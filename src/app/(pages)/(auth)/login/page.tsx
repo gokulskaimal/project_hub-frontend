@@ -3,47 +3,52 @@
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import Link from "next/link";
-import { use, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "../../../../store/store";
+import { loginUser, setEmail, setPassword } from "@/features/auth/authSlice";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email , setEmail] = useState('')
-  const [password , setPassword] = useState('')
-  const [loading ,setLoading] = useState(false)
-  const [error , setError] = useState('')
 
-  // const handleSubmit = async(e : React.FormEvent) =>{
+  const router = useRouter()
+  
+  const dispatch = useDispatch<AppDispatch>()
+  const { email, password, error ,loading , isLoggedIn , role} = useSelector((state: RootState) => state.auth)
+
+  useEffect(() =>{
+    if(isLoggedIn){
+      switch(role){
+        case 'admin' :
+          router.push('/admin/dashboard')
+          break;
+        case 'manager' :
+          router.push('/manager/dashboard')
+          break;
+        case 'member' :
+          router.push('/member/dashboard')
+          break;
+        default:
+          break;
+      }
+    }
+  },[isLoggedIn , role , router])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!email || !password) return
+    dispatch(loginUser({ email, password }))
+
+  }
 
 
-  //   e.preventDefault();
-  //   setError('')
-
-
-  //   if(!email.trim() || !password.trim()){
-  //     setError('Email and password are required')
-  //     return
-  //   }
-
-
-  //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]$/
-  //   if(!emailRegex.test(email)){
-  //     setError('Please enter a valid email address')
-  //     return
-  //   }
-
-
-  //   setLoading(true)
-  //   try{
-  //     setLoading(false)
-      
-  //   }
-
-  // }
 
 
 
   return (
     <div className="min-h-dvh flex flex-col bg-white">
-     <Header/>
+      <Header />
 
       <main
         className="relative flex-1 overflow-hidden"
@@ -58,7 +63,7 @@ export default function LoginPage() {
                 <p className="text-sm text-gray-600">Sign in to continue to Project Hub</p>
               </div>
 
-              <div className="mb-6 space-y-4">
+              <form onSubmit={handleSubmit} className="mb-2 space-y-4">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                     <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,12 +71,14 @@ export default function LoginPage() {
                     </svg>
                   </div>
                   <input
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => dispatch(setEmail(e.target.value))}
+                    value={email}
                     type="email"
-                    placeholder="you@company.com"
+                    placeholder="you@example.com"
                     className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
+                {error && <p className="text-sm text-red-600">{error}</p>}
 
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -80,22 +87,29 @@ export default function LoginPage() {
                     </svg>
                   </div>
                   <input
-                  onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => dispatch(setPassword(e.target.value))}
+                    value={password}
                     type="password"
                     placeholder="Password"
                     className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-              </div>
+                {error && <p className="text-sm text-red-600">{error}</p>}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`mb-6 w-full rounded-lg py-2.5 text-sm font-medium text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                >
+                  {loading ? 'Signing in...' : 'Sign in'}
+                </button>
+              </form>
 
               <div className="mb-6 flex items-center justify-between">
                 <Link className="text-sm text-blue-600 hover:text-blue-700" href="/forgot">Forgot password?</Link>
                 <Link className="text-sm text-gray-600 hover:text-gray-900" href="/signup">Create account</Link>
               </div>
 
-              <button className="mb-6 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700">
-                Sign in
-              </button>
 
               <div className="mb-6 flex items-center">
                 <div className="flex-1 border-t border-gray-200" />
@@ -116,7 +130,7 @@ export default function LoginPage() {
           </div>
         </div>
       </main>
-    <Footer/>
+      <Footer />
     </div>
   );
 }
