@@ -4,9 +4,8 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState, AppDispatch } from '@/store/store';
+import { AppDispatch } from '@/store/store';
 import {
-  sendOtp,
   verifyOtp,
   completeSignup,
   setEmail,
@@ -14,17 +13,23 @@ import {
   setName,
   setPassword,
   resendOtp,
+  setFirstName,
+  setLastName,
 } from "@/features/auth/authSlice";
+import { registerManager } from '@/features/auth/authSlice';
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { selectSignupData } from "@/features/auth/selectors";
+import { toast } from "react-hot-toast";
 
 export default function SignUpPage() {
   const dispatch = useDispatch<AppDispatch>();
 
 
-  const { email, otp, name, password, signupStep, error, loading, otpResendAvailableAt } = useSelector(selectSignupData);
+  const { email, otp, name, password, firstName, lastName, signupStep, error, loading, otpResendAvailableAt } = useSelector(selectSignupData);
 
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const [remainingMs, setRemainingMs] = useState<number>(0);
 
@@ -53,24 +58,81 @@ export default function SignUpPage() {
     return `${seconds}s`;
   }, [remainingMs]);
 
-  const onSendOtp = () => {
-    dispatch(sendOtp({ email }));
-  };
-
-  const onResendOtp = () => {
-    dispatch(resendOtp({ email }));
-  };
-
-  const onVerifyOtp = () => {
-    dispatch(verifyOtp({ email, otp }));
-  };
-
-  const onCompleteSignup = () => {
-    if (password !== confirmPassword) {
-      alert('Passwords do not match!');
+  const onRegisterManager = async () => {
+    const schema = z.object({
+      email: z.string().email('Enter a valid email'),
+      organizationName: z.string().min(2, 'Organization name is required')
+    });
+    const parsed = schema.safeParse({ email, organizationName: name });
+    if (!parsed.success) {
+      setLocalError(parsed.error.errors[0]?.message ?? 'Invalid email');
       return;
     }
-    dispatch(completeSignup({ email, name, password }));
+    setLocalError(null);
+    try {
+      await dispatch(registerManager({ email: parsed.data.email, organizationName: parsed.data.organizationName })).unwrap();
+      toast.success('Organization created and OTP sent');
+    } catch (err: unknown) {
+      const message = typeof err === 'string' ? err : 'Failed to register';
+      toast.error(message);
+    }
+  };
+
+  const onResendOtp = async () => {
+    try {
+      await dispatch(resendOtp({ email })).unwrap();
+      toast.success('OTP resent');
+    } catch (err: unknown) {
+      const message = typeof err === 'string' ? err : 'Failed to resend OTP';
+      toast.error(message);
+    }
+  };
+
+  const onVerifyOtp = async () => {
+    const schema = z.object({
+      email: z.string().email('Enter a valid email'),
+      otp: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
+    });
+    const parsed = schema.safeParse({ email, otp });
+    if (!parsed.success) {
+      setLocalError(parsed.error.errors[0]?.message ?? 'Invalid OTP');
+      return;
+    }
+    setLocalError(null);
+    try {
+      await dispatch(verifyOtp(parsed.data)).unwrap();
+      toast.success('OTP verified');
+    } catch (err: unknown) {
+      const message = typeof err === 'string' ? err : 'OTP verification failed';
+      toast.error(message);
+    }
+  };
+
+  const onCompleteSignup = async () => {
+    const schema = z.object({
+      email: z.string().email('Enter a valid email'),
+      firstName: z.string().min(2, 'First name too short'),
+      lastName: z.string().min(2, 'Last name too short'),
+      password: z.string().min(8, 'Password must be at least 8 characters'),
+      confirmPassword: z.string(),
+    }).refine((data) => data.password === data.confirmPassword, {
+      message: 'Passwords do not match',
+      path: ['confirmPassword']
+    });
+
+    const parsed = schema.safeParse({ email, firstName, lastName, password, confirmPassword });
+    if (!parsed.success) {
+      setLocalError(parsed.error.errors[0]?.message ?? 'Invalid input');
+      return;
+    }
+    setLocalError(null);
+    try {
+      await dispatch(completeSignup({ email, firstName, lastName, password })).unwrap();
+      toast.success('Signup complete. You can now sign in.');
+    } catch (err: unknown) {
+      const message = typeof err === 'string' ? err : 'Signup failed';
+      toast.error(message);
+    }
   };
 
   return (
@@ -105,8 +167,8 @@ export default function SignUpPage() {
 
                 {/* Signup form steps */}
                 {signupStep === 1 && (
-                  <div className="flex items-center gap-3 mb-6 max-w-xl">
-                    <div className="flex-1 relative">
+                  <div className="grid gap-3 mb-6 max-w-xl">
+                    <div className="relative">
                       <div className="absolute left-3 top-1/2 -translate-y-1/2">
                         <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 17 17">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33" d="M14.9964 5.33655L9.00242 9.15455C8.79902 9.27269 8.56798 9.33492 8.33275 9.33492C8.09753 9.33492 7.86649 9.27269 7.66309 9.15455L1.66309 5.33655" />
@@ -122,12 +184,22 @@ export default function SignUpPage() {
                         disabled={loading}
                       />
                     </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Organization Name"
+                        className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
+                        value={name}
+                        onChange={(e) => dispatch(setName(e.target.value))}
+                        disabled={loading}
+                      />
+                    </div>
                     <button
                       className="h-10 px-6 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
-                      onClick={onSendOtp}
-                      disabled={loading || !email}
+                      onClick={onRegisterManager}
+                      disabled={loading || !email || !name}
                     >
-                      {loading ? 'Sending OTP...' : 'Send OTP'}
+                      {loading ? 'Creating...' : 'Create org & Send OTP'}
                     </button>
                   </div>
                 )}
@@ -183,10 +255,18 @@ export default function SignUpPage() {
                   <div className="space-y-4 max-w-xl">
                     <input
                       type="text"
-                      placeholder="Organization Name"
+                      placeholder="First Name"
                       className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
-                      value={name}
-                      onChange={(e) => dispatch(setName(e.target.value))}
+                      value={firstName}
+                      onChange={(e) => dispatch(setFirstName(e.target.value))}
+                      disabled={loading}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Last Name"
+                      className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
+                      value={lastName}
+                      onChange={(e) => dispatch(setLastName(e.target.value))}
                       disabled={loading}
                     />
                     <input
@@ -207,16 +287,16 @@ export default function SignUpPage() {
                     <button
                       className="w-full h-10 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
                       onClick={onCompleteSignup}
-                      disabled={loading || !name || !password || !confirmPassword}
+                      disabled={loading || !firstName || !lastName || !name || !password || !confirmPassword}
                     >
                       {loading ? 'Signing Up...' : 'Complete Signup'}
                     </button>
                   </div>
                 )}
 
-                {error && (
+                {(error || localError) && (
                   <p className="mt-2 text-sm text-red-600 max-w-xl">
-                    {error}
+                    {localError || error}
                   </p>
                 )}
 

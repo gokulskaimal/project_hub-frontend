@@ -1,0 +1,18 @@
+.main{padding:24px;display:grid;gap:24px}
+.simpleMain{padding:24px}
+.header{display:flex;align-items:center;justify-content:space-between}
+.headerMeta{opacity:.8}
+.section{display:grid;gap:16px}
+.inviteForm{display:flex;gap:8px}
+.input{flex:1;padding:10px;border:1px solid #ccc;border-radius:6px}
+.button{padding:10px 16px;border-radius:6px;border:1px solid #111;background:#111;color:#fff}
+.tableWrap{border:1px solid #eee;border-radius:8px;overflow:hidden}
+.table{width:100%;border-collapse:collapse}
+.thead{background:#fafafa}
+.th{ text-align:left;padding:10px }
+.td{ padding:10px }
+.trBorder{ border-top:1px solid #f0f0f0 }
+.list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.listItem{border:1px solid #eee;border-radius:8px;padding:12px;display:flex;justify-content:space-between}
+.name{margin:0}
+.subtleText{font-size:12px;opacity:.7}

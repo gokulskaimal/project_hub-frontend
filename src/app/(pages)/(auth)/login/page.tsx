@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../../../store/store";
 import { loginUser, setEmail, setPassword } from "@/features/auth/authSlice";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -14,31 +15,54 @@ export default function LoginPage() {
   const router = useRouter()
   
   const dispatch = useDispatch<AppDispatch>()
-  const { email, password, error ,loading , isLoggedIn , role} = useSelector((state: RootState) => state.auth)
+  const { email, password, error ,loading , isLoggedIn , role, accessToken } = useSelector((state: RootState) => state.auth)
+  const [localError, setLocalError] = useState<string | null>(null)
 
-  useEffect(() =>{
-    if(isLoggedIn){
-      switch(role){
-        case 'admin' :
-          router.push('/admin/dashboard')
-          break;
-        case 'manager' :
-          router.push('/manager/dashboard')
-          break;
-        case 'member' :
-          router.push('/member/dashboard')
-          break;
-        default:
-          break;
-      }
+  const loginSchema = useMemo(() => z.object({
+    email: z.string().email('Enter a valid email'),
+    password: z.string().min(8, 'Password must be at least 8 characters')
+  }), [])
+
+  useEffect(() => {
+    if (!isLoggedIn || !role) return
+
+    if (accessToken) {
+      try {
+        localStorage.setItem('accessToken', accessToken)
+      } catch {}
     }
-  },[isLoggedIn , role , router])
+
+    const normalizedRole = role.toLowerCase().replace(/\s+/g, '-')
+
+    switch (normalizedRole) {
+      case 'super-admin':
+      case 'admin':
+        router.push('/admin/dashboard')
+        break
+      case 'org-manager':
+      case 'manager':
+        router.push('/manager/dashboard')
+        break
+      case 'team-member':
+      case 'member':
+        router.push('/member/dashboard')
+        break
+      default:
+        break
+    }
+  }, [isLoggedIn, role, accessToken, router])
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!email || !password) return
-    dispatch(loginUser({ email, password }))
+    const parsed = loginSchema.safeParse({ email, password })
+    if (!parsed.success) {
+      setLocalError(parsed.error.errors[0]?.message ?? 'Invalid input')
+      return
+    }
+    setLocalError(null)
+    dispatch(loginUser(parsed.data))
 
   }
 
@@ -75,10 +99,10 @@ export default function LoginPage() {
                     value={email}
                     type="email"
                     placeholder="you@example.com"
-                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {(localError || error) && <p className="text-sm text-red-600">{localError || error}</p>}
 
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -91,7 +115,7 @@ export default function LoginPage() {
                     value={password}
                     type="password"
                     placeholder="Password"
-                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 {error && <p className="text-sm text-red-600">{error}</p>}

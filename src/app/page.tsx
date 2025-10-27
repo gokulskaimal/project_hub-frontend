@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-html-link-for-pages */
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 
@@ -184,7 +183,10 @@ export default function Page() {
                       <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-900">{item.name}</span><span className="text-xs text-gray-500">{item.depends}</span></div>
                       <div className="flex gap-1">
                         {Array.from({ length: 20 }).map((_, i) => (
-                          <div key={i} className={`h-2 rounded ${i < item.progress/5 ? (index===0?'bg-[#2463EB]/60':index===1?'bg-[#7750E2]/60':index===2?'bg-[#2463EB]/50':'bg-[#2463EB]/40'):'bg-gray-100'}`} style={{width:'100%'}} />
+                          <div
+                            key={i}
+                            className={`h-2 w-full rounded ${i < item.progress/5 ? (index===0?'bg-[#2463EB]/60':index===1?'bg-[#7750E2]/60':index===2?'bg-[#2463EB]/50':'bg-[#2463EB]/40'):'bg-gray-100'}`}
+                          />
                         ))}
                       </div>
                     </div>
