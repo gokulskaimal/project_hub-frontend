@@ -186,10 +186,10 @@ export default function Page() {
                           <div
                             key={i}
                             className={`h-2 w-full rounded ${i < item.progress/5 ? (index===0?'bg-[#2463EB]/60':index===1?'bg-[#7750E2]/60':index===2?'bg-[#2463EB]/50':'bg-[#2463EB]/40'):'bg-gray-100'}`}
-                          />
-                        ))}
+                          />  
+                        ))} 
                       </div>
-                    </div>
+                    </div> 
                   ))}
                 </div>
               </div>

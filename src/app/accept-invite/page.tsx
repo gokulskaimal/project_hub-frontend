@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function LegacyAcceptInviteRedirect() {
+function LegacyAcceptInviteRedirectContent() {
   const router = useRouter()
   const search = useSearchParams()
 
@@ -17,4 +17,12 @@ export default function LegacyAcceptInviteRedirect() {
   }, [router, search])
 
   return null
+}
+
+export default function LegacyAcceptInviteRedirect() {
+  return (
+    <Suspense>
+      <LegacyAcceptInviteRedirectContent />
+    </Suspense>
+  )
 }

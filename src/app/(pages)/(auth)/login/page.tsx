@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import Footer from "@/components/Footer";
@@ -5,10 +6,12 @@ import Header from "@/components/Header";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../../../store/store";
-import { loginUser, setEmail, setPassword } from "@/features/auth/authSlice";
+import { loginUser, setEmail, setPassword, googleSignIn } from "@/features/auth/authSlice";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 export default function LoginPage() {
 
@@ -16,12 +19,17 @@ export default function LoginPage() {
   
   const dispatch = useDispatch<AppDispatch>()
   const { email, password, error ,loading , isLoggedIn , role, accessToken } = useSelector((state: RootState) => state.auth)
-  const [localError, setLocalError] = useState<string | null>(null)
 
   const loginSchema = useMemo(() => z.object({
-    email: z.string().email('Enter a valid email'),
-    password: z.string().min(8, 'Password must be at least 8 characters')
+    email: z.string().trim().email('Enter a valid email'),
+    password: z.string().trim().min(8, 'Password must be at least 8 characters')
   }), [])
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error)
+    }
+  }, [error])
 
   useEffect(() => {
     if (!isLoggedIn || !role) return
@@ -32,7 +40,8 @@ export default function LoginPage() {
       } catch {}
     }
 
-    const normalizedRole = role.toLowerCase().replace(/\s+/g, '-')
+  // normalize role by lowercasing and replacing spaces/underscores with hyphens
+  const normalizedRole = role.toLowerCase().replace(/[\s_]+/g, '-')
 
     switch (normalizedRole) {
       case 'super-admin':
@@ -58,12 +67,20 @@ export default function LoginPage() {
 
     const parsed = loginSchema.safeParse({ email, password })
     if (!parsed.success) {
-      setLocalError(parsed.error.errors[0]?.message ?? 'Invalid input')
+      toast.error(parsed.error.errors[0]?.message ?? 'Invalid input')
       return
     }
-    setLocalError(null)
     dispatch(loginUser(parsed.data))
 
+  }
+
+  const handleGoogleSignIn = (credentialResponse: CredentialResponse) => {
+    const { credential } = credentialResponse
+    if (!credential) {
+      toast.error("Google sign-in failed")
+      return
+    }
+    dispatch(googleSignIn({ idToken: credential }))
   }
 
 
@@ -102,7 +119,6 @@ export default function LoginPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-                {(localError || error) && <p className="text-sm text-red-600">{localError || error}</p>}
 
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -118,7 +134,7 @@ export default function LoginPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                <></>
                 <button
                   type="submit"
                   disabled={loading}
@@ -141,15 +157,13 @@ export default function LoginPage() {
                 <div className="flex-1 border-t border-gray-200" />
               </div>
 
-              <button className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50">
-                <svg className="h-4 w-4" viewBox="0 0 24 24">
-                  <path fill="#EA4335" d="M23.7 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.6c-.3 1.4-1.2 2.7-2.4 3.5v3h3.9c2.3-2.1 3.6-5.2 3.6-8.6z" />
-                  <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-4.9H1.4v3.1C3.4 21.1 7.4 24 12 24z" />
-                  <path fill="#FBBC05" d="M5.3 14.3c-.2-.7-.4-1.4-.4-2.3s.1-1.6.4-2.3V6.6H1.4C.5 8.3 0 10.1 0 12s.5 3.7 1.4 5.4l3.9-3.1z" />
-                  <path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.5-3.5C18 1.1 15.2 0 12 0 7.4 0 3.4 2.9 1.4 7.1l3.9 3.1c.9-2.8 3.6-4.9 6.7-4.9z" />
-                </svg>
-                Continue with Google
-              </button>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSignIn}
+                  onError={() => toast.error("Google sign-in failed")}
+                  useOneTap
+                />
+              </div>
             </div>
           </div>
         </div>

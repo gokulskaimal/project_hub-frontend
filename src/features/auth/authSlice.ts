@@ -3,6 +3,18 @@ import axios from "axios";
 import { api, API_ROUTES } from "../../utils/api";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  role: string;
+  orgId?: string;
+  status?: string;
+  lastLoginAt?: string | Date;
+}
+
 interface AuthState {
   email: string;
   password: string;
@@ -18,6 +30,7 @@ interface AuthState {
   otpResendAvailableAt: number | null;
   accessToken: string | null;
   role: string | null;
+  user: UserProfile | null;
 }
 
 const baseInitialState: AuthState = {
@@ -34,6 +47,7 @@ const baseInitialState: AuthState = {
   otpResendAvailableAt: null,
   accessToken: null,
   role: null,
+  user: null,
 };
 
 const loadPersistedAuth = (): Partial<AuthState> => {
@@ -58,15 +72,92 @@ const initialState: AuthState = { ...baseInitialState, ...loadPersistedAuth() };
 
 const normalizeRole = (role: string | null): string | null => {
   if (!role) return null;
-  return role.toLowerCase().replace(/\s+/g, "-");
+  // Normalize by lowercasing and converting spaces/underscores to hyphens
+  return role.toLowerCase().replace(/[\s_]+/g, "-");
 };
+
+export const fetchProfile = createAsyncThunk<
+  UserProfile,
+  void,
+  { rejectValue: string }
+>("auth/fetchProfile", async (_, thunkAPI) => {
+  try {
+    const res = await api.get(API_ROUTES.USER.PROFILE);
+    const data = res.data?.data;
+    if (data) {
+      return data as UserProfile;
+    }
+    return thunkAPI.rejectWithValue("Failed to load profile");
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const d = err.response?.data as
+        | { message?: string; error?: string }
+        | string
+        | undefined;
+      const message =
+        typeof d === "string" ? d : d?.message || d?.error || "Network error";
+      return thunkAPI.rejectWithValue(message);
+    }
+    return thunkAPI.rejectWithValue("Network error");
+  }
+});
+
+export const googleSignIn = createAsyncThunk<
+  { accessToken: string; role: string; user: UserProfile },
+  { idToken: string; inviteToken?: string },
+  { rejectValue: string }
+>("auth/googleSignIn", async ({ idToken, inviteToken }, thunkAPI) => {
+  try {
+    const response = await api.post(API_ROUTES.AUTH.GOOGLE_SIGNIN, {
+      idToken,
+      inviteToken,
+    });
+    const { accessToken, user } = response.data;
+    if (accessToken && user?.role) {
+      return { accessToken, role: user.role, user };
+    }
+    return thunkAPI.rejectWithValue("Invalid Google sign-in response");
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const d = err.response?.data as
+        | {
+            message?: string;
+            error?: string;
+            errors?: Array<{ message?: string }>;
+            detail?: string;
+          }
+        | string
+        | undefined;
+      if (typeof d === "string" && d.trim().length) {
+        return thunkAPI.rejectWithValue(d);
+      }
+      if (d && typeof d === "object") {
+        const obj = d as {
+          message?: string;
+          error?: string;
+          errors?: Array<{ message?: string }>;
+          detail?: string;
+        };
+        const firstValidation = Array.isArray(obj.errors)
+          ? obj.errors[0]?.message || null
+          : null;
+        const message =
+          obj.message || obj.error || obj.detail || firstValidation;
+        if (message && typeof message === "string") {
+          return thunkAPI.rejectWithValue(message);
+        }
+      }
+    }
+    return thunkAPI.rejectWithValue("Network error");
+  }
+});
 
 export const acceptInvite = createAsyncThunk<
   void,
   { token: string; password: string; firstName: string; lastName: string },
   { rejectValue: string }
 >(
-  "auth/acceptInvite",
+  API_ROUTES.AUTH.ACCEPT_INVITE,
   async ({ token, password, firstName, lastName }, thunkAPI) => {
     try {
       await api.post(API_ROUTES.AUTH.ACCEPT_INVITE, {
@@ -77,46 +168,91 @@ export const acceptInvite = createAsyncThunk<
       });
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        const data = err.response?.data as
-          | { message?: string; error?: string }
+        const d = err.response?.data as
+          | {
+              message?: string;
+              error?: string;
+              errors?: Array<{ message?: string }>;
+              detail?: string;
+            }
+          | string
           | undefined;
-        const message = data?.message ?? data?.error;
-        if (message) return thunkAPI.rejectWithValue(message);
+        if (typeof d === "string" && d.trim().length) {
+          return thunkAPI.rejectWithValue(d);
+        }
+        if (d && typeof d === "object") {
+          const obj = d as {
+            message?: string;
+            error?: string;
+            errors?: Array<{ message?: string }>;
+            detail?: string;
+          };
+          const firstValidation = Array.isArray(obj.errors)
+            ? obj.errors[0]?.message || null
+            : null;
+          const message =
+            obj.message || obj.error || obj.detail || firstValidation;
+          if (message && typeof message === "string") {
+            return thunkAPI.rejectWithValue(message);
+          }
+        }
       }
-      return thunkAPI.rejectWithValue("Network Error");
+      return thunkAPI.rejectWithValue("Network error");
     }
   },
 );
 
 export const registerManager = createAsyncThunk<
-  { organizationId: string; invitationToken: string },
+  { organizationId: string; invitationToken: string; otpExpiresAt: string },
   { email: string; organizationName: string },
   { rejectValue: string }
->("auth/registerManager", async (payload, thunkAPI) => {
+>(API_ROUTES.AUTH.REGISTER_MANAGER, async (payload, thunkAPI) => {
   try {
     const res = await api.post(API_ROUTES.AUTH.REGISTER_MANAGER, payload);
-    // API returns { success, message, data: { organizationId, invitationToken } }
-    const data = res.data?.data;
-    if (data?.organizationId) {
+    // API returns { message, organizationId, invitationToken, otpExpiresAt }
+    const data = res.data;
+    if (data?.organizationId && data?.otpExpiresAt) {
       return {
         organizationId: data.organizationId,
         invitationToken: data.invitationToken,
+        otpExpiresAt: data.otpExpiresAt,
       };
     }
     return thunkAPI.rejectWithValue("Invalid register response");
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
       const d = err.response?.data as
-        | { message?: string; error?: string }
+        | {
+            message?: string;
+            error?: string;
+            errors?: Array<{ message?: string }>;
+            detail?: string;
+          }
+        | string
         | undefined;
-      const message = d?.message ?? d?.error;
-      if (message) return thunkAPI.rejectWithValue(message);
+      if (typeof d === "string" && d.trim().length) {
+        return thunkAPI.rejectWithValue(d);
+      }
+      if (d && typeof d === "object") {
+        const obj = d as {
+          message?: string;
+          error?: string;
+          errors?: Array<{ message?: string }>;
+          detail?: string;
+        };
+        const firstValidation = Array.isArray(obj.errors)
+          ? obj.errors[0]?.message || null
+          : null;
+        const message =
+          obj.message || obj.error || obj.detail || firstValidation;
+        if (message && typeof message === "string") {
+          return thunkAPI.rejectWithValue(message);
+        }
+      }
     }
     return thunkAPI.rejectWithValue("Network error");
   }
 });
-
-// Using shared axios instance and centralized API routes
 
 export const loginUser = createAsyncThunk<
   { accessToken: string; role: string },
@@ -124,22 +260,43 @@ export const loginUser = createAsyncThunk<
   { rejectValue: string }
 >("auth/loginUser", async (credentials, thunkAPI) => {
   try {
+    // Normal API login - server handles super admin credential check
     const response = await api.post(API_ROUTES.AUTH.LOGIN, credentials);
-    // API returns { success, message, data: { accessToken, role, ... } }
-    const payload =
-      response.data && response.data.data ? response.data.data : null;
-    if (payload && payload.accessToken && payload.role) {
-      return { accessToken: payload.accessToken, role: payload.role };
+    // API returns { accessToken, user: { role, ... } }
+    const { accessToken, user } = response.data;
+    if (accessToken && user?.role) {
+      return { accessToken, role: user.role };
     }
     return thunkAPI.rejectWithValue("Invalid login response");
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
-      const data = err.response?.data as
-        | { message?: string; error?: string }
+      const d = err.response?.data as
+        | {
+            message?: string;
+            error?: string;
+            errors?: Array<{ message?: string }>;
+            detail?: string;
+          }
+        | string
         | undefined;
-      const message = data?.message ?? data?.error;
-      if (message) {
-        return thunkAPI.rejectWithValue(message);
+      if (typeof d === "string" && d.trim().length) {
+        return thunkAPI.rejectWithValue(d);
+      }
+      if (d && typeof d === "object") {
+        const obj = d as {
+          message?: string;
+          error?: string;
+          errors?: Array<{ message?: string }>;
+          detail?: string;
+        };
+        const firstValidation = Array.isArray(obj.errors)
+          ? obj.errors[0]?.message || null
+          : null;
+        const message =
+          obj.message || obj.error || obj.detail || firstValidation;
+        if (message && typeof message === "string") {
+          return thunkAPI.rejectWithValue(message);
+        }
       }
     }
     return thunkAPI.rejectWithValue("Network error");
@@ -190,7 +347,15 @@ export const verifyOtp = createAsyncThunk<
   { rejectValue: string }
 >("auth/verifyOtp", async ({ email, otp }, thunkAPI) => {
   try {
-    await api.post(API_ROUTES.AUTH.VERIFY_OTP, { email, otp });
+    const response = await api.post(API_ROUTES.AUTH.VERIFY_OTP, { email, otp });
+
+    // Check if OTP was actually verified in the response
+    const data = response.data;
+    if (!data?.verified) {
+      // OTP verification failed, return the error message
+      const message = data?.message || "OTP verification failed";
+      return thunkAPI.rejectWithValue(message);
+    }
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
       const data = err.response?.data as
@@ -276,6 +441,7 @@ const authSlice = createSlice({
       state.otpResendAvailableAt = null;
       state.accessToken = null;
       state.role = null;
+      state.user = null;
       try {
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
@@ -299,7 +465,8 @@ const authSlice = createSlice({
         try {
           if (typeof window !== "undefined") {
             localStorage.setItem("accessToken", action.payload.accessToken);
-            localStorage.setItem("role", action.payload.role);
+            // Store normalized role to ensure consistency on reload
+            localStorage.setItem("role", state.role || "");
           }
         } catch {}
       })
@@ -309,6 +476,34 @@ const authSlice = createSlice({
           typeof action.payload === "string"
             ? action.payload
             : "Failed to Login";
+        state.isLoggedIn = false;
+        state.accessToken = null;
+      })
+      .addCase(googleSignIn.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(googleSignIn.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isLoggedIn = true;
+        state.error = null;
+        state.accessToken = action.payload.accessToken;
+        state.role = normalizeRole(action.payload.role);
+        state.user = action.payload.user;
+        try {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("accessToken", action.payload.accessToken);
+            // Store normalized role to ensure consistency on reload
+            localStorage.setItem("role", state.role || "");
+          }
+        } catch {}
+      })
+      .addCase(googleSignIn.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : "Failed to sign in with Google";
         state.isLoggedIn = false;
         state.accessToken = null;
       })
@@ -382,10 +577,14 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(registerManager.fulfilled, (state) => {
+      .addCase(registerManager.fulfilled, (state, action) => {
         state.loading = false;
         state.signupStep = 2;
         state.error = null;
+        // Use server-provided expiry time to ensure timer matches backend
+        // Parse the otpExpiresAt ISO string and convert to milliseconds
+        const expiresAt = new Date(action.payload.otpExpiresAt).getTime();
+        state.otpResendAvailableAt = expiresAt;
       })
       .addCase(registerManager.rejected, (state, action) => {
         state.loading = false;
@@ -408,6 +607,22 @@ const authSlice = createSlice({
           typeof action.payload === "string"
             ? action.payload
             : "Accept invite failed";
+      })
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : "Failed to load profile";
       });
   },
 });

@@ -8,7 +8,11 @@ import { logout, hydrateFromStorage } from '@/features/auth/authSlice';
 
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
+import { getFriendlyError } from '@/utils/errors';
+import { confirmWithAlert } from '@/utils/confirm';
+import UserInfoView from '@/components/profile/UserInfoView';
+import EditUserForm from '@/components/profile/EditUserForm';
 
 type InviteForm = { email: string; role: 'Team Member' | 'Admin' | 'Manager'; expiry: '7 Days' | '14 Days' | '30 Days' };
 type UserMode = 'view' | 'edit';
@@ -29,7 +33,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!authChecked) return;
-    if (!isLoggedIn || role !== 'org-manager') router.push('/login');
+    // Check if user is logged in and has the correct role
+    // Allow both normalized and non-normalized versions of manager role
+    const isValidManager = isLoggedIn && (role === 'org-manager' || role === 'manager');
+    if (!isValidManager) {
+      router.push('/login');
+    }
   }, [authChecked, isLoggedIn, role, router]);
 
   const handleLogout = async () => {
@@ -54,21 +63,27 @@ export default function DashboardPage() {
     setProfileImage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  
   const openUserModal = (mode: UserMode = 'view') => {
     setUserModalMode(mode);
-    setShowUserModal(true);
+    if (!token && typeof window !== 'undefined') {
+      const t = localStorage.getItem('accessToken');
+      if (t) setToken(t);
+    }
+    setTimeout(() => setShowUserModal(true), 0);
   };
 
   const sidebarLinks = [
     { name: 'Dashboard', active: true },
-    { name: 'Projects' },
-    { name: 'Kanban Board' },
-    { name: 'Calendar' },
-    { name: 'Chat' },
-    { name: 'Tickets' },
-    { name: 'Team' },
-    { name: 'Billing' },
-    { name: 'Settings', borderTop: true },
+    // { name: 'Projects' },
+    // { name: 'Kanban Board' },
+    // { name: 'Calendar' },
+    // { name: 'Chat' },
+    // { name: 'Tickets' },
+    // { name: 'Team' },
+    // { name: 'Billing' },
+    // { name: 'Settings', borderTop: true },
   ];
 
   const [invites, setInvites] = useState<InviteForm[]>([{ email: '', role: 'Team Member', expiry: '7 Days' }]);
@@ -95,11 +110,17 @@ export default function DashboardPage() {
       const headers = { Authorization: `Bearer ${token}` };
       const emails = invites.map((i) => i.email.trim()).filter(Boolean);
       await axios.post(`${apiBase}/api/manager/bulk-invite`, { emails }, { headers });
+      
+      // Fetch updated invitations list
+      await refetchInvitations();
+      
       toast.success(`Sent ${emails.length} invitation${emails.length !== 1 ? 's' : ''}`);
       setShowInviteModal(false);
+      
+      // Clear the invites form
+      setInvites([{ email: '', role: 'Team Member', expiry: '7 Days' }]);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to send invitations';
-      toast.error(message);
+      toast.error(getFriendlyError(err, 'Failed to send invitations'));
     }
   };
 
@@ -117,7 +138,7 @@ export default function DashboardPage() {
       setMembers(filtered);
       setInvitations(invitesRes.data?.data || []);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load data');
+      toast.error(getFriendlyError(err, 'Failed to load data'));
     } finally {
       setLoading(false);
     }
@@ -135,7 +156,7 @@ export default function DashboardPage() {
       const membersRes = await axios.get(`${apiBase}/api/manager/members`, { headers });
       setMembers(membersRes.data?.data || []);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to refresh members');
+      toast.error(getFriendlyError(err, 'Failed to refresh members'));
     }
   };
 
@@ -146,40 +167,49 @@ export default function DashboardPage() {
       const res = await axios.get(`${apiBase}/api/manager/invitations`, { headers });
       setInvitations(res.data?.data || []);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to refresh invitations');
+      toast.error(getFriendlyError(err, 'Failed to refresh invitations'));
     }
   };
 
   const onUpdateStatus = async (memberId: string, nextStatus: 'ACTIVE' | 'BLOCKED') => {
+    const confirmed = await confirmWithAlert(
+      nextStatus === 'BLOCKED' ? 'Block this user? They will lose access.' : 'Unblock this user? They will regain access.',
+      nextStatus === 'BLOCKED' ? 'Yes, Block' : 'Yes, Unblock'
+    );
+    if (!confirmed) return;
     try {
       const headers = { Authorization: `Bearer ${token}` };
       await axios.put(`${apiBase}/api/manager/members/${memberId}/status`, { status: nextStatus }, { headers });
       toast.success(nextStatus === 'BLOCKED' ? 'User blocked' : 'User unblocked');
       await refetchMembers();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update status');
+      toast.error(getFriendlyError(err, 'Failed to update status'));
     }
   };
 
   const onRemoveMember = async (memberId: string) => {
+    const confirmed = await confirmWithAlert('Remove this member? This cannot be undone.', 'Yes, Remove');
+    if (!confirmed) return;
     try {
       const headers = { Authorization: `Bearer ${token}` };
       await axios.delete(`${apiBase}/api/manager/members/${memberId}`, { headers });
       toast.success('User removed');
       await refetchMembers();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to remove user');
+      toast.error(getFriendlyError(err, 'Failed to remove user'));
     }
   };
 
   const onCancelInvitation = async (tokenToCancel: string) => {
+    const confirmed = await confirmWithAlert('Cancel this invitation?', 'Yes, Cancel');
+    if (!confirmed) return;
     try {
       const headers = { Authorization: `Bearer ${token}` };
       await axios.delete(`${apiBase}/api/manager/invitations/${encodeURIComponent(tokenToCancel)}`, { headers });
       toast.success('Invitation cancelled');
       await refetchInvitations();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to cancel invitation');
+      toast.error(getFriendlyError(err, 'Failed to cancel invitation'));
     }
   };
 
@@ -187,6 +217,11 @@ export default function DashboardPage() {
   const [profileFirstName, setProfileFirstName] = useState('');
   const [profileLastName, setProfileLastName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
+  const [profileName, setProfileName] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -198,13 +233,26 @@ export default function DashboardPage() {
         setProfileFirstName(d.firstName || '');
         setProfileLastName(d.lastName || '');
         setProfileEmail(d.email || '');
+        setProfileName(d.name || '');
       } catch {
         /* ignore */
       }
     };
     loadProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showUserModal]);
+  }, [showUserModal, token]);
+
+  const computedName = useMemo(() => {
+    const full = `${profileFirstName || ''} ${profileLastName || ''}`.trim();
+    if (full) return full;
+    const n = (profileName || '').trim();
+    if (n) return n;
+    const e = (profileEmail || '').trim();
+    if (e) return (e.split('@')[0] || e);
+    return 'User';
+  }, [profileFirstName, profileLastName, profileName, profileEmail]);
+
+  const computedInitial = useMemo(() => (computedName?.[0] || profileEmail?.[0] || 'U').toUpperCase(), [computedName, profileEmail]);
 
   const onSaveProfile = async () => {
     try {
@@ -213,7 +261,31 @@ export default function DashboardPage() {
       toast.success('Profile updated');
       setShowUserModal(false);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update profile');
+      toast.error(getFriendlyError(err, 'Failed to update profile'));
+    }
+  };
+
+  const onChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      toast.error('Please fill all password fields');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    try {
+      setChangingPassword(true);
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.post(`${apiBase}/api/user/change-password`, { currentPassword, newPassword, confirmNewPassword }, { headers });
+      toast.success('Password changed successfully');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: unknown) {
+      toast.error(getFriendlyError(err, 'Failed to change password'));
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -230,7 +302,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Toaster />
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex-col hidden md:flex">
         <div className="h-16 px-6 border-b border-gray-200 flex items-center">
@@ -250,7 +321,7 @@ export default function DashboardPage() {
                 item.active
                   ? 'text-blue-700 bg-blue-50 border border-blue-200'
                   : 'text-gray-700 hover:bg-gray-50'
-              } ${item.borderTop ? 'border-t border-gray-200 mt-3 pt-4' : ''}`}
+              } `}
             >
               <span className="w-5 h-5 inline-block bg-gray-100 rounded" />
               <span className="text-sm font-medium">{item.name}</span>
@@ -275,13 +346,13 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
-              className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-500 outline-none"
+              className="flex-1 bg-transparent text-sm text-black placeholder-gray-700 outline-none"
               placeholder="Search projects, tasks, users..."
               aria-label="Global search"
             />
             <div className="hidden sm:flex items-center gap-1 bg-gray-100 border border-gray-200 rounded px-2 py-0.5">
-              <span className="text-xs text-gray-500">⌘</span>
-              <span className="text-xs text-gray-500">K</span>
+              <span className="text-xs text-black">⌘</span>
+              <span className="text-xs text-black">K</span>
             </div>
           </div>
           <div className="flex items-center gap-4 pl-2">
@@ -300,7 +371,7 @@ export default function DashboardPage() {
               {profileImage ? (
                 <Image src={profileImage} alt="Profile" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <span className="text-sm font-medium text-gray-900">S</span>
+                <span className="text-sm font-medium text-gray-900">{computedInitial}</span>
               )}
             </button>
           </div>
@@ -310,8 +381,8 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Organization Dashboard</h1>
-              <p className="text-gray-600">Manage your team, projects, and organization performance</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-black mb-1">Organization Dashboard</h1>
+              <p className="text-black">Manage your team, projects, and organization performance</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -319,7 +390,7 @@ export default function DashboardPage() {
                 className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 focus:ring-2 focus:ring-gray-300"
               >
                 <span className="w-4 h-4 rounded bg-blue-600 inline-flex" />
-                <span className="text-sm font-medium">Invite Team</span>
+                <span className="text-sm text-black font-medium">Invite Team</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 focus:ring-2 focus:ring-gray-300">
                 <span className="w-4 h-4 rounded bg-gray-600 inline-flex" />
@@ -328,7 +399,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Stat Cards */}
+          {/* Stat Cards
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 p-6">
               <h3 className="text-sm font-medium text-blue-900 mb-2">Active Projects</h3>
@@ -350,7 +421,7 @@ export default function DashboardPage() {
               <div className="text-3xl font-bold text-orange-900 mb-1">$45.2k</div>
               <div className="text-sm text-orange-800">+8% from last month</div>
             </div>
-          </section>
+          </section> */}
 
           {/* Quick Actions */}
           <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
@@ -362,8 +433,8 @@ export default function DashboardPage() {
               >
                 <span className="w-10 h-10 bg-blue-100 rounded-lg" />
                 <div>
-                  <h3 className="font-medium text-gray-900">View Profile</h3>
-                  <p className="text-sm text-gray-500">Manage your account settings</p>
+                  <h3 className="font-medium text-black">View Profile</h3>
+                  <p className="text-sm text-black">Manage your account settings</p>
                 </div>
               </button>
               <button
@@ -372,23 +443,23 @@ export default function DashboardPage() {
               >
                 <span className="w-10 h-10 bg-green-100 rounded-lg" />
                 <div>
-                  <h3 className="font-medium text-gray-900">Edit Profile</h3>
-                  <p className="text-sm text-gray-500">Update your information</p>
+                  <h3 className="font-medium text-black">Edit Profile</h3>
+                  <p className="text-sm text-black">Update your information</p>
                 </div>
               </button>
-              <button className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left focus:ring-2 focus:ring-gray-300">
+              {/* <button className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left focus:ring-2 focus:ring-gray-300">
                 <span className="w-10 h-10 bg-purple-100 rounded-lg" />
                 <div>
-                  <h3 className="font-medium text-gray-900">View Reports</h3>
-                  <p className="text-sm text-gray-500">Check performance metrics</p>
+                  <h3 className="font-medium text-black">View Reports</h3>
+                  <p className="text-sm text-black">Check performance metrics</p>
                 </div>
-              </button>
+              </button> */}
             </div>
           </section>
 
           {/* Members */}
           <section className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Organization Members</h2>
+            <h2 className="text-lg font-semibold text-black mb-4">Organization Members</h2>
             {loading ? (
               <div>Loading...</div>
             ) : members.length === 0 ? (
@@ -397,7 +468,7 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-gray-900">
                   <thead>
-                    <tr className="text-left text-gray-600">
+                    <tr className="text-left text-black font-medium">
                       <th className="py-2 pr-4">Name</th>
                       <th className="py-2 pr-4">Email</th>
                       <th className="py-2 pr-4">Role</th>
@@ -419,7 +490,7 @@ export default function DashboardPage() {
                             ) : (
                               <button className="px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700" onClick={() => onUpdateStatus(m.id, 'BLOCKED')} title="Block user">Block</button>
                             )}
-                            <button className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700" onClick={() => { if (confirm('Remove this member?')) onRemoveMember(m.id); }} title="Remove user">Remove</button>
+                            <button className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700" onClick={() => onRemoveMember(m.id)} title="Remove user">Remove</button>
                           </div>
                         </td>
                       </tr>
@@ -432,24 +503,26 @@ export default function DashboardPage() {
 
           {/* Invitations */}
           <section className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Pending Invitations</h2>
+            <h2 className="text-lg font-semibold text-black mb-4">Pending Invitations</h2>
             {loading ? (
               <div>Loading...</div>
-            ) : invitations.length === 0 ? (
+            ) : invitations.filter((inv) => inv.status === 'PENDING').length === 0 ? (
               <div>No pending invitations.</div>
             ) : (
               <ul className="divide-y">
-                {invitations.map((inv, idx) => (
-                  <li key={idx} className="py-3 flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{inv.email}</div>
-                      <div className="text-xs text-gray-500">{inv.status || 'PENDING'}</div>
-                    </div>
-                    {inv.token && (
-                      <button className="px-3 py-1 border rounded" onClick={() => onCancelInvitation(inv.token!)}>Cancel</button>
-                    )}
-                  </li>
-                ))}
+                {invitations
+                  .filter((inv) => inv.status === 'PENDING')
+                  .map((inv, idx) => (
+                    <li key={idx} className="py-3 flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-black">{inv.email}</div>
+                        <div className="text-xs text-black">{inv.status || 'PENDING'}</div>
+                      </div>
+                      {inv.token && (
+                        <button className="px-3 py-1 rounded text-white bg-red-600 hover:bg-red-700 transition-colors" onClick={() => onCancelInvitation(inv.token!)}>Cancel</button>
+                      )}
+                    </li>
+                  ))}
               </ul>
             )}
           </section>
@@ -473,8 +546,8 @@ export default function DashboardPage() {
             </button>
 
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">Invite Team Members</h2>
-              <p className="text-sm text-gray-600">Send invitations to new team members to join your organization</p>
+              <h2 className="text-lg font-semibold text-black mb-1">Invite Team Members</h2>
+              <p className="text-sm text-black">Send invitations to new team members to join your organization</p>
             </div>
 
             <div className="space-y-6">
@@ -496,43 +569,43 @@ export default function DashboardPage() {
 
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor={`invite-email-${idx}`} className="block text-sm font-medium text-gray-900 mb-2">Email Address</label>
+                        <label htmlFor={`invite-email-${idx}`} className="block text-sm font-medium text-black mb-2">Email Address</label>
                         <input
                           id={`invite-email-${idx}`}
                           type="email"
                           placeholder="team.member@company.com"
                           value={invite.email}
                           onChange={(e) => updateInvite(idx, 'email', e.target.value)}
-                          className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm text-black placeholder-black placeholder-opacity-60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label htmlFor={`invite-role-${idx}`} className="block text-sm font-medium text-gray-900 mb-2">Role</label>
+                          <label htmlFor={`invite-role-${idx}`} className="block text-sm font-medium text-black mb-2">Role</label>
                           <select
                             id={`invite-role-${idx}`}
                             title="Select role"
                             value={invite.role}
                             onChange={(e) => updateInvite(idx, 'role', e.target.value as InviteForm['role'])}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm text-black bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
-                            <option>Team Member</option>
-                            <option>Admin</option>
-                            <option>Manager</option>
+                            <option className="text-black">Team Member</option>
+                            <option className="text-black">Admin</option>
+                            <option className="text-black">Manager</option>
                           </select>
                         </div>
                         <div>
-                          <label htmlFor={`invite-expiry-${idx}`} className="block text-sm font-medium text-gray-900 mb-2">Invite Expires (Days)</label>
+                          <label htmlFor={`invite-expiry-${idx}`} className="block text-sm font-medium text-black mb-2">Invite Expires (Days)</label>
                           <select
                             id={`invite-expiry-${idx}`}
                             title="Select expiry"
                             value={invite.expiry}
                             onChange={(e) => updateInvite(idx, 'expiry', e.target.value as InviteForm['expiry'])}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm text-black bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
-                            <option>7 Days</option>
-                            <option>14 Days</option>
-                            <option>30 Days</option>
+                            <option className="text-black">7 Days</option>
+                            <option className="text-black">14 Days</option>
+                            <option className="text-black">30 Days</option>
                           </select>
                         </div>
                       </div>
@@ -549,7 +622,7 @@ export default function DashboardPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="text-sm font-medium text-gray-900">Add Another Invitation</span>
+                <span className="text-sm font-medium text-black">Add Another Invitation</span>
               </button>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -570,7 +643,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowInviteModal(false)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-md text-sm font-medium text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-gray-300"
+                  className="px-4 py-2.5 border border-gray-200 rounded-md text-sm font-medium text-black hover:bg-gray-50 focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
                 </button>
@@ -606,7 +679,7 @@ export default function DashboardPage() {
 
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                {userModalMode === 'edit' ? 'Edit User: John Doe' : 'Manage User: John Doe'}
+                {userModalMode === 'edit' ? `Edit User: ${computedName}` : `Manage User: ${computedName}`}
               </h2>
               <p className="text-sm text-gray-600">
                 {userModalMode === 'edit' ? 'Update user information and account settings' : 'View and manage user account information'}
@@ -620,9 +693,10 @@ export default function DashboardPage() {
                     {profileImage ? (
                       <Image src={profileImage} alt="Profile" width={64} height={64} className="w-16 h-16 object-cover rounded-full" />
                     ) : (
-                      <span className="text-xl font-medium text-gray-900">J</span>
+                      <span className="text-xl font-medium text-gray-900">{computedInitial}</span>
                     )}
                   </div>
+
                   {userModalMode === 'edit' && (
                     <button
                       onClick={triggerFileInput}
@@ -637,7 +711,7 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{`${profileFirstName || ''} ${profileLastName || ''}`.trim() || 'User'}</h3>
+                  <h3 className="text-lg font-medium text-gray-900">{computedName}</h3>
                   <p className="text-gray-900">{profileEmail || '-'}</p>
                   <p className="text-sm text-gray-500">&nbsp;</p>
                   <div className="flex items-center gap-2 mt-2">
@@ -672,13 +746,13 @@ export default function DashboardPage() {
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">JPG, PNG or GIF. Max size 2MB. Recommended 400x400px.</p>
+                    <p className="text-xs text-black">JPG, PNG or GIF. Max size 2MB. Recommended 400x400px.</p>
                   </div>
                 </div>
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" aria-label="Upload profile image" />
               </div>
             )}
-
+{/* 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Last Active</label>
@@ -688,7 +762,7 @@ export default function DashboardPage() {
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Subscription Expiry</label>
                 <div className="text-sm font-medium text-gray-900">2024-12-31</div>
               </div>
-            </div>
+            </div> */}
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-900 mb-3">Select Action</label>
@@ -713,51 +787,30 @@ export default function DashboardPage() {
             </div>
 
             {userModalMode === 'view' ? (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">User Information</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="font-medium text-gray-700">Email:</span><span className="text-gray-900">{profileEmail || '-'}</span></div>
-                  <div className="flex justify-between"><span className="font-medium text-gray-700">Name:</span><span className="text-gray-900">{`${profileFirstName || ''} ${profileLastName || ''}`.trim() || '-'}</span></div>
-                  <div className="flex justify-between"><span className="font-medium text-gray-700">Role:</span><span className="text-gray-900">{(role || '').toUpperCase()}</span></div>
-                  <div className="flex justify-between"><span className="font-medium text-gray-700">Status:</span><span className="text-gray-900">ACTIVE</span></div>
-                </div>
-              </div>
+              <UserInfoView email={profileEmail || '-'} name={computedName} role={(role || '').toString()} status={'ACTIVE'} />
             ) : (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h4 className="text-sm font-medium text-gray-900 mb-4">Edit User Information</h4>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="profile-first" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                      <input id="profile-first" type="text" value={profileFirstName} onChange={(e) => setProfileFirstName(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                      <label htmlFor="profile-last" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                      <input id="profile-last" type="text" value={profileLastName} onChange={(e) => setProfileLastName(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="profile-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                    <input id="profile-email" type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-role" className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                    <select id="profile-role" title="Select role" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" defaultValue={(role || '').toUpperCase()}>
-                      <option value="ORG_MANAGER">Organization Manager</option>
-                      <option value="ADMIN">Admin</option>
-                      <option value="MEMBER">Team Member</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="profile-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select id="profile-status" title="Select status" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" defaultValue="ACTIVE">
-                      <option value="ACTIVE">Active</option>
-                      <option value="INACTIVE">Inactive</option>
-                      <option value="SUSPENDED">Suspended</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+              <EditUserForm
+                firstName={profileFirstName}
+                lastName={profileLastName}
+                email={profileEmail}
+                role={(role || '').toString()}
+                status={'ACTIVE'}
+                disableEmail={true}
+                showRole={true}
+                showStatus={true}
+                setFirstName={setProfileFirstName}
+                setLastName={setProfileLastName}
+                setEmail={setProfileEmail}
+                showChangePassword={true}
+                currentPassword={currentPassword}
+                newPassword={newPassword}
+                confirmNewPassword={confirmNewPassword}
+                setCurrentPassword={setCurrentPassword}
+                setNewPassword={setNewPassword}
+                setConfirmNewPassword={setConfirmNewPassword}
+                onChangePassword={onChangePassword}
+                changingPassword={changingPassword}
+              />
             )}
 
             <div className="flex justify-end gap-3">

@@ -1,4 +1,5 @@
 import axios from "axios";
+import toast from "react-hot-toast";
 
 export const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"}/api`;
 
@@ -15,6 +16,7 @@ export const API_ROUTES = {
     COMPLETE_SIGNUP: "/auth/complete-signup",
     INVITE_MEMBER: "/auth/invite-member",
     ACCEPT_INVITE: "/auth/accept-invite",
+    GOOGLE_SIGNIN: "/auth/google-signin",
   },
   USER: {
     PROFILE: "/user/profile",
@@ -34,12 +36,66 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message =
-      error?.response?.data?.error || error?.message || "Network error";
-    return Promise.reject(new Error(message));
+    try {
+      const data = error?.response?.data;
+      const statusCode = error?.response?.status;
+      const errorCode = data?.code;
+
+      // Handle JWT token expiration
+      if (statusCode === 401 && errorCode === "TOKEN_EXPIRED") {
+        // Show toast notification
+        toast.error("Your session has expired. Please login again.");
+
+        // Clear localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+        }
+
+        // Redirect to login page
+        if (typeof window !== "undefined") {
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1000); // Give time for toast to be visible
+        }
+
+        return Promise.reject(error);
+      }
+
+      const extracted =
+        typeof data === "string" && data.trim()
+          ? data
+          : data?.message ||
+            data?.error ||
+            data?.detail ||
+            (Array.isArray(data?.errors) && data.errors[0]?.message) ||
+            error?.message ||
+            "Network error";
+      // Mutate the original AxiosError message so downstream handlers can read a friendly message
+      if (extracted && typeof extracted === "string") {
+        error.message = extracted;
+      }
+    } catch {}
+    // Important: keep the original AxiosError so axios.isAxiosError remains true
+    return Promise.reject(error);
   },
 );
 

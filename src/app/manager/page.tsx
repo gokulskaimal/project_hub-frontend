@@ -1,98 +1,57 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '@/store/store';
 import { useRouter } from 'next/navigation';
-import { api, API_ROUTES } from '@/utils/api';
+import { fetchProfile } from '@/features/auth/authSlice';
+import { useInvites, InviteForm } from '@/hooks/useInvites';
 
-type InviteForm = { email: string; role: 'Team Member' | 'Admin' | 'Manager'; expiry: '7 Days' | '14 Days' | '30 Days' };
 type UserMode = 'view' | 'edit';
-type UserProfile = { id: string; email: string; firstName?: string; lastName?: string; name?: string; role: string; orgId?: string; status?: string; lastLoginAt?: string | Date };
 
 export default function DashboardPage() {
-  const { isLoggedIn, role } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+  const { isLoggedIn, role, user } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
+
   useEffect(() => {
     if (!isLoggedIn || role !== 'org-manager') router.push('/login');
   }, [isLoggedIn, role, router]);
 
-  const [token, setToken] = useState<string | null>(() => (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null));
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const base64UrlToJson = useCallback((b64url: string) => {
-    const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-    const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
-    const decoded = atob(b64 + pad);
-    return JSON.parse(decodeURIComponent(Array.prototype.map.call(decoded, (c: string) =>
-      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-    ).join('')));
-  }, []);
-  const decodeJwtProfile = useCallback((): Partial<UserProfile> | null => {
-    try {
-      const t = token || (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null);
-      if (!t) return null;
-      const parts = t.split('.');
-      if (parts.length < 2) return null;
-      const payload = base64UrlToJson(parts[1]);
-      const p: Partial<UserProfile> = {
-        email: payload.email || '',
-        firstName: payload.firstName || payload.given_name || undefined,
-        lastName: payload.lastName || payload.family_name || undefined,
-        name: payload.name || undefined,
-        role: payload.role || (Array.isArray(payload.roles) ? payload.roles[0] : '') || '',
-      };
-      return p;
-    } catch {
-      return null;
+  useEffect(() => {
+    if (isLoggedIn) {
+      dispatch(fetchProfile());
     }
-  }, [token, base64UrlToJson]);
-  const jwtProfile = useMemo(() => decodeJwtProfile(), [decodeJwtProfile]);
+  }, [dispatch, isLoggedIn]);
+
+  const { invites, addInvite, removeInvite, updateInvite, canSend } = useInvites();
+
   const roleLabel = useMemo(() => {
-    const sourceRole = (profile?.role || jwtProfile?.role || '').toString().toUpperCase();
+    const sourceRole = (user?.role || '').toString().toUpperCase();
     if (sourceRole === 'ORG_MANAGER') return 'Organization Admin';
     if (sourceRole === 'SUPER_ADMIN') return 'Platform Admin';
     if (sourceRole === 'ADMIN') return 'Admin';
     if (sourceRole === 'MEMBER' || sourceRole === 'TEAM_MEMBER') return 'Team Member';
     return sourceRole.replace(/-/g, ' ');
-  }, [profile, jwtProfile]);
+  }, [user]);
+
   const displayName = useMemo(() => {
-    const first = (profile?.firstName || jwtProfile?.firstName || '').trim();
-    const last = (profile?.lastName || jwtProfile?.lastName || '').trim();
+    const first = (user?.firstName || '').trim();
+    const last = (user?.lastName || '').trim();
     const full = [first, last].filter(Boolean).join(' ').trim();
     if (full) return full;
-    const nameField = (profile?.name || jwtProfile?.name || '').trim();
+    const nameField = (user?.name || '').trim();
     if (nameField) return nameField;
-    const email = (profile?.email || jwtProfile?.email || '').trim();
+    const email = (user?.email || '').trim();
     if (email) {
       const username = email.split('@')[0] || '';
       return username ? username.replace(/\./g, ' ').replace(/_/g, ' ').replace(/-/g, ' ').replace(/\s+/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()) : email;
     }
     return 'User';
-  }, [profile, jwtProfile]);
-  const displayInitial = useMemo(() => (displayName?.[0] || profile?.email?.[0] || jwtProfile?.email?.[0] || 'U').toUpperCase(), [displayName, profile, jwtProfile]);
-  useEffect(() => {
-    if (!token) {
-      const t = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      if (t) setToken(t);
-    }
-  }, [token]);
-  const fetchProfile = useCallback(async (): Promise<boolean> => {
-    const effectiveToken = token || (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null);
-    if (!effectiveToken) return false;
-    try {
-      const res = await api.get(API_ROUTES.USER.PROFILE, { headers: { Authorization: `Bearer ${effectiveToken}` } });
-      const data = res.data?.data;
-      if (data) {
-        setProfile(data as UserProfile);
-        return true;
-      }
-    } catch {}
-    return false;
-  }, [token]);
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+  }, [user]);
+
+  const displayInitial = useMemo(() => (displayName?.[0] || user?.email?.[0] || 'U').toUpperCase(), [displayName, user]);
 
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -112,25 +71,10 @@ export default function DashboardPage() {
     setProfileImage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
-  const openUserModal = async (mode: UserMode = 'view') => {
+  
+  const openUserModal = (mode: UserMode = 'view') => {
     setUserModalMode(mode);
-    // Ensure token exists
-    if (!token && typeof window !== 'undefined') {
-      const t = localStorage.getItem('accessToken');
-      if (t) setToken(t);
-    }
-    // Ensure profile is loaded before showing the modal
-    if (!profile) {
-      const loaded = await fetchProfile();
-      if (!loaded) {
-        const fallback = decodeJwtProfile();
-        if (fallback && fallback.email) {
-          setProfile((prev) => prev ?? { id: '', role: fallback.role || '', email: fallback.email!, firstName: fallback.firstName, lastName: fallback.lastName, name: fallback.name });
-        }
-      }
-    }
-    // Defer to next tick so state updates (profile/jwt) are applied before first modal render
-    setTimeout(() => setShowUserModal(true), 0);
+    setShowUserModal(true);
   };
 
   const sidebarLinks = [
@@ -144,13 +88,6 @@ export default function DashboardPage() {
     { name: 'Billing' },
     { name: 'Settings', borderTop: true },
   ];
-
-  const [invites, setInvites] = useState<InviteForm[]>([{ email: '', role: 'Team Member', expiry: '7 Days' }]);
-  const addInvite = () => setInvites((i) => [...i, { email: '', role: 'Team Member', expiry: '7 Days' }]);
-  const removeInvite = (index: number) => setInvites((i) => (i.length > 1 ? i.filter((_, k) => k !== index) : i));
-  const updateInvite = (index: number, field: keyof InviteForm, value: InviteForm[keyof InviteForm]) =>
-    setInvites((prev) => prev.map((it, i) => (i === index ? { ...it, [field]: value } : it)));
-  const canSend = invites.every((i) => i.email.trim().length > 3 && i.email.includes('@'));
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => {
@@ -494,11 +431,11 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-medium text-gray-900">{displayName}</h3>
-                  <p className="text-gray-600">{profile?.email || ''}</p>
-                  <p className="text-sm text-gray-500">{profile?.orgId || ''}</p>
+                  <p className="text-gray-600">{user?.email || ''}</p>
+                  <p className="text-sm text-gray-500">{user?.orgId || ''}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border border-gray-200 text-gray-900">{roleLabel}</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-900 text-white">{(profile?.status || '').toString().toUpperCase()}</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-900 text-white">{(user?.status || '').toString().toUpperCase()}</span>
                   </div>
                 </div>
               </div>
@@ -538,7 +475,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Last Active</label>
-                <div className="text-sm font-medium text-gray-900">{profile?.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleString() : ''}</div>
+                <div className="text-sm font-medium text-gray-900">{user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : ''}</div>
               </div>
             </div>
 
@@ -569,11 +506,11 @@ export default function DashboardPage() {
                 <h4 className="text-sm font-medium text-gray-900 mb-3">User Information</h4>
                 <div className="space-y-2 text-sm">
                   
-                  <div className="flex justify-between"><span className="font-medium text-gray-700">Email:</span><span className="text-gray-900">{profile?.email || ''}</span></div>
+                  <div className="flex justify-between"><span className="font-medium text-gray-700">Email:</span><span className="text-gray-900">{user?.email || ''}</span></div>
                   <div className="flex justify-between"><span className="font-medium text-gray-700">Role:</span><span className="text-gray-900">{roleLabel}</span></div>
-                  <div className="flex justify-between"><span className="font-medium text-gray-700">Organization:</span><span className="text-gray-900">{profile?.orgId || ''}</span></div>
-                  <div className="flex justify-between"><span className="font-medium text-gray-700">Status:</span><span className="text-gray-900">{(profile?.status || '').toString().toUpperCase()}</span></div>
-                  <div className="flex justify-between"><span className="font-medium text-gray-700">Last Active:</span><span className="text-gray-900">{profile?.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleString() : ''}</span></div>
+                  <div className="flex justify-between"><span className="font-medium text-gray-700">Organization:</span><span className="text-gray-900">{user?.orgId || ''}</span></div>
+                  <div className="flex justify-between"><span className="font-medium text-gray-700">Status:</span><span className="text-gray-900">{(user?.status || '').toString().toUpperCase()}</span></div>
+                  <div className="flex justify-between"><span className="font-medium text-gray-700">Last Active:</span><span className="text-gray-900">{user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : ''}</span></div>
                 </div>
               </div>
             ) : (
@@ -583,16 +520,16 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="edit-first-name" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                      <input id="edit-first-name" type="text" defaultValue={profile?.firstName || ''} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      <input id="edit-first-name" type="text" defaultValue={user?.firstName || ''} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                     </div>
                     <div>
                       <label htmlFor="edit-last-name" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                      <input id="edit-last-name" type="text" defaultValue={profile?.lastName || ''} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      <input id="edit-last-name" type="text" defaultValue={user?.lastName || ''} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                     </div>
                   </div>
                   <div>
                     <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                    <input id="edit-email" type="email" defaultValue={profile?.email || ''} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <input id="edit-email" type="email" defaultValue={user?.email || ''} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                   </div>
                   <div>
                     <label htmlFor="edit-role" className="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -604,7 +541,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <label htmlFor="edit-org" className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
-                    <input id="edit-org" type="text" defaultValue={profile?.orgId || ''} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <input id="edit-org" type="text" defaultValue={user?.orgId || ''} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                   </div>
                   <div>
                     <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>

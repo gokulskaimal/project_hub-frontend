@@ -15,23 +15,33 @@ import {
   resendOtp,
   setFirstName,
   setLastName,
+  googleSignIn,
 } from "@/features/auth/authSlice";
 import { registerManager } from '@/features/auth/authSlice';
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { selectSignupData } from "@/features/auth/selectors";
-import { toast } from "react-hot-toast";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 export default function SignUpPage() {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
 
 
   const { email, otp, name, password, firstName, lastName, signupStep, error, loading, otpResendAvailableAt } = useSelector(selectSignupData);
 
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [localError, setLocalError] = useState<string | null>(null);
-
+  // Error states for inline validation
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [remainingMs, setRemainingMs] = useState<number>(0);
+
+  useEffect(() => {
+    if (error && typeof error === 'string' && error.trim()) {
+      toast.error(error);
+    }
+  }, [error]);
 
   useEffect(() => {
     if (!otpResendAvailableAt) {
@@ -60,15 +70,22 @@ export default function SignUpPage() {
 
   const onRegisterManager = async () => {
     const schema = z.object({
-      email: z.string().email('Enter a valid email'),
-      organizationName: z.string().min(2, 'Organization name is required')
+      email: z.string().trim().min(1, 'Email is required').email('Enter a valid email'),
+      organizationName: z.string().trim().min(2, 'Organization name is required')
     });
     const parsed = schema.safeParse({ email, organizationName: name });
     if (!parsed.success) {
-      setLocalError(parsed.error.errors[0]?.message ?? 'Invalid email');
+      // Set field errors for inline display
+      const errors: { [key: string]: string } = {};
+      parsed.error.errors.forEach((err) => {
+        if (err.path[0]) errors[err.path[0]] = err.message;
+      });
+      setFieldErrors(errors);
+      toast.error(parsed.error.errors[0]?.message ?? 'Invalid email');
       return;
+    } else {
+      setFieldErrors({});
     }
-    setLocalError(null);
     try {
       await dispatch(registerManager({ email: parsed.data.email, organizationName: parsed.data.organizationName })).unwrap();
       toast.success('Organization created and OTP sent');
@@ -79,8 +96,13 @@ export default function SignUpPage() {
   };
 
   const onResendOtp = async () => {
+    const emailCheck = z.string().trim().email('Enter a valid email').safeParse(email);
+    if (!emailCheck.success) {
+      toast.error(emailCheck.error.errors[0]?.message ?? 'Enter a valid email');
+      return;
+    }
     try {
-      await dispatch(resendOtp({ email })).unwrap();
+      await dispatch(resendOtp({ email: emailCheck.data })).unwrap();
       toast.success('OTP resent');
     } catch (err: unknown) {
       const message = typeof err === 'string' ? err : 'Failed to resend OTP';
@@ -90,15 +112,21 @@ export default function SignUpPage() {
 
   const onVerifyOtp = async () => {
     const schema = z.object({
-      email: z.string().email('Enter a valid email'),
-      otp: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
+      email: z.string().trim().min(1, 'Email is required').email('Enter a valid email'),
+      otp: z.string().trim().min(1, 'OTP is required').regex(/^\d{6}$/, 'OTP must be 6 digits'),
     });
     const parsed = schema.safeParse({ email, otp });
     if (!parsed.success) {
-      setLocalError(parsed.error.errors[0]?.message ?? 'Invalid OTP');
+      const errors: { [key: string]: string } = {};
+      parsed.error.errors.forEach((err) => {
+        if (err.path[0]) errors[err.path[0]] = err.message;
+      });
+      setFieldErrors(errors);
+      toast.error(parsed.error.errors[0]?.message ?? 'Invalid OTP');
       return;
+    } else {
+      setFieldErrors({});
     }
-    setLocalError(null);
     try {
       await dispatch(verifyOtp(parsed.data)).unwrap();
       toast.success('OTP verified');
@@ -110,11 +138,11 @@ export default function SignUpPage() {
 
   const onCompleteSignup = async () => {
     const schema = z.object({
-      email: z.string().email('Enter a valid email'),
-      firstName: z.string().min(2, 'First name too short'),
-      lastName: z.string().min(2, 'Last name too short'),
-      password: z.string().min(8, 'Password must be at least 8 characters'),
-      confirmPassword: z.string(),
+      email: z.string().trim().min(1, 'Email is required').email('Enter a valid email'),
+      firstName: z.string().trim().min(2, 'First name too short'),
+      lastName: z.string().trim().min(2, 'Last name too short'),
+      password: z.string().trim().min(8, 'Password must be at least 8 characters'),
+      confirmPassword: z.string().trim().min(1, 'Confirm password is required'),
     }).refine((data) => data.password === data.confirmPassword, {
       message: 'Passwords do not match',
       path: ['confirmPassword']
@@ -122,17 +150,33 @@ export default function SignUpPage() {
 
     const parsed = schema.safeParse({ email, firstName, lastName, password, confirmPassword });
     if (!parsed.success) {
-      setLocalError(parsed.error.errors[0]?.message ?? 'Invalid input');
+      const errors: { [key: string]: string } = {};
+      parsed.error.errors.forEach((err) => {
+        if (err.path[0]) errors[err.path[0]] = err.message;
+      });
+      setFieldErrors(errors);
+      toast.error(parsed.error.errors[0]?.message ?? 'Invalid input');
       return;
+    } else {
+      setFieldErrors({});
     }
-    setLocalError(null);
     try {
-      await dispatch(completeSignup({ email, firstName, lastName, password })).unwrap();
+      await dispatch(completeSignup({ email: parsed.data.email, firstName: parsed.data.firstName, lastName: parsed.data.lastName, password: parsed.data.password })).unwrap();
       toast.success('Signup complete. You can now sign in.');
+      router.push('/login');
     } catch (err: unknown) {
       const message = typeof err === 'string' ? err : 'Signup failed';
       toast.error(message);
     }
+  };
+
+  const handleGoogleSignIn = (credentialResponse: CredentialResponse) => {
+    const { credential } = credentialResponse
+    if (!credential) {
+      toast.error("Google sign-in failed")
+      return
+    }
+    dispatch(googleSignIn({ idToken: credential }))
   };
 
   return (
@@ -180,9 +224,10 @@ export default function SignUpPage() {
                         placeholder="you@example.com"
                         className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                         value={email}
-                        onChange={(e) => dispatch(setEmail(e.target.value))}
+                        onChange={(e) => { dispatch(setEmail(e.target.value)); setFieldErrors((prev) => ({ ...prev, email: '' })); }}
                         disabled={loading}
                       />
+                      {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                     </div>
                     <div className="relative">
                       <input
@@ -190,14 +235,15 @@ export default function SignUpPage() {
                         placeholder="Organization Name"
                         className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                         value={name}
-                        onChange={(e) => dispatch(setName(e.target.value))}
+                        onChange={(e) => { dispatch(setName(e.target.value)); setFieldErrors((prev) => ({ ...prev, organizationName: '' })); }}
                         disabled={loading}
                       />
+                      {fieldErrors.organizationName && <p className="text-xs text-red-500 mt-1">{fieldErrors.organizationName}</p>}
                     </div>
                     <button
                       className="h-10 px-6 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
                       onClick={onRegisterManager}
-                      disabled={loading || !email || !name}
+                      disabled={loading || !email?.trim() || !name?.trim()}
                     >
                       {loading ? 'Creating...' : 'Create org & Send OTP'}
                     </button>
@@ -218,16 +264,18 @@ export default function SignUpPage() {
                           placeholder="Enter 6-digit OTP"
                           className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                           value={otp}
-                          onChange={(e) => dispatch(setOtp(e.target.value))}
+                          onChange={(e) => { dispatch(setOtp(e.target.value)); setFieldErrors((prev) => ({ ...prev, otp: '' })); }}
                           disabled={loading}
                         />
+                        {fieldErrors.otp && <p className="text-xs text-red-500 mt-1">{fieldErrors.otp}</p>}
+                        {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                       </div>
                       <button
                         className="h-10 px-6 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
                         onClick={onVerifyOtp}
                         disabled={loading || otp.length !== 6}
                       >
-                        {loading ? 'Verifying OTP...' : 'Verify OTP'}
+                        {loading ? 'Verify OTP...' : 'Verify OTP'}
                       </button>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-600">
@@ -238,7 +286,7 @@ export default function SignUpPage() {
                         className="text-[#2463EB] hover:underline disabled:text-gray-400"
                         type="button"
                         onClick={onResendOtp}
-                        disabled={loading || isResendDisabled || !email}
+                        disabled={loading || isResendDisabled || !email?.trim()}
                       >
                         Resend OTP
                       </button>
@@ -258,46 +306,49 @@ export default function SignUpPage() {
                       placeholder="First Name"
                       className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                       value={firstName}
-                      onChange={(e) => dispatch(setFirstName(e.target.value))}
+                      onChange={(e) => { dispatch(setFirstName(e.target.value)); setFieldErrors((prev) => ({ ...prev, firstName: '' })); }}
                       disabled={loading}
                     />
+                    {fieldErrors.firstName && <p className="text-xs text-red-500 mt-1">{fieldErrors.firstName}</p>}
                     <input
                       type="text"
                       placeholder="Last Name"
                       className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                       value={lastName}
-                      onChange={(e) => dispatch(setLastName(e.target.value))}
+                      onChange={(e) => { dispatch(setLastName(e.target.value)); setFieldErrors((prev) => ({ ...prev, lastName: '' })); }}
                       disabled={loading}
                     />
+                    {fieldErrors.lastName && <p className="text-xs text-red-500 mt-1">{fieldErrors.lastName}</p>}
                     <input
                       type="password"
                       placeholder="Password"
                       className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                       value={password}
-                      onChange={(e) => dispatch(setPassword(e.target.value))}
+                      onChange={(e) => { dispatch(setPassword(e.target.value)); setFieldErrors((prev) => ({ ...prev, password: '' })); }}
                       disabled={loading}
                     />
+                    {fieldErrors.password && <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>}
                     <input
                       type="password"
                       placeholder="Confirm Password"
                       className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      value={confirmPassword}
+                      onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, confirmPassword: '' })); }}
                       disabled={loading}
                     />
+                    {fieldErrors.confirmPassword && <p className="text-xs text-red-500 mt-1">{fieldErrors.confirmPassword}</p>}
                     <button
                       className="w-full h-10 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
                       onClick={onCompleteSignup}
-                      disabled={loading || !firstName || !lastName || !name || !password || !confirmPassword}
+                      disabled={loading || !firstName?.trim() || !lastName?.trim() || !name?.trim() || !password?.trim() || !confirmPassword?.trim()}
                     >
                       {loading ? 'Signing Up...' : 'Complete Signup'}
                     </button>
                   </div>
                 )}
 
-                {(error || localError) && (
-                  <p className="mt-2 text-sm text-red-600 max-w-xl">
-                    {localError || error}
-                  </p>
+                {error && (
+                  <></>
                 )}
 
                 <p className="mt-8 text-gray-600 text-xs max-w-xl">
@@ -306,6 +357,23 @@ export default function SignUpPage() {
                     Sign in
                   </Link>
                 </p>
+
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="bg-white px-2 text-gray-500">Or sign up with</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSignIn}
+                    onError={() => toast.error("Google sign-in failed")}
+                    text="signup_with"
+                  />
+                </div>
               </div>
             </div>
           </div>
