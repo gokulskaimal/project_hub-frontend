@@ -57,7 +57,19 @@ export default function AcceptInvitePage() {
       toast.error("Google sign-in failed")
       return
     }
+    // When accepting invite via Google, pass the invite token
+    // Backend will validate token and create user as TEAM_MEMBER
     dispatch(googleSignIn({ idToken: credential, inviteToken: token }))
+      .unwrap()
+      .then(() => {
+        toast.success("Invitation accepted. You can now sign in.")
+        router.push("/login")
+      })
+      .catch((err: unknown) => {
+        const message = typeof err === "string" ? err : "Failed to accept invitation via Google"
+        toast.error(message)
+        console.error("Google invite error:", err)
+      })
   };
 
   return (
@@ -130,7 +142,10 @@ export default function AcceptInvitePage() {
                   <div className="flex justify-center">
                     <GoogleLogin
                       onSuccess={handleGoogleSignIn}
-                      onError={() => toast.error("Google sign-in failed")}
+                      onError={() => {
+                        console.error("[GoogleLogin Error] Sign-in failed on invite page");
+                        toast.error("Google sign-in failed. Please use password setup or refresh.");
+                      }}
                       text="signup_with"
                     />
                   </div>

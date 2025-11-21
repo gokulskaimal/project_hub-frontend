@@ -170,13 +170,70 @@ export default function SignUpPage() {
     }
   };
 
-  const handleGoogleSignIn = (credentialResponse: CredentialResponse) => {
-    const { credential } = credentialResponse
+  const [showOrgModal, setShowOrgModal] = useState(false);
+  const [googleOrgName, setGoogleOrgName] = useState("");
+  const [pendingIdToken, setPendingIdToken] = useState<string | null>(null);
+
+  const handleGoogleSignIn = async (credentialResponse: CredentialResponse) => {
+    const { credential } = credentialResponse;
     if (!credential) {
-      toast.error("Google sign-in failed")
-      return
+      toast.error("Google sign-in failed: No credential received");
+      return;
     }
-    dispatch(googleSignIn({ idToken: credential }))
+
+    try {
+      // First, try to sign in without organization name
+      // If user is new and manager signup is required, backend will return "Organization Name Required"
+      await dispatch(
+        googleSignIn({ idToken: credential })
+      ).unwrap();
+      // Success - user exists or already has org
+      toast.success("Signed in successfully!");
+    } catch (err: unknown) {
+      console.error("Google Sign-In Error:", err);
+      const errorMessage =
+        typeof err === "string"
+          ? err
+          : (err as Record<string, unknown>)?.message || "Unknown error";
+
+      // If new user needs org name, show modal
+      if (errorMessage === "Organization Name Required") {
+        toast("Please enter your Organization Name to complete signup", {
+          icon: "🏢",
+        });
+        setPendingIdToken(credential);
+        setGoogleOrgName("");
+        setShowOrgModal(true);
+        return;
+      }
+      // Other errors
+      if (typeof errorMessage === "string") {
+        toast.error(errorMessage);
+      } else {
+        toast.error("Google sign-in failed");
+      }
+    }
+  };
+
+  const handleGoogleOrgSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleOrgName.trim() || !pendingIdToken) return;
+
+    try {
+      await dispatch(
+        googleSignIn({ idToken: pendingIdToken, orgName: googleOrgName })
+      ).unwrap();
+      setShowOrgModal(false);
+      setPendingIdToken(null);
+      setGoogleOrgName("");
+      toast.success("Account created successfully!");
+      router.push('/login')
+    } catch (err: unknown) {
+      console.error("Google Sign-In with Org Name Failed:", err);
+      const message =
+        typeof err === "string" ? err : "Failed to complete signup";
+      toast.error(message);
+    }
   };
 
   return (
@@ -370,7 +427,10 @@ export default function SignUpPage() {
                 <div className="flex justify-center">
                   <GoogleLogin
                     onSuccess={handleGoogleSignIn}
-                    onError={() => toast.error("Google sign-in failed")}
+                    onError={() => {
+                      console.error("[GoogleLogin Error] Sign-in failed on signup page");
+                      toast.error("Google sign-in failed. Please try again or use email signup.");
+                    }}
                     text="signup_with"
                   />
                 </div>
@@ -379,6 +439,56 @@ export default function SignUpPage() {
           </div>
         </section>
       </main>
+
+      {/* Organization Name Modal for Google Signup */}
+      {showOrgModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="mb-2 text-xl font-bold text-gray-900">
+              Create Organization
+            </h2>
+            <p className="mb-4 text-sm text-gray-600">
+              To complete your signup via Google as an Organization Manager,
+              please enter your Organization Name.
+            </p>
+            <form onSubmit={handleGoogleOrgSubmit}>
+              <div className="mb-4">
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Organization Name
+                </label>
+                <input
+                  type="text"
+                  value={googleOrgName}
+                  onChange={(e) => setGoogleOrgName(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="e.g. Acme Corp"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOrgModal(false);
+                    setPendingIdToken(null);
+                  }}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !googleOrgName.trim()}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {loading ? "Creating..." : "Complete Signup"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

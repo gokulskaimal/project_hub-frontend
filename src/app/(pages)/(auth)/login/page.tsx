@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import Link from "next/link";
+import Link from "next/link"; 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../../../store/store";
 import { loginUser, setEmail, setPassword, googleSignIn } from "@/features/auth/authSlice";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";      
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 export default function LoginPage() {
@@ -26,7 +25,7 @@ export default function LoginPage() {
   }), [])
 
   useEffect(() => {
-    if (error) {
+    if (error && error !== "Organization Name Required") {
       toast.error(error)
     }
   }, [error])
@@ -74,18 +73,58 @@ export default function LoginPage() {
 
   }
 
-  const handleGoogleSignIn = (credentialResponse: CredentialResponse) => {
+  const [showOrgModal, setShowOrgModal] = useState(false)
+  const [orgName, setOrgName] = useState("")
+  const [pendingIdToken, setPendingIdToken] = useState<string | null>(null)
+
+  const handleGoogleSignIn = async (credentialResponse: CredentialResponse) => {
     const { credential } = credentialResponse
     if (!credential) {
-      toast.error("Google sign-in failed")
+      console.error("Google Sign-In: No credential received");
+      toast.error("Google sign-in failed: No credential")
       return
     }
-    dispatch(googleSignIn({ idToken: credential }))
+    try {
+      // Try to sign in (if user exists, it will succeed)
+      // If Google user is new and not in system, backend will return "Organization Name Required"
+      await dispatch(googleSignIn({ idToken: credential })).unwrap()
+      toast.success("Signed in successfully!")
+    } catch (err: unknown) {
+      console.error("Google Sign-In Error:", err);
+      const errorMessage = typeof err === "string" ? err : (err as Record<string, unknown>)?.message || "Unknown error";
+      
+      // Only show org modal for NEW manager signups that need org name
+      if (errorMessage === "Organization Name Required") {
+        toast("Please enter your Organization Name to complete signup", { icon: "🏢" })
+        setPendingIdToken(credential)
+        setShowOrgModal(true)
+        return
+      }
+      // Other errors
+      if (typeof errorMessage === "string") {
+        toast.error(errorMessage)
+      } else {
+        toast.error("Google sign-in failed")
+      }
+    }
   }
 
+  const handleOrgSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!orgName.trim() || !pendingIdToken) return
 
-
-
+    try {
+      await dispatch(googleSignIn({ idToken: pendingIdToken, orgName })).unwrap()
+      setShowOrgModal(false)
+      setPendingIdToken(null)
+      setOrgName("")
+      toast.success("Account created and you are now signed in!")
+    } catch (err) {
+      console.error("Google Sign-In with Org Name Failed:", err)
+      const message = typeof err === "string" ? err : "Failed to complete signup"
+      toast.error(message)
+    }
+  }
 
   return (
     <div className="min-h-dvh flex flex-col bg-white">
@@ -160,13 +199,63 @@ export default function LoginPage() {
               <div className="flex justify-center">
                 <GoogleLogin
                   onSuccess={handleGoogleSignIn}
-                  onError={() => toast.error("Google sign-in failed")}
-                  useOneTap
+                  onError={() => {
+                    console.error("[GoogleLogin Error] Sign-in failed on login page");
+                    toast.error("Google sign-in failed. Please try email/password or refresh the page.");
+                  }}
+                  text="signin_with"
                 />
               </div>
             </div>
           </div>
         </div>
+
+        {/* Organization Name Modal */}
+        {showOrgModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+              <h2 className="mb-2 text-xl font-bold text-gray-900">Create Organization</h2>
+              <p className="mb-4 text-sm text-gray-600">
+                To complete your signup as a Manager, please enter your Organization Name.
+              </p>
+              <form onSubmit={handleOrgSubmit}>
+                <div className="mb-4">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Organization Name
+                  </label>
+                  <input
+                    type="text"
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="e.g. Acme Corp"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOrgModal(false)
+                      setPendingIdToken(null)
+                    }}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {loading ? "Creating..." : "Complete Signup"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

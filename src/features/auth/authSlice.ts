@@ -104,13 +104,14 @@ export const fetchProfile = createAsyncThunk<
 
 export const googleSignIn = createAsyncThunk<
   { accessToken: string; role: string; user: UserProfile },
-  { idToken: string; inviteToken?: string },
+  { idToken: string; inviteToken?: string; orgName?: string },
   { rejectValue: string }
->("auth/googleSignIn", async ({ idToken, inviteToken }, thunkAPI) => {
+>("auth/googleSignIn", async ({ idToken, inviteToken, orgName }, thunkAPI) => {
   try {
     const response = await api.post(API_ROUTES.AUTH.GOOGLE_SIGNIN, {
       idToken,
       inviteToken,
+      orgName,
     });
     const { accessToken, user } = response.data;
     if (accessToken && user?.role) {
