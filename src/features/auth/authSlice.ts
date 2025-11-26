@@ -13,6 +13,7 @@ export interface UserProfile {
   orgId?: string;
   status?: string;
   lastLoginAt?: string | Date;
+  avatar?: string;
 }
 
 interface AuthState {
@@ -76,83 +77,6 @@ const normalizeRole = (role: string | null): string | null => {
   return role.toLowerCase().replace(/[\s_]+/g, "-");
 };
 
-export const fetchProfile = createAsyncThunk<
-  UserProfile,
-  void,
-  { rejectValue: string }
->("auth/fetchProfile", async (_, thunkAPI) => {
-  try {
-    const res = await api.get(API_ROUTES.USER.PROFILE);
-    const data = res.data?.data;
-    if (data) {
-      return data as UserProfile;
-    }
-    return thunkAPI.rejectWithValue("Failed to load profile");
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const d = err.response?.data as
-        | { message?: string; error?: string }
-        | string
-        | undefined;
-      const message =
-        typeof d === "string" ? d : d?.message || d?.error || "Network error";
-      return thunkAPI.rejectWithValue(message);
-    }
-    return thunkAPI.rejectWithValue("Network error");
-  }
-});
-
-export const googleSignIn = createAsyncThunk<
-  { accessToken: string; role: string; user: UserProfile },
-  { idToken: string; inviteToken?: string; orgName?: string },
-  { rejectValue: string }
->("auth/googleSignIn", async ({ idToken, inviteToken, orgName }, thunkAPI) => {
-  try {
-    const response = await api.post(API_ROUTES.AUTH.GOOGLE_SIGNIN, {
-      idToken,
-      inviteToken,
-      orgName,
-    });
-    const { accessToken, user } = response.data;
-    if (accessToken && user?.role) {
-      return { accessToken, role: user.role, user };
-    }
-    return thunkAPI.rejectWithValue("Invalid Google sign-in response");
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const d = err.response?.data as
-        | {
-            message?: string;
-            error?: string;
-            errors?: Array<{ message?: string }>;
-            detail?: string;
-          }
-        | string
-        | undefined;
-      if (typeof d === "string" && d.trim().length) {
-        return thunkAPI.rejectWithValue(d);
-      }
-      if (d && typeof d === "object") {
-        const obj = d as {
-          message?: string;
-          error?: string;
-          errors?: Array<{ message?: string }>;
-          detail?: string;
-        };
-        const firstValidation = Array.isArray(obj.errors)
-          ? obj.errors[0]?.message || null
-          : null;
-        const message =
-          obj.message || obj.error || obj.detail || firstValidation;
-        if (message && typeof message === "string") {
-          return thunkAPI.rejectWithValue(message);
-        }
-      }
-    }
-    return thunkAPI.rejectWithValue("Network error");
-  }
-});
-
 export const acceptInvite = createAsyncThunk<
   void,
   { token: string; password: string; firstName: string; lastName: string },
@@ -210,8 +134,8 @@ export const registerManager = createAsyncThunk<
 >(API_ROUTES.AUTH.REGISTER_MANAGER, async (payload, thunkAPI) => {
   try {
     const res = await api.post(API_ROUTES.AUTH.REGISTER_MANAGER, payload);
-    // API returns { message, organizationId, invitationToken, otpExpiresAt }
-    const data = res.data;
+    // API returns { success, message, data: { organizationId, invitationToken, otpExpiresAt } }
+    const data = res.data?.data;
     if (data?.organizationId && data?.otpExpiresAt) {
       return {
         organizationId: data.organizationId,
@@ -255,6 +179,83 @@ export const registerManager = createAsyncThunk<
   }
 });
 
+export const fetchProfile = createAsyncThunk<
+  UserProfile,
+  void,
+  { rejectValue: string }
+>("auth/fetchProfile", async (_, thunkAPI) => {
+  try {
+    const res = await api.get(API_ROUTES.USER.PROFILE);
+    const data = res.data?.data;
+    if (data) {
+      return data as UserProfile;
+    }
+    return thunkAPI.rejectWithValue("Failed to load profile");
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const d = err.response?.data as
+        | { message?: string; error?: string }
+        | string
+        | undefined;
+      const message =
+        typeof d === "string" ? d : d?.message || d?.error || "Network error";
+      return thunkAPI.rejectWithValue(message);
+    }
+    return thunkAPI.rejectWithValue("Network error");
+  }
+});
+
+export const googleSignIn = createAsyncThunk<
+  { accessToken: string; role: string; user: UserProfile },
+  { idToken: string; inviteToken?: string; orgName?: string },
+  { rejectValue: string }
+>("auth/googleSignIn", async ({ idToken, inviteToken, orgName }, thunkAPI) => {
+  try {
+    const response = await api.post(API_ROUTES.AUTH.GOOGLE_SIGNIN, {
+      idToken,
+      inviteToken,
+      orgName,
+    });
+    const { accessToken, user } = response.data.data;
+    if (accessToken && user?.role) {
+      return { accessToken, role: user.role, user };
+    }
+    return thunkAPI.rejectWithValue("Invalid Google sign-in response");
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const d = err.response?.data as
+        | {
+            message?: string;
+            error?: string;
+            errors?: Array<{ message?: string }>;
+            detail?: string;
+          }
+        | string
+        | undefined;
+      if (typeof d === "string" && d.trim().length) {
+        return thunkAPI.rejectWithValue(d);
+      }
+      if (d && typeof d === "object") {
+        const obj = d as {
+          message?: string;
+          error?: string;
+          errors?: Array<{ message?: string }>;
+          detail?: string;
+        };
+        const firstValidation = Array.isArray(obj.errors)
+          ? obj.errors[0]?.message || null
+          : null;
+        const message =
+          obj.message || obj.error || obj.detail || firstValidation;
+        if (message && typeof message === "string") {
+          return thunkAPI.rejectWithValue(message);
+        }
+      }
+    }
+    return thunkAPI.rejectWithValue("Network error");
+  }
+});
+
 export const loginUser = createAsyncThunk<
   { accessToken: string; role: string },
   { email: string; password: string },
@@ -263,10 +264,15 @@ export const loginUser = createAsyncThunk<
   try {
     // Normal API login - server handles super admin credential check
     const response = await api.post(API_ROUTES.AUTH.LOGIN, credentials);
-    // API returns { accessToken, user: { role, ... } }
-    const { accessToken, user } = response.data;
-    if (accessToken && user?.role) {
-      return { accessToken, role: user.role };
+    // API returns { success, message, data: { accessToken, role, ... } }
+    const payload =
+      response.data && response.data.data ? response.data.data : null;
+    if (payload && payload.accessToken && payload.user?.role) {
+      return {
+        accessToken: payload.accessToken,
+        role: payload.user.role,
+        user: payload.user,
+      };
     }
     return thunkAPI.rejectWithValue("Invalid login response");
   } catch (err: unknown) {
@@ -351,7 +357,7 @@ export const verifyOtp = createAsyncThunk<
     const response = await api.post(API_ROUTES.AUTH.VERIFY_OTP, { email, otp });
 
     // Check if OTP was actually verified in the response
-    const data = response.data;
+    const data = response.data?.data;
     if (!data?.verified) {
       // OTP verification failed, return the error message
       const message = data?.message || "OTP verification failed";
@@ -442,7 +448,6 @@ const authSlice = createSlice({
       state.otpResendAvailableAt = null;
       state.accessToken = null;
       state.role = null;
-      state.user = null;
       try {
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
@@ -477,34 +482,6 @@ const authSlice = createSlice({
           typeof action.payload === "string"
             ? action.payload
             : "Failed to Login";
-        state.isLoggedIn = false;
-        state.accessToken = null;
-      })
-      .addCase(googleSignIn.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(googleSignIn.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isLoggedIn = true;
-        state.error = null;
-        state.accessToken = action.payload.accessToken;
-        state.role = normalizeRole(action.payload.role);
-        state.user = action.payload.user;
-        try {
-          if (typeof window !== "undefined") {
-            localStorage.setItem("accessToken", action.payload.accessToken);
-            // Store normalized role to ensure consistency on reload
-            localStorage.setItem("role", state.role || "");
-          }
-        } catch {}
-      })
-      .addCase(googleSignIn.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "Failed to sign in with Google";
         state.isLoggedIn = false;
         state.accessToken = null;
       })
@@ -608,6 +585,34 @@ const authSlice = createSlice({
           typeof action.payload === "string"
             ? action.payload
             : "Accept invite failed";
+      })
+      .addCase(googleSignIn.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(googleSignIn.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isLoggedIn = true;
+        state.error = null;
+        state.accessToken = action.payload.accessToken;
+        state.role = normalizeRole(action.payload.role);
+        state.user = action.payload.user;
+        try {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("accessToken", action.payload.accessToken);
+            // Store normalized role to ensure consistency on reload
+            localStorage.setItem("role", state.role || "");
+          }
+        } catch {}
+      })
+      .addCase(googleSignIn.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : "Failed to sign in with Google";
+        state.isLoggedIn = false;
+        state.accessToken = null;
       })
       .addCase(fetchProfile.pending, (state) => {
         state.loading = true;

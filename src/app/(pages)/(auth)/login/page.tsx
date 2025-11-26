@@ -1,138 +1,141 @@
 'use client'
 
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-import Link from "next/link"; 
-import { useDispatch, useSelector } from "react-redux";
-import { RootState, AppDispatch } from "../../../../store/store";
-import { loginUser, setEmail, setPassword, googleSignIn } from "@/features/auth/authSlice";
-import { useEffect, useMemo, useState } from "react";
-import { z } from "zod";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";      
+import { useDispatch, useSelector } from "react-redux";
+import { z } from "zod";
+import { toast } from "react-hot-toast";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
+// Components
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+
+// Redux
+import { RootState, AppDispatch } from "@/store/store";
+import { loginUser, googleSignIn } from "@/features/auth/authSlice";
+import Link from "next/link";
+
+// Define schema outside component
+const loginSchema = z.object({
+  email: z.string().trim().email('Enter a valid email'),
+  password: z.string().trim().min(8, 'Password must be at least 8 characters')
+});
+
 export default function LoginPage() {
-
-  const router = useRouter()
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   
-  const dispatch = useDispatch<AppDispatch>()
-  const { email, password, error ,loading , isLoggedIn , role, accessToken } = useSelector((state: RootState) => state.auth)
+  // Local state for form inputs (Performance Optimization)
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  
+  const { error, loading, isLoggedIn, role, accessToken } = useSelector((state: RootState) => state.auth);
 
-  const loginSchema = useMemo(() => z.object({
-    email: z.string().trim().email('Enter a valid email'),
-    password: z.string().trim().min(8, 'Password must be at least 8 characters')
-  }), [])
+  const [showOrgModal, setShowOrgModal] = useState(false);
+  const [orgName, setOrgName] = useState("");
+  const [pendingIdToken, setPendingIdToken] = useState<string | null>(null);
 
+  // Handle local input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Error/Redirect effects remain
   useEffect(() => {
     if (error && error !== "Organization Name Required") {
-      toast.error(error)
+      toast.error(error);
     }
-  }, [error])
+  }, [error]);
 
   useEffect(() => {
-    if (!isLoggedIn || !role) return
+    if (!isLoggedIn || !role) return;
 
     if (accessToken) {
       try {
-        localStorage.setItem('accessToken', accessToken)
+        localStorage.setItem('accessToken', accessToken);
+        // Note: For Middleware security, your backend MUST also set a 'role' cookie.
       } catch {}
     }
 
-  // normalize role by lowercasing and replacing spaces/underscores with hyphens
-  const normalizedRole = role.toLowerCase().replace(/[\s_]+/g, '-')
+    const normalizedRole = role.toLowerCase().replace(/[\s_]+/g, '-');
 
     switch (normalizedRole) {
       case 'super-admin':
-      case 'admin':
-        router.push('/admin/dashboard')
-        break
+        router.push('/super-admin/dashboard');
+        break;
       case 'org-manager':
       case 'manager':
-        router.push('/manager/dashboard')
-        break
+        router.push('/manager/dashboard');
+        break;
       case 'team-member':
       case 'member':
-        router.push('/member/dashboard')
-        break
+        router.push('/member/dashboard');
+        break;
       default:
-        break
+        router.push('/');
+        break;
     }
-  }, [isLoggedIn, role, accessToken, router])
+  }, [isLoggedIn, role, accessToken, router]);
 
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const parsed = loginSchema.safeParse({ email, password })
+    const parsed = loginSchema.safeParse(formData);
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message ?? 'Invalid input')
-      return
+      toast.error(parsed.error.errors[0]?.message ?? 'Invalid input');
+      return;
     }
-    dispatch(loginUser(parsed.data))
-
-  }
-
-  const [showOrgModal, setShowOrgModal] = useState(false)
-  const [orgName, setOrgName] = useState("")
-  const [pendingIdToken, setPendingIdToken] = useState<string | null>(null)
+    // Dispatch login using local state data
+    dispatch(loginUser(parsed.data));
+  };
 
   const handleGoogleSignIn = async (credentialResponse: CredentialResponse) => {
-    const { credential } = credentialResponse
+    const { credential } = credentialResponse;
     if (!credential) {
-      console.error("Google Sign-In: No credential received");
-      toast.error("Google sign-in failed: No credential")
-      return
+      toast.error("Google sign-in failed: No credential");
+      return;
     }
     try {
-      // Try to sign in (if user exists, it will succeed)
-      // If Google user is new and not in system, backend will return "Organization Name Required"
-      await dispatch(googleSignIn({ idToken: credential })).unwrap()
-      toast.success("Signed in successfully!")
+      await dispatch(googleSignIn({ idToken: credential })).unwrap();
+      toast.success("Signed in successfully!");
     } catch (err: unknown) {
-      console.error("Google Sign-In Error:", err);
-      const errorMessage = typeof err === "string" ? err : (err as Record<string, unknown>)?.message || "Unknown error";
+      const errorMessage = (err as Record<string, unknown>)?.message || (typeof err === "string" ? err : "Unknown error");
       
-      // Only show org modal for NEW manager signups that need org name
+      console.log("DEBUG: Google Sign-In Error", { err, errorMessage, type: typeof errorMessage, match: errorMessage === "Organization Name Required" });
+
       if (errorMessage === "Organization Name Required") {
-        toast("Please enter your Organization Name to complete signup", { icon: "🏢" })
-        setPendingIdToken(credential)
-        setShowOrgModal(true)
-        return
+        toast("Please enter your Organization Name to complete signup", { icon: "🏢" });
+        setPendingIdToken(credential);
+        setShowOrgModal(true);
+        return;
       }
-      // Other errors
-      if (typeof errorMessage === "string") {
-        toast.error(errorMessage)
-      } else {
-        toast.error("Google sign-in failed")
-      }
+      toast.error(typeof errorMessage === "string" ? errorMessage : "Google sign-in failed");
     }
-  }
+  };
 
   const handleOrgSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!orgName.trim() || !pendingIdToken) return
+    e.preventDefault();
+    if (!orgName.trim() || !pendingIdToken) return;
 
     try {
-      await dispatch(googleSignIn({ idToken: pendingIdToken, orgName })).unwrap()
-      setShowOrgModal(false)
-      setPendingIdToken(null)
-      setOrgName("")
-      toast.success("Account created and you are now signed in!")
+      await dispatch(googleSignIn({ idToken: pendingIdToken, orgName })).unwrap();
+      setShowOrgModal(false);
+      setPendingIdToken(null);
+      setOrgName("");
+      toast.success("Account created and you are now signed in!");
     } catch (err) {
-      console.error("Google Sign-In with Org Name Failed:", err)
-      const message = typeof err === "string" ? err : "Failed to complete signup"
-      toast.error(message)
+      const message = typeof err === "string" ? err : "Failed to complete signup";
+      toast.error(message);
     }
-  }
+  };
 
   return (
     <div className="min-h-dvh flex flex-col bg-white">
       <Header />
-
-      <main
-        className="relative flex-1 overflow-hidden"
-      >
+      <main className="relative flex-1 overflow-hidden">
+        {/* ... (UI unchanged) ... */}
         <div className="absolute inset-0 bg-[radial-gradient(84.09%_62.5%_at_0%_0%,rgba(36,99,235,0.25)_0%,rgba(36,99,235,0)_60%),radial-gradient(84.09%_62.5%_at_100%_0%,rgba(119,80,226,0.25)_0%,rgba(119,80,226,0)_60%),linear-gradient(180deg,#F8FAFC_0%,#EBEFF5_100%)]" />
         <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[linear-gradient(135deg,rgba(36,99,235,0.25)_0%,rgba(119,80,226,0.25)_100%)] blur-[32px]" />
         <div className="relative flex min-h-full items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
@@ -151,8 +154,9 @@ export default function LoginPage() {
                     </svg>
                   </div>
                   <input
-                    onChange={(e) => dispatch(setEmail(e.target.value))}
-                    value={email}
+                    name="email"
+                    onChange={handleChange}
+                    value={formData.email}
                     type="email"
                     placeholder="you@example.com"
                     className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -166,29 +170,28 @@ export default function LoginPage() {
                     </svg>
                   </div>
                   <input
-                    onChange={(e) => dispatch(setPassword(e.target.value))}
-                    value={password}
+                    name="password"
+                    onChange={handleChange}
+                    value={formData.password}
                     type="password"
                     placeholder="Password"
                     className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-                <></>
+                
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`mb-6 w-full rounded-lg py-2.5 text-sm font-medium text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
+                  className={`mb-6 w-full rounded-lg py-2.5 text-sm font-medium text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                 >
                   {loading ? 'Signing in...' : 'Sign in'}
                 </button>
               </form>
 
               <div className="mb-6 flex items-center justify-between">
-                <Link className="text-sm text-blue-600 hover:text-blue-700" href="/forgot">Forgot password?</Link>
+                <Link className="text-sm text-blue-600 hover:text-blue-700" href="/reset-password">Forgot password?</Link>
                 <Link className="text-sm text-gray-600 hover:text-gray-900" href="/signup">Create account</Link>
               </div>
-
 
               <div className="mb-6 flex items-center">
                 <div className="flex-1 border-t border-gray-200" />
@@ -199,10 +202,7 @@ export default function LoginPage() {
               <div className="flex justify-center">
                 <GoogleLogin
                   onSuccess={handleGoogleSignIn}
-                  onError={() => {
-                    console.error("[GoogleLogin Error] Sign-in failed on login page");
-                    toast.error("Google sign-in failed. Please try email/password or refresh the page.");
-                  }}
+                  onError={() => toast.error("Google sign-in failed. Please try email/password or refresh the page.")}
                   text="signin_with"
                 />
               </div>
@@ -215,14 +215,10 @@ export default function LoginPage() {
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
               <h2 className="mb-2 text-xl font-bold text-gray-900">Create Organization</h2>
-              <p className="mb-4 text-sm text-gray-600">
-                To complete your signup as a Manager, please enter your Organization Name.
-              </p>
+              <p className="mb-4 text-sm text-gray-600">To complete your signup as a Manager, please enter your Organization Name.</p>
               <form onSubmit={handleOrgSubmit}>
                 <div className="mb-4">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Organization Name
-                  </label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Organization Name</label>
                   <input
                     type="text"
                     value={orgName}
@@ -236,10 +232,7 @@ export default function LoginPage() {
                 <div className="flex justify-end gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowOrgModal(false)
-                      setPendingIdToken(null)
-                    }}
+                    onClick={() => { setShowOrgModal(false); setPendingIdToken(null); }}
                     className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
                   >
                     Cancel

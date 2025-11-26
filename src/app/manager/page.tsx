@@ -7,6 +7,9 @@ import { RootState, AppDispatch } from '@/store/store';
 import { useRouter } from 'next/navigation';
 import { fetchProfile } from '@/features/auth/authSlice';
 import { useInvites, InviteForm } from '@/hooks/useInvites';
+import { startLoading, stopLoading } from '@/features/ui/uiSlice';
+import { api, API_ROUTES } from '@/utils/api';
+import toast from 'react-hot-toast';
 
 type UserMode = 'view' | 'edit';
 
@@ -27,6 +30,29 @@ export default function DashboardPage() {
 
   const { invites, addInvite, removeInvite, updateInvite, canSend } = useInvites();
 
+  const handleSendInvites = async () => {
+    if (!canSend) return;
+    
+    dispatch(startLoading());
+    try {
+      await Promise.all(invites.map(invite => 
+        api.post(API_ROUTES.AUTH.INVITE_MEMBER, {
+          email: invite.email,
+          orgId: user?.orgId,
+          role: invite.role.toUpperCase().replace(' ', '_')
+        })
+      ));
+
+      toast.success('Invitations sent successfully');
+      setShowInviteModal(false);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to send invitations');
+    } finally {
+      dispatch(stopLoading());
+    }
+  };
+
   const roleLabel = useMemo(() => {
     const sourceRole = (user?.role || '').toString().toUpperCase();
     if (sourceRole === 'ORG_MANAGER') return 'Organization Admin';
@@ -46,7 +72,7 @@ export default function DashboardPage() {
     const email = (user?.email || '').trim();
     if (email) {
       const username = email.split('@')[0] || '';
-      return username ? username.replace(/\./g, ' ').replace(/_/g, ' ').replace(/-/g, ' ').replace(/\s+/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()) : email;
+      return username ? username.replace(/\\./g, ' ').replace(/_/g, ' ').replace(/-/g, ' ').replace(/\\s+/g, ' ').replace(/\\b\\w/g, (m) => m.toUpperCase()) : email;
     }
     return 'User';
   }, [user]);
@@ -370,6 +396,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={handleSendInvites}
                   disabled={!canSend}
                   className={`px-4 py-2.5 rounded-md text-sm font-medium text-white ${canSend ? 'bg-gray-900 hover:bg-gray-800 focus:ring-2 focus:ring-gray-300' : 'bg-gray-400 cursor-not-allowed'}`}
                 >

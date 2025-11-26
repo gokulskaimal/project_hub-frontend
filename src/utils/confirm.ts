@@ -1,3 +1,5 @@
+// This utility dynamically loads SweetAlert2 to replace window.confirm()
+// Uses standard window.confirm as fallback
 type SwalResult = { isConfirmed?: boolean };
 type SwalModule = {
   fire: (options: Record<string, unknown>) => Promise<SwalResult>;
@@ -16,6 +18,7 @@ export async function confirmWithAlert(
 ): Promise<boolean> {
   if (typeof window === "undefined") return false;
 
+  // Dynamic import to avoid SSR issues
   const ensureSwal = (): Promise<SwalModule | null> =>
     new Promise((resolve) => {
       if (window.Swal) return resolve(window.Swal);
@@ -42,6 +45,7 @@ export async function confirmWithAlert(
     });
     return !!result?.isConfirmed;
   } catch {
+    // Fallback if dynamic loading fails
     return window.confirm(message);
   }
 }

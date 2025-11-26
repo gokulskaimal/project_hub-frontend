@@ -20,9 +20,10 @@ export const API_ROUTES = {
   },
   USER: {
     PROFILE: "/user/profile",
+    CHANGE_PASSWORD: "/user/change-password",
   },
   ADMIN: {
-    ORGS: "/admin/orgs",
+    ORGS: "/admin/organizations",
     USERS: "/admin/users",
   },
   MANAGER: {

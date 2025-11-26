@@ -1,7 +1,16 @@
 "use client";
 
-import { ReactNode } from "react";
+import React, { ReactNode, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store"; // Access the store type
+import { 
+  MANAGER_LINKS, 
+  MEMBER_LINKS, 
+  ADMIN_LINKS, 
+  NavItem 
+} from "@/config/navigation"; // Imports Nav config
 
 type Props = {
   title: string;
@@ -13,17 +22,25 @@ type Props = {
 };
 
 export default function DashboardLayout({ title, children, onAvatarClick, avatarUrl = null, avatarInitial = "U", onLogout }: Props) {
-  const sidebarLinks = [
-    { name: "Dashboard", active: true },
-    // { name: "Projects" },
-    // { name: "Kanban Board" },
-    // { name: "Calendar" },
-    // { name: "Chat" },
-    // { name: "Tickets" },
-    // { name: "Team" },
-    // { name: "Billing" },
-    // { name: "Settings", borderTop: true },
-  ];
+  
+  const { role } = useSelector((state: RootState) => state.auth);
+
+  const navLinks: NavItem[] = useMemo(() => {
+    const normalizedRole = (role || '').toLowerCase().replace(/[\s_]+/g, '-');
+    
+    switch (normalizedRole) {
+      case 'super-admin':
+        return ADMIN_LINKS;
+      case 'org-manager':
+      case 'manager':
+        return MANAGER_LINKS;
+      case 'team-member':
+      case 'member':
+        return MEMBER_LINKS;
+      default:
+        return [];
+    }
+  }, [role]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -38,24 +55,34 @@ export default function DashboardLayout({ title, children, onAvatarClick, avatar
           </div>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-1">
-          {sidebarLinks.map((item) => (
-            <a
+          {navLinks.map((item) => (
+            <Link
               key={item.name}
-              href="#"
+              href={item.href}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                 item.active
                   ? "text-blue-700 bg-blue-50 border border-blue-200"
                   : "text-gray-700 hover:bg-gray-50"
-              } `}
+              } ${item.borderTop ? 'mt-4 pt-4 border-t border-gray-100' : ''}`}
             >
               <span className="w-5 h-5 inline-block bg-gray-100 rounded" />
               <span className="text-sm font-medium">{item.name}</span>
-            </a>
+            </Link>
           ))}
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="mt-6 w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-red-700 hover:bg-red-50 border border-red-200"
+            >
+              <span className="w-5 h-5 inline-block bg-red-100 rounded" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          )}
         </nav>
       </aside>
 
-      {/* Main */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="h-16 bg-white border-b border-gray-200 px-4 md:px-6 flex items-center justify-between">
@@ -82,17 +109,6 @@ export default function DashboardLayout({ title, children, onAvatarClick, avatar
                 <span className="text-xs text-white font-semibold">2</span>
               </div>
             </button>
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="px-3 py-1.5 text-sm border border-red-200 text-red-700 rounded hover:bg-red-50"
-                aria-label="Logout"
-                title="Logout"
-              >
-                Logout
-              </button>
-            )}
             <button
               onClick={onAvatarClick}
               className="w-8 h-8 bg-gray-100 rounded-full grid place-items-center hover:bg-gray-200 transition-colors focus:ring-2 focus:ring-gray-300"

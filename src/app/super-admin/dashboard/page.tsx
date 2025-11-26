@@ -1,252 +1,143 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import type { RootState, AppDispatch } from "@/store/store";
-import axios from "axios";
-import toast from "react-hot-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
-import { getFriendlyError } from "@/utils/errors";
-import { confirmWithAlert } from "@/utils/confirm";
-
-type Org = { id: string; name: string; status?: string; createdAt?: string };
-type User = { id: string; email: string; name?: string; firstName?: string; lastName?: string; role?: string; status?: string; orgId?: string };
+import { useAdminData, User, Org } from "@/hooks/useAdminData"; 
+import Table from "@/components/Table"; 
 
 export default function SuperAdminDashboardPage() {
-  const { isLoggedIn, role, email: loggedInEmail } = useSelector((s: RootState) => s.auth);
+  const { isLoggedIn, role, accessToken, user } = useSelector((s: RootState) => s.auth);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const [authChecked, setAuthChecked] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
+  // --- 1. Auth Check & Hydration ---
   useEffect(() => {
-    // Hydrate auth from localStorage on client mount
     dispatch(hydrateFromStorage());
-    setAuthChecked(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const roleOk = useMemo(() => {
-    const r = (role || "").toString().toLowerCase();
-    return r === "super-admin" || r === "super_admin";
-  }, [role]);
+    setIsReady(true);
+  }, [dispatch]);
 
   useEffect(() => {
-    if (!authChecked) return;
-    if (!isLoggedIn || !roleOk) router.push("/login");
-  }, [authChecked, isLoggedIn, roleOk, router]);
+    if (isReady && (!isLoggedIn || role !== "super-admin")) router.push("/login");
+  }, [isReady, isLoggedIn, role, router]);
 
-  const apiBase = useMemo(() => process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000", []);
-  const [token, setToken] = useState<string | null>(null);
-  useEffect(() => {
-    if (typeof window !== "undefined") setToken(localStorage.getItem("accessToken"));
-  }, []);
-
-  const [loading, setLoading] = useState(false);
-  const [orgs, setOrgs] = useState<Org[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-
-
-  const asArray = (input: unknown): any[] => {
-    if (Array.isArray(input)) return input;
-    if (input && typeof input === 'object') {
-      const obj = input as any;
-      if (Array.isArray(obj.data)) return obj.data;
-      if (obj.data && Array.isArray(obj.data.users)) return obj.data.users;
-      if (obj.data && Array.isArray(obj.data.organizations)) return obj.data.organizations;
-      if (Array.isArray(obj.users)) return obj.users;
-      if (Array.isArray(obj.organizations)) return obj.organizations;
-    }
-    return [];
-  };
-
-  const fetchAll = async () => {
-    if (!token) return;
-    try {
-      setLoading(true);
-      const headers = { Authorization: `Bearer ${token}` };
-      const [orgRes, userRes] = await Promise.all([
-        axios.get(`${apiBase}/api/admin/organizations`, { headers }),
-        axios.get(`${apiBase}/api/admin/users`, { headers }),
-      ]);
-      setOrgs(asArray(orgRes.data));
-      setUsers(asArray(userRes.data));
-    } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to load admin data"));
-    } finally {
-      setLoading(false);
-    }
-  };
+  // --- 2. Data Logic Hook ---
+  const { data, actions } = useAdminData(accessToken);
 
   useEffect(() => {
-    fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, apiBase]);
+    // Initial fetch on mount or token change
+    actions.fetchData();
+  }, [actions.fetchData]);
 
-  const onDeleteOrg = async (orgId: string) => {
-    const ok = await confirmWithAlert("Delete this organization? This cannot be undone.", 'Yes, Delete');
-    if (!ok) return;
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.delete(`${apiBase}/api/admin/organizations/${orgId}`, { headers });
-      toast.success("Organization deleted");
-      fetchAll();
-    } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to delete organization"));
-    }
-  };
-
-  const onOrgStatus = async (orgId: string, nextStatus: "ACTIVE" | "BLOCKED") => {
-    const ok = await confirmWithAlert(nextStatus === 'BLOCKED' ? 'Block this organization? Members will lose access.' : 'Unblock this organization?', nextStatus === 'BLOCKED' ? 'Yes, Block' : 'Yes, Unblock');
-    if (!ok) return;
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.put(`${apiBase}/api/admin/organizations/${orgId}`, { status: nextStatus }, { headers });
-      toast.success(nextStatus === "BLOCKED" ? "Organization blocked" : "Organization unblocked");
-      fetchAll();
-    } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to update organization status"));
-    }
-  };
-
-  const onUserStatus = async (userId: string, nextStatus: "ACTIVE" | "BLOCKED") => {
-    const ok = await confirmWithAlert(nextStatus === 'BLOCKED' ? 'Block this user? They will lose access.' : 'Unblock this user?', nextStatus === 'BLOCKED' ? 'Yes, Block' : 'Yes, Unblock');
-    if (!ok) return;
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.put(`${apiBase}/api/admin/users/${userId}/status`, { status: nextStatus }, { headers });
-      toast.success(nextStatus === "BLOCKED" ? "User blocked" : "User unblocked");
-      fetchAll();
-    } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to update user status"));
-    }
-  };
-
-  const onDeleteUser = async (userId: string) => {
-    const ok = await confirmWithAlert("Delete this user? This cannot be undone.", 'Yes, Delete');
-    if (!ok) return;
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.delete(`${apiBase}/api/admin/users/${userId}`, { headers });
-      toast.success("User deleted");
-      fetchAll();
-    } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to delete user"));
-    }
-  };
-
-  const userDisplayName = (u: User) => {
-    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-    if (full) return full;
-    if (u.name) return u.name;
-    return u.email?.split("@")[0] || u.email || "User";
-  };
-
-  const onLogout = async () => {
+  const handleLogout = async () => {
     await dispatch(logout());
     router.push('/login');
   };
-  return (
-    <DashboardLayout title="Super Admin Dashboard" onLogout={onLogout}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Organizations</h2>
-              <button onClick={fetchAll} className="px-3 py-1.5 text-sm border bg-black-50 rounded hover:bg-gray-50">Refresh</button>
-            </div>
-            {loading ? (
-              <div>Loading...</div>
-            ) : (!Array.isArray(orgs) || orgs.length === 0) ? (
-              <div>No organizations found.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-gray-900">
-                  <thead>
-                    <tr className="text-left text-gray-600">
-                      <th className="py-2 pr-4">Name</th>
-                      <th className="py-2 pr-4">Status</th>
-                      <th className="py-2 pr-4">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orgs.map((o) => (
-                      <tr key={o.id} className="border-t">
-                        <td className="py-2 pr-4 font-medium text-gray-900">{o.name}</td>
-                        <td className="py-2 pr-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${((o.status || 'ACTIVE') === 'ACTIVE') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                            {(o.status || 'ACTIVE').toString().toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-4">
-                          <div className="flex gap-2">
-                            {o.status === 'BLOCKED' ? (
-                              <button className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700" onClick={() => onOrgStatus(o.id, 'ACTIVE')} title="Unblock organization">Unblock</button>
-                            ) : (
-                              <button className="px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700" onClick={() => onOrgStatus(o.id, 'BLOCKED')} title="Block organization">Block</button>
-                            )}
-                            <button className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700" onClick={() => onDeleteOrg(o.id)} title="Delete organization">Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
 
-          <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Users</h2>
-              <button onClick={fetchAll} className="px-3 py-1.5 text-sm border rounded hover:bg-bla-50">Refresh</button>
-            </div>
-            {loading ? (
-              <div>Loading...</div>
-            ) : (!Array.isArray(users) || users.filter((u) => u.email !== loggedInEmail).length === 0) ? (
-              <div>No users found.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-gray-900">
-                  <thead>
-                    <tr className="text-left text-gray-600">
-                      <th className="py-2 pr-4">Name</th>
-                      <th className="py-2 pr-4">Email</th>
-                      <th className="py-2 pr-4">Role</th>
-                      <th className="py-2 pr-4">Status</th>
-                      <th className="py-2 pr-4">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users
-                      .filter((u) => u.email !== loggedInEmail)
-                      .map((u) => (
-                        <tr key={u.id} className="border-t">
-                          <td className="py-2 pr-4">{userDisplayName(u)}</td>
-                          <td className="py-2 pr-4">{u.email}</td>
-                          <td className="py-2 pr-4">{(u.role || "").toString().toUpperCase()}</td>
-                          <td className="py-2 pr-4">{(u.status || "ACTIVE").toString().toUpperCase()}</td>
-                          <td className="py-2 pr-4">
-                            <div className="flex gap-2">
-                              {u.status === "BLOCKED" ? (
-                                <button className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700" onClick={() => onUserStatus(u.id, "ACTIVE")} title="Unblock user">Unblock</button>
-                              ) : (
-                                <button className="px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700" onClick={() => onUserStatus(u.id, "BLOCKED")} title="Block user">Block</button>
-                              )}
-                              <button className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700" onClick={() => onDeleteUser(u.id)} title="Delete user">Delete</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+  const getOrgStatusStyle = (status: string | undefined) => {
+    const s = (status || 'ACTIVE').toUpperCase();
+    if (s === 'ACTIVE') return 'bg-green-100 text-green-800';
+    if (s === 'BLOCKED' || s === 'SUSPENDED') return 'bg-red-100 text-red-800';
+    return 'bg-yellow-100 text-yellow-800';
+  };
+
+  if (!isReady || !isLoggedIn || role !== "super-admin") return null;
+
+  return (
+    <DashboardLayout 
+      title="Platform Admin" 
+      onLogout={handleLogout}
+      avatarUrl={user?.avatar}
+      avatarInitial={user?.name?.[0] || user?.email?.[0]}
+    >
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        
+        {/* Organizations Table */}
+        <section className="bg-white rounded-lg border border-gray-200 shadow-lg p-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">All Organizations</h2>
+            <button onClick={actions.fetchData} className="text-sm text-blue-600 hover:underline">Refresh Data</button>
+          </div>
+          {data.loading ? <p>Loading Organizations...</p> : (
+            <Table<Org> 
+              columns={[
+                { key: 'name', header: 'Name' },
+                { key: 'status', header: 'Status', render: (row) => (
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getOrgStatusStyle(row.status)}`}>
+                    {(row.status || 'ACTIVE').toUpperCase()}
+                  </span>
+                )},
+                { key: 'id', header: 'Actions', render: (row) => (
+                  <div className="flex gap-2">
+                    {row.status === 'ACTIVE' ? (
+                      <button onClick={() => actions.updateOrgStatus(row.id, 'SUSPENDED')} className="px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 text-xs font-medium disabled:opacity-50" disabled={data.loading}>
+                        Block
+                      </button>
+                    ) : (
+                      <button onClick={() => actions.updateOrgStatus(row.id, 'ACTIVE')} className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-medium disabled:opacity-50" disabled={data.loading}>
+                        Unblock
+                      </button>
+                    )}
+                    <button onClick={() => actions.deleteOrg(row.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs font-medium disabled:opacity-50" disabled={data.loading}>
+                      Delete
+                    </button>
+                  </div>
+                )}
+              ]} 
+              data={data.orgs} 
+            />
+          )}
+        </section>
+
+        {/* Users Table */}
+        <section className="bg-white rounded-lg border border-gray-200 shadow-lg p-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">All Users</h2>
+            <button onClick={actions.fetchData} className="text-sm text-blue-600 hover:underline">Refresh Data</button>
+          </div>
+          {data.loading ? <p>Loading Users...</p> : (
+            <Table<User> 
+              columns={[
+                { key: 'email', header: 'Email' },
+                { key: 'role', header: 'Role' },
+                { key: 'orgId', header: 'Organization', render: (row) => {
+                  const orgName = data.orgs.find(o => o.id === row.orgId)?.name;
+                  return <span className="text-sm text-gray-700">{orgName || 'N/A'}</span>;
+                }},
+                { key: 'status', header: 'Status', render: (row) => (
+                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getOrgStatusStyle(row.status)}`}>
+                    {(row.status || 'ACTIVE').toUpperCase()}
+                  </span>
+                )},
+                { key: 'id', header: 'Actions', render: (row) => (
+                  <div className="flex gap-2">
+                    {row.status === 'ACTIVE' ? (
+                      <button onClick={() => actions.updateUserStatus(row.id, 'INACTIVE')} className="px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 text-xs font-medium disabled:opacity-50" disabled={data.loading}>
+                        Block
+                      </button>
+                    ) : (
+                      <button onClick={() => actions.updateUserStatus(row.id, 'ACTIVE')} className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-medium disabled:opacity-50" disabled={data.loading}>
+                        Unblock
+                      </button>
+                    )}
+                    <button onClick={() => actions.deleteUser(row.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs font-medium disabled:opacity-50" disabled={data.loading}>
+                      Delete
+                    </button>
+                  </div>
+                )}
+              ]} 
+              data={data.users} 
+            />
+          )}
+        </section>
       </div>
+      <footer className="mt-6 text-sm text-gray-500">
+        Note: Admin dashboard functionality relies on the cascading logic in your Organization Management Use Case.
+      </footer>
     </DashboardLayout>
   );
 }
-
-

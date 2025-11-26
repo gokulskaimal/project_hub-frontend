@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
-import { logout, hydrateFromStorage } from '@/features/auth/authSlice';
+import { logout, hydrateFromStorage, fetchProfile } from '@/features/auth/authSlice';
 
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -19,7 +19,7 @@ type UserMode = 'view' | 'edit';
 type Member = { id: string; email: string; firstName?: string; lastName?: string; name?: string; role?: string; status?: string };
 
 export default function DashboardPage() {
-  const { isLoggedIn, role } = useSelector((state: RootState) => state.auth);
+  const { isLoggedIn, role, user } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const [authChecked, setAuthChecked] = useState(false);
@@ -234,6 +234,7 @@ export default function DashboardPage() {
         setProfileLastName(d.lastName || '');
         setProfileEmail(d.email || '');
         setProfileName(d.name || '');
+        setProfileImage(d.avatar || null);
       } catch {
         /* ignore */
       }
@@ -257,8 +258,14 @@ export default function DashboardPage() {
   const onSaveProfile = async () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      await axios.put(`${apiBase}/api/user/profile`, { firstName: profileFirstName, lastName: profileLastName, email: profileEmail }, { headers });
+      await axios.put(`${apiBase}/api/user/profile`, { 
+        firstName: profileFirstName, 
+        lastName: profileLastName, 
+        email: profileEmail,
+        avatar: profileImage 
+      }, { headers });
       toast.success('Profile updated');
+      dispatch(fetchProfile()); // Refresh Redux state
       setShowUserModal(false);
     } catch (err: unknown) {
       toast.error(getFriendlyError(err, 'Failed to update profile'));
@@ -368,10 +375,10 @@ export default function DashboardPage() {
               onClick={() => openUserModal('view')}
               className="w-8 h-8 bg-gray-100 rounded-full grid place-items-center hover:bg-gray-200 transition-colors focus:ring-2 focus:ring-gray-300"
             >
-              {profileImage ? (
-                <Image src={profileImage} alt="Profile" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+              {user?.avatar ? (
+                <Image src={user.avatar} alt="Profile" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <span className="text-sm font-medium text-gray-900">{computedInitial}</span>
+                <span className="text-sm font-medium text-gray-900">{(user?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}</span>
               )}
             </button>
           </div>
