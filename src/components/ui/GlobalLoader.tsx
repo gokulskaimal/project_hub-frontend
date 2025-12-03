@@ -6,9 +6,8 @@ import { RootState } from "@/store/store";
 
 export default function GlobalLoader() {
   const authLoading = useSelector((state: RootState) => state.auth.loading);
-  // We'll need to update RootState definition after adding uiSlice, 
-  // but for now we can safely assume it will be there or default to false if not yet typed
-  const uiLoading = useSelector((state: any) => state.ui?.isLoading);
+  // Read ui loading flag from typed RootState; default to false when missing
+  const uiLoading = useSelector((state: RootState) => (state.ui?.isLoading ?? false));
 
   const isLoading = authLoading || uiLoading;
 

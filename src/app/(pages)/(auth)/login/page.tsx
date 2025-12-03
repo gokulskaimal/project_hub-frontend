@@ -25,10 +25,10 @@ const loginSchema = z.object({
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   // Local state for form inputs (Performance Optimization)
   const [formData, setFormData] = useState({ email: "", password: "" });
-  
+
   const { error, loading, isLoggedIn, role, accessToken } = useSelector((state: RootState) => state.auth);
 
   const [showOrgModal, setShowOrgModal] = useState(false);
@@ -55,7 +55,7 @@ export default function LoginPage() {
       try {
         localStorage.setItem('accessToken', accessToken);
         // Note: For Middleware security, your backend MUST also set a 'role' cookie.
-      } catch {}
+      } catch { }
     }
 
     const normalizedRole = role.toLowerCase().replace(/[\s_]+/g, '-');
@@ -102,10 +102,8 @@ export default function LoginPage() {
       toast.success("Signed in successfully!");
     } catch (err: unknown) {
       const errorMessage = (err as Record<string, unknown>)?.message || (typeof err === "string" ? err : "Unknown error");
-      
-      console.log("DEBUG: Google Sign-In Error", { err, errorMessage, type: typeof errorMessage, match: errorMessage === "Organization Name Required" });
 
-      if (errorMessage === "Organization Name Required") {
+      if (typeof errorMessage === "string" && errorMessage.includes("Organization Name Required")) {
         toast("Please enter your Organization Name to complete signup", { icon: "🏢" });
         setPendingIdToken(credential);
         setShowOrgModal(true);
@@ -178,7 +176,7 @@ export default function LoginPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-                
+
                 <button
                   type="submit"
                   disabled={loading}

@@ -191,19 +191,11 @@ export default function SignUpPage() {
       // Success - user exists or already has org
       toast.success("Signed in successfully!");
     } catch (err: unknown) {
-      console.error("Google Sign-In Error:", err);
-      const errorMessage =
-        typeof err === "string"
-          ? err
-          : (err as Record<string, unknown>)?.message || "Unknown error";
+      const errorMessage = (err as Record<string, unknown>)?.message || (typeof err === "string" ? err : "Unknown error");
 
-      // If new user needs org name, show modal
-      if (errorMessage === "Organization Name Required") {
-        toast("Please enter your Organization Name to complete signup", {
-          icon: "🏢",
-        });
+      if (typeof errorMessage === "string" && errorMessage.includes("Organization Name Required")) {
+        toast("Please enter your Organization Name to complete signup", { icon: "🏢" });
         setPendingIdToken(credential);
-        setGoogleOrgName("");
         setShowOrgModal(true);
         return;
       }

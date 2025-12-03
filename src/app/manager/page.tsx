@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -7,8 +8,8 @@ import { RootState, AppDispatch } from '@/store/store';
 import { useRouter } from 'next/navigation';
 import { fetchProfile } from '@/features/auth/authSlice';
 import { useInvites, InviteForm } from '@/hooks/useInvites';
-import { startLoading, stopLoading } from '@/features/ui/uiSlice';
 import { api, API_ROUTES } from '@/utils/api';
+import { startLoading, stopLoading } from '@/features/ui/uiSlice';
 import toast from 'react-hot-toast';
 
 type UserMode = 'view' | 'edit';
@@ -29,19 +30,25 @@ export default function DashboardPage() {
   }, [dispatch, isLoggedIn]);
 
   const { invites, addInvite, removeInvite, updateInvite, canSend } = useInvites();
+  const [isSending, setIsSending] = useState(false);
 
   const handleSendInvites = async () => {
     if (!canSend) return;
-    
+
+    console.log('sendInvites: start', invites);
+
+    setIsSending(true);
     dispatch(startLoading());
     try {
-      await Promise.all(invites.map(invite => 
-        api.post(API_ROUTES.AUTH.INVITE_MEMBER, {
-          email: invite.email,
-          orgId: user?.orgId,
-          role: invite.role.toUpperCase().replace(' ', '_')
-        })
-      ));
+      await Promise.all(
+        invites.map((invite) =>
+          api.post(API_ROUTES.AUTH.INVITE_MEMBER, {
+            email: invite.email,
+            orgId: user?.orgId,
+            role: invite.role.toUpperCase().replace(' ', '_'),
+          }),
+        ),
+      );
 
       toast.success('Invitations sent successfully');
       setShowInviteModal(false);
@@ -49,7 +56,9 @@ export default function DashboardPage() {
       console.error(error);
       toast.error(error.response?.data?.message || 'Failed to send invitations');
     } finally {
+      setIsSending(false);
       dispatch(stopLoading());
+      console.log('sendInvites: finished');
     }
   };
 
@@ -105,14 +114,14 @@ export default function DashboardPage() {
 
   const sidebarLinks = [
     { name: 'Dashboard', active: true },
-    { name: 'Projects' },
-    { name: 'Kanban Board' },
-    { name: 'Calendar' },
-    { name: 'Chat' },
-    { name: 'Tickets' },
-    { name: 'Team' },
-    { name: 'Billing' },
-    { name: 'Settings', borderTop: true },
+    // { name: 'Projects' },
+    // { name: 'Kanban Board' },
+    // { name: 'Calendar' },
+    // { name: 'Chat' },
+    // { name: 'Tickets' },
+    // { name: 'Team' },
+    // { name: 'Billing' },
+    // { name: 'Settings', borderTop: true },
   ];
 
   useEffect(() => {
@@ -147,7 +156,7 @@ export default function DashboardPage() {
                 item.active
                   ? 'text-blue-700 bg-blue-50 border border-blue-200'
                   : 'text-gray-700 hover:bg-gray-50'
-              } ${item.borderTop ? 'border-t border-gray-200 mt-3 pt-4' : ''}`}
+              } `}
             >
               <span className="w-5 h-5 inline-block bg-gray-100 rounded" />
               <span className="text-sm font-medium">{item.name}</span>
@@ -281,11 +290,26 @@ export default function DashboardPage() {
       {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 z-50 grid place-items-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowInviteModal(false)} />
-          <div role="dialog" aria-modal="true" className="relative bg-white rounded-lg border border-gray-200 shadow-xl w-full max-w-2xl mx-4 p-6">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => {
+              if (!isSending) setShowInviteModal(false);
+            }}
+          />
+          <div role="dialog" aria-modal="true" {...(isSending ? { 'aria-busy': 'true' } : {})} className="relative bg-white rounded-lg border border-gray-200 shadow-xl w-full max-w-2xl mx-4 p-6">
+            {isSending && (
+              <div className="absolute inset-0 z-50 grid place-items-center bg-white/80 backdrop-blur-sm rounded-lg">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+                  <p className="text-sm font-medium text-gray-800">Sending invitations...</p>
+                </div>
+              </div>
+            )}
             <button
               type="button"
-              onClick={() => setShowInviteModal(false)}
+              onClick={() => {
+                if (!isSending) setShowInviteModal(false);
+              }}
               className="absolute top-4 right-4 p-1 rounded hover:bg-gray-100 focus:ring-2 focus:ring-gray-300"
               aria-label="Close invitation modal"
             >
@@ -307,6 +331,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => removeInvite(idx)}
+                        disabled = {isSending}
                         className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100 text-gray-500"
                         aria-label="Remove invitation"
                       >
@@ -322,10 +347,11 @@ export default function DashboardPage() {
                         <input
                           id={`invite-email-${idx}`}
                           type="email"
-                          placeholder="team.member@company.com"
+                          placeholder="team.member@company.com "
                           value={invite.email}
                           onChange={(e) => updateInvite(idx, 'email', e.target.value)}
-                          className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled = {isSending}
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm placeholder-gray-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -335,11 +361,10 @@ export default function DashboardPage() {
                             id={`invite-role-${idx}`}
                             value={invite.role}
                             onChange={(e) => updateInvite(idx, 'role', e.target.value as InviteForm['role'])}
+                            disabled = {isSending}
                             className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             <option>Team Member</option>
-                            <option>Admin</option>
-                            <option>Manager</option>
                           </select>
                         </div>
                         <div>
@@ -351,8 +376,6 @@ export default function DashboardPage() {
                             className="w-full px-3 py-2.5 border border-gray-200 rounded-md text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             <option>7 Days</option>
-                            <option>14 Days</option>
-                            <option>30 Days</option>
                           </select>
                         </div>
                       </div>
@@ -363,8 +386,9 @@ export default function DashboardPage() {
 
               <button
                 type="button"
-                onClick={addInvite}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-gray-300"
+                onClick={() => !isSending && addInvite()}
+                disabled={isSending}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4v16m8-8H4" />
@@ -390,19 +414,26 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowInviteModal(false)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-md text-sm font-medium text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-gray-300"
+                  className="px-4 py-2.5 border border-gray-200 rounded-md text-sm font-medium text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleSendInvites}
-                  disabled={!canSend}
-                  className={`px-4 py-2.5 rounded-md text-sm font-medium text-white ${canSend ? 'bg-gray-900 hover:bg-gray-800 focus:ring-2 focus:ring-gray-300' : 'bg-gray-400 cursor-not-allowed'}`}
+                  disabled={!canSend || isSending}
+                  className={`px-4 py-2.5 rounded-md text-sm font-medium text-white ${canSend && !isSending ? 'bg-gray-900 hover:bg-gray-800 focus:ring-2 focus:ring-gray-300' : 'bg-gray-400 cursor-not-allowed'}`}
                 >
-                  Send {invites.length} Invitation{invites.length !== 1 ? 's' : ''}
+                  {isSending ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-white" />
+                      Sending...
+                    </span>
+                  ) : (
+                    <>Send {invites.length} Invitation{invites.length !== 1 ? 's' : ''}</>
+                  )}
                 </button>
-              </div>
+  div         </div>
             </div>
           </div>
         </div>

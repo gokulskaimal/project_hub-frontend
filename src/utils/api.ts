@@ -1,7 +1,7 @@
 import axios from "axios";
 import toast from "react-hot-toast";
 
-export const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"}/api`;
+export const API_BASE_URL = "/api";
 
 export const API_ROUTES = {
   AUTH: {
@@ -25,9 +25,11 @@ export const API_ROUTES = {
   ADMIN: {
     ORGS: "/admin/organizations",
     USERS: "/admin/users",
+    PLANS: "/admin/plans",
   },
   MANAGER: {
     MEMBERS: "/manager/members",
+    PLANS: "/plans", // Public route for listing plans
   },
 } as const;
 

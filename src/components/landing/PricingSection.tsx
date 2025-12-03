@@ -1,11 +1,138 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Plan } from '../../types/plan';
+import { toast } from 'react-hot-toast';
+
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+  razorpay_subscription_id?: string;
+}
+
+interface RazorpayOptions {
+  key: string | undefined;
+  subscription_id: string;
+  name: string;
+  description: string;
+  handler: (response: RazorpayResponse) => Promise<void>;
+  theme: {
+    color: string;
+  };
+}
+
+interface SubscriptionResponse {
+  success: boolean;
+  data: {
+    id: string;
+    key_id: string;
+  };
+}
+
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Razorpay: any;
+  }
+}
 
 export default function PricingSection() {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
-  
-  const price = billingCycle === 'yearly' ? 10 : 12; // Placeholder logic
-  const yearlySavings = billingCycle === 'yearly' ? 20 : 0;
+
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await axios.get<any>('/api/plans');
+        setPlans(response.data.data);
+      } catch {
+        toast.error('Failed to load plans');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
+
+  const handleSubscribe = async (planId: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        toast.error('Please login to subscribe');
+        return;
+      }
+
+      const response = await axios.post<SubscriptionResponse>(
+        '/api/payments/subscription',
+        { planId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const { id: subscription_id, key_id } = response.data.data;
+
+      // MOCK FLOW: If subscription ID is a mock, bypass Razorpay modal
+      if (subscription_id.startsWith("sub_mock_")) {
+        console.log("Mock Subscription detected, bypassing Razorpay modal...");
+        try {
+            await axios.post(
+                '/api/payments/verify',
+                {
+                    razorpay_payment_id: `pay_mock_${Date.now()}`,
+                    razorpay_order_id: subscription_id, 
+                    razorpay_signature: `sig_mock_${Date.now()}`,
+                    razorpay_subscription_id: subscription_id
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast.success('Subscription successful! (Mock Mode)');
+        } catch (error) {
+            console.error("Mock verification failed", error);
+            toast.error('Payment verification failed (Mock)');
+        }
+        return;
+      }
+
+      const options: RazorpayOptions = {
+        key: key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        subscription_id: subscription_id,
+        name: "Project Hub",
+        description: "Subscription",
+        handler: async function (response: RazorpayResponse) {
+          try {
+            await axios.post(
+              '/api/payments/verify',
+              {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                razorpay_subscription_id: response.razorpay_subscription_id
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast.success('Subscription successful!');
+          } catch {
+            toast.error('Payment verification failed');
+          }
+        },
+        theme: {
+          color: "#2463EB",
+        },
+      };
+
+      const rzp1 = new window.Razorpay(options);
+      rzp1.open();
+    } catch {
+      toast.error('Failed to initiate subscription');
+    }
+  };
+
+  if (loading) {
+    return <div className="py-20 text-center">Loading plans...</div>;
+  }
 
   return (
     <section id="pricing" className="py-20">
@@ -15,49 +142,36 @@ export default function PricingSection() {
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">Choose a plan that grows with your team.</p>
         </div>
-        <div className="flex justify-center mb-8">
-          <div className="flex rounded-full border border-gray-200 bg-white p-1 shadow-sm">
-            <button 
-              onClick={() => setBillingCycle('monthly')} 
-              className={`rounded-full px-6 py-2 text-sm transition-colors ${billingCycle === 'monthly' ? 'bg-[#2463EB] text-white' : 'text-gray-600'}`}
-            >
-              Monthly
-            </button>
-            <button 
-              onClick={() => setBillingCycle('yearly')}
-              className={`rounded-full px-6 py-2 text-sm transition-colors ${billingCycle === 'yearly' ? 'bg-[#2463EB] text-white' : 'text-gray-600'}`}
-            >
-              Yearly 
-              {yearlySavings > 0 && <span className="ml-2 text-xs opacity-80">Save {yearlySavings}%</span>}
-            </button>
-          </div>
-        </div>
+        
         <div className="grid lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {/* Starter Plan */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4"><h3 className="text-lg font-semibold text-gray-900">Starter</h3><p className="text-sm text-gray-600">For individuals and small projects</p></div>
-            <div className="mb-6"><span className="text-3xl font-bold text-gray-900">₹0</span></div>
-            <ul className="space-y-2 mb-6 text-sm text-gray-900"><li>Unlimited projects</li><li>Kanban & timeline</li><li>Basic integrations</li></ul>
-            <button className="w-full rounded-lg border border-gray-300 bg-white py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">Get Started</button>
-          </div>
-          {/* Team Plan */}
-          <div className="rounded-2xl border-2 border-[#2463EB] bg-white p-6 shadow-lg relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="rounded-full bg-gradient-to-r from-[#326DEC] to-[#8D65F1] px-3 py-1 text-xs font-medium text-white shadow-lg">Most popular</span>
+          {plans.map((plan) => (
+            <div key={plan.id} className={`rounded-2xl border ${plan.type === 'PRO' ? 'border-2 border-[#2463EB] shadow-lg relative' : 'border-gray-200 shadow-sm'} bg-white p-6`}>
+              {plan.type === 'PRO' && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="rounded-full bg-gradient-to-r from-[#326DEC] to-[#8D65F1] px-3 py-1 text-xs font-medium text-white shadow-lg">Most popular</span>
+                </div>
+              )}
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                <p className="text-sm text-gray-600">{plan.description}</p>
+              </div>
+              <div className="mb-6 flex items-end gap-1">
+                <span className="text-3xl font-bold text-gray-900">₹{plan.price}</span>
+                <span className="text-sm text-gray-600">/{plan.currency.toLowerCase()}/mo</span>
+              </div>
+              <ul className="space-y-2 mb-6 text-sm text-gray-900">
+                {plan.features.map((feature, index) => (
+                  <li key={index}>{feature}</li>
+                ))}
+              </ul>
+              <button 
+                onClick={() => handleSubscribe(plan.id)}
+                className={`w-full rounded-lg py-3 text-sm font-medium ${plan.type === 'PRO' ? 'bg-gradient-to-r from-[#326DEC] to-[#8D65F1] text-white shadow-lg hover:shadow-xl' : 'border border-gray-300 bg-white text-gray-900 hover:bg-gray-50'}`}
+              >
+                {plan.price === 0 ? 'Get Started' : 'Subscribe'}
+              </button>
             </div>
-            <div className="mb-4"><h3 className="text-lg font-semibold text-gray-900">Team</h3><p className="text-sm text-gray-600">Best for growing teams</p></div>
-            <div className="mb-6 flex items-end gap-1"><span className="text-3xl font-bold text-gray-900">₹{price}</span><span className="text-sm text-gray-600">/user/mo</span></div>
-            <ul className="space-y-2 mb-6 text-sm text-gray-900"><li>Everything in Starter</li><li>Advanced reports</li><li>Priority support</li></ul>
-            <button className="w-full rounded-lg bg-gradient-to-r from-[#326DEC] to-[#8D65F1] py-3 text-sm font-medium text-white shadow-lg hover:shadow-xl">Subscribe</button>
-            <p className="text-center text-xs text-gray-600 mt-2">{billingCycle === 'yearly' ? 'Billed Yearly' : 'Billed Monthly'}</p>
-          </div>
-          {/* Business Plan */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4"><h3 className="text-lg font-semibold text-gray-900">Business</h3><p className="text-sm text-gray-600">For large orgs and compliance</p></div>
-            <div className="mb-6"><span className="text-2xl font-semibold text-gray-900">Custom</span></div>
-            <ul className="space-y-2 mb-6 text-sm text-gray-900"><li>SSO & role-based access</li><li>Custom workflows</li><li>Uptime SLA</li></ul>
-            <button className="w-full rounded-lg border border-gray-300 bg-white py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">Contact Sales</button>
-          </div>
+          ))}
         </div>
       </div>
     </section>

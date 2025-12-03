@@ -71,11 +71,6 @@ export function useAdminData(token: string | null) {
     }
   }, [token]);
 
-  // Initial Data Fetch on mount/token change
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
   const deleteOrg = async (id: string) => {
     if (
       !(await confirmWithAlert(

@@ -20,7 +20,8 @@ export const MEMBER_LINKS: NavItem[] = [
 ];
 
 export const ADMIN_LINKS: NavItem[] = [
-  { name: "Overview", href: "/super-admin/dashboard", active: true },
-  { name: "Organizations", href: "/super-admin/organizations" },
-  { name: "Users", href: "/super-admin/users" },
+  { name: "Overview", href: "/admin/dashboard", active: true },
+  { name: "Organizations", href: "/admin/organizations" },
+  { name: "Users", href: "/admin/users" },
+  { name: "Plans", href: "/admin/plans" },
 ];
