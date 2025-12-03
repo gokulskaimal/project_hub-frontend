@@ -10,6 +10,6 @@ export default function CtaSection() {
                 <a href="#" className="rounded-lg border border-gray-300 bg-white px-8 py-3 text-gray-900 font-medium hover:bg-gray-50">Request Demo</a>
             </div>
         </div>
-    </section>
+    </section> 
 );
 }

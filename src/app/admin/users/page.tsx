@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { useAdminData } from "@/hooks/useAdminData";
-import { Mail, Shield, Building, Trash2, Ban, CheckCircle, RefreshCw, Search, ArrowUpDown, User as UserIcon, Users } from "lucide-react";
+import { User, Trash2, Ban, CheckCircle, RefreshCw, Mail, Building, Search, ArrowUpDown, Users } from "lucide-react";
 
 export default function AdminUsersPage() {
   const { accessToken } = useSelector((s: RootState) => s.auth);
@@ -14,7 +14,7 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
-  const [sortBy, setSortBy] = useState("name");
+  const [sortBy, setSortBy] = useState("email");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
@@ -28,15 +28,12 @@ export default function AdminUsersPage() {
     // Search
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter(user => {
-        const orgName = data.orgs.find(o => o.id === user.orgId)?.name?.toLowerCase() || "";
-        const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim().toLowerCase();
-        return (
-          user.email.toLowerCase().includes(lowerTerm) ||
-          orgName.includes(lowerTerm) ||
-          fullName.includes(lowerTerm)
-        );
-      });
+      result = result.filter(user => 
+        user.email.toLowerCase().includes(lowerTerm) ||
+        (user.orgId && user.orgId.toLowerCase().includes(lowerTerm)) ||
+        (user.firstName && user.firstName.toLowerCase().includes(lowerTerm)) ||
+        (user.lastName && user.lastName.toLowerCase().includes(lowerTerm))
+      );
     }
 
     // Filter
@@ -62,8 +59,8 @@ export default function AdminUsersPage() {
         valA = a.status || "ACTIVE";
         valB = b.status || "ACTIVE";
       } else if (sortBy === "name") {
-        valA = `${a.firstName || ""} ${a.lastName || ""}`.trim().toLowerCase();
-        valB = `${b.firstName || ""} ${b.lastName || ""}`.trim().toLowerCase();
+        valA = (a.firstName || "").toLowerCase();
+        valB = (b.firstName || "").toLowerCase();
       }
 
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
@@ -72,7 +69,7 @@ export default function AdminUsersPage() {
     });
 
     return result;
-  }, [data.users, data.orgs, searchTerm, filterRole, filterStatus, sortBy, sortOrder]);
+  }, [data.users, searchTerm, filterRole, filterStatus, sortBy, sortOrder]);
 
   const toggleSort = (field: string) => {
     if (sortBy === field) {
@@ -96,7 +93,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="text-gray-600 text-sm mt-1">Manage system users and their access</p>
+          <p className="text-gray-600 text-sm mt-1">Manage all registered users</p>
         </div>
         <button 
           onClick={actions.fetchData} 
@@ -132,7 +129,7 @@ export default function AdminUsersPage() {
             <Ban size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-600">Blocked Users</p>
+            <p className="text-sm font-medium text-gray-600">Blocked/Suspended</p>
             <h3 className="text-2xl font-bold text-gray-900">{stats.blocked}</h3>
           </div>
         </div>
@@ -145,7 +142,7 @@ export default function AdminUsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
           <input 
             type="text" 
-            placeholder="Search by name, email or organization..." 
+            placeholder="Search by name, email or org..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 bg-white placeholder-gray-500"
@@ -160,8 +157,8 @@ export default function AdminUsersPage() {
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="ALL">All Roles</option>
-            <option value="ORG_MANAGER">Manager</option>
-            <option value="ORG_MEMBER">Member</option>
+            <option value="MANAGER">Manager</option>
+            <option value="MEMBER">Member</option>
           </select>
 
           <select 
@@ -197,10 +194,17 @@ export default function AdminUsersPage() {
             >
               Role <ArrowUpDown size={14} />
             </button>
+            <div className="w-px bg-gray-300"></div>
+            <button 
+              onClick={() => toggleSort("status")}
+              className={`px-3 py-2 text-sm flex items-center gap-1 ${sortBy === "status" ? "bg-blue-50 text-blue-700 font-medium" : "bg-white text-gray-700 hover:bg-gray-50"}`}
+            >
+              Status <ArrowUpDown size={14} />
+            </button>
           </div>
         </div>
       </div>
-      
+
       {data.loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -213,16 +217,14 @@ export default function AdminUsersPage() {
             </div>
           ) : (
             filteredUsers.map((user) => {
-              const orgName = data.orgs.find(o => o.id === user.orgId)?.name;
               const isBlocked = user.status === 'BLOCKED' || user.status === 'SUSPENDED';
               const isActive = user.status === 'ACTIVE';
-              const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "No Name";
 
               return (
                 <div key={user.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-4">
                     <div className="p-2 bg-blue-50 rounded-lg">
-                      <UserIcon className="text-blue-600" size={20} />
+                      <User className="text-blue-600" size={20} />
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
                       isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -232,34 +234,27 @@ export default function AdminUsersPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-3 mb-6">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 truncate" title={fullName}>
-                        {fullName}
-                      </h3>
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 truncate" title={user.email}>
+                      {user.firstName} {user.lastName}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                      <Mail size={14} />
+                      <span className="truncate">{user.email}</span>
+                    </div>
+                    {user.orgId && (
                       <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                        <Mail size={14} />
-                        <span className="truncate" title={user.email}>{user.email}</span>
+                        <Building size={14} />
+                        <span className="truncate">Org ID: {user.orgId.slice(0, 8)}...</span>
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2">
-                       <div className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded-lg flex-1">
-                        <Shield size={14} className="text-gray-500" />
-                        <span>{user.role}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded-lg">
-                      <Building size={14} className="text-gray-500" />
-                      <span className="truncate">{orgName || 'No Organization'}</span>
-                    </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">Role: {user.role}</p>
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t border-gray-100">
                     {isActive ? (
                       <button 
-                        onClick={() => actions.updateUserStatus(user.id, 'INACTIVE')} 
+                        onClick={() => actions.updateUserStatus(user.id, 'BLOCKED')} 
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                         disabled={data.loading}
                       >
