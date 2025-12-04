@@ -74,28 +74,6 @@ export default function PricingSection() {
 
       const { id: subscription_id, key_id } = response.data.data;
 
-      // MOCK FLOW: If subscription ID is a mock, bypass Razorpay modal
-      if (subscription_id.startsWith("sub_mock_")) {
-        console.log("Mock Subscription detected, bypassing Razorpay modal...");
-        try {
-            await axios.post(
-                '/api/payments/verify',
-                {
-                    razorpay_payment_id: `pay_mock_${Date.now()}`,
-                    razorpay_order_id: subscription_id, 
-                    razorpay_signature: `sig_mock_${Date.now()}`,
-                    razorpay_subscription_id: subscription_id
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            toast.success('Subscription successful! (Mock Mode)');
-        } catch (error) {
-            console.error("Mock verification failed", error);
-            toast.error('Payment verification failed (Mock)');
-        }
-        return;
-      }
-
       const options: RazorpayOptions = {
         key: key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         subscription_id: subscription_id,

@@ -1,108 +1,45 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
-import type { RootState, AppDispatch } from "@/store/store";
-import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
+import React from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import UserModal from "@/components/modals/UserModal"; // Assuming this is created
-import { useMemberProfile } from "@/hooks/useMemberProfile"; // Assuming this hook is available
-
-export default function MemberDashboardPage() {
-  const { isLoggedIn, role, accessToken, user } = useSelector((s: RootState) => s.auth);
-  const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
-  const [authChecked, setAuthChecked] = useState(false);
-
-  // --- 1. Auth Check & Hydration ---
-  useEffect(() => {
-    dispatch(hydrateFromStorage());
-    setAuthChecked(true);
-  }, [dispatch]);
-
-  const isMember = useMemo(() => {
-    const r = (role || "").toString().toLowerCase();
-    return ['member', 'user', 'team_member', 'team-member'].includes(r);
-  }, [role]);
-
-  useEffect(() => {
-    // Redirect if not authenticated or not a member role
-    if (authChecked && (!isLoggedIn || !isMember)) {
-      router.push("/login");
-    }
-  }, [authChecked, isLoggedIn, isMember, router]);
-
-  // --- 2. Profile Logic Hook (Uses token for API calls) ---
-  const profile = useMemberProfile(accessToken);
-  
-  // --- 3. Modal State & Handlers ---
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
-
-  const openModal = (mode: 'view' | 'edit') => {
-    setModalMode(mode);
-    setShowUserModal(true);
-    // Trigger data fetch when modal opens
-    profile.actions.loadProfile();
-  };
-
-  const handleLogout = async () => {
-    await dispatch(logout());
-    router.push("/login");
-  };
-
-  // --- 4. Render ---
-  if (!authChecked || !isLoggedIn || !isMember) return null; // Render nothing until auth check is complete
+export default function MemberDashboard() {
+  const { user } = useSelector((state: RootState) => state.auth);
 
   return (
-    <DashboardLayout 
-      title="Member Dashboard" 
-      onLogout={handleLogout}
-      avatarUrl={user?.avatar}
-      avatarInitial={user?.name?.[0] || user?.email?.[0]}
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <section className="lg:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">My Work</h2>
-            <div className="flex gap-2">
-              <button 
-                className={`px-3 py-1.5 text-sm border rounded text-gray-900 hover:bg-gray-50 transition-colors`} 
-                onClick={() => openModal("view")}
-              >
-                View Profile
-              </button>
-              <button 
-                className={`px-3 py-1.5 text-sm border rounded text-gray-900 hover:bg-gray-50 transition-colors`} 
-                onClick={() => openModal("edit")}
-              >
-                Edit Profile
-              </button>
-            </div>
-          </div>
-          <div className="text-sm text-gray-600">Your projects and tasks will appear here.</div>
-        </section>
-        
-        <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Quick Stats</h2>
-          <div className="space-y-2 text-sm text-gray-700">
-            <div className="flex justify-between"><span>Assigned Tasks</span><span>0</span></div>
-            <div className="flex justify-between"><span>Open Tickets</span><span>0</span></div>
-            <div className="flex justify-between"><span>Active Projects</span><span>0</span></div>
-          </div>
-        </section>
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Welcome back, {user?.firstName || "Member"}!
+        </h1>
+        <p className="mt-1 text-sm text-gray-600">
+          Here is an overview of your assigned tasks and activity.
+        </p>
       </div>
 
-      <UserModal 
-        isOpen={showUserModal}
-        mode={modalMode}
-        setMode={setModalMode}
-        onClose={() => setShowUserModal(false)}
-        profile={profile}
-        // Note: Profile information is derived directly from the hook state
-      />
-    </DashboardLayout>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* Stats Cards */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-500">Assigned Tasks</h3>
+          <p className="mt-2 text-3xl font-bold text-gray-900">0</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-500">Pending Review</h3>
+          <p className="mt-2 text-3xl font-bold text-gray-900">0</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-500">Completed</h3>
+          <p className="mt-2 text-3xl font-bold text-gray-900">0</p>
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+        <h3 className="text-lg font-medium text-gray-900">No recent activity</h3>
+        <p className="mt-2 text-gray-500">
+          You haven't been assigned to any projects yet.
+        </p>
+      </div>
+    </div>
   );
 }

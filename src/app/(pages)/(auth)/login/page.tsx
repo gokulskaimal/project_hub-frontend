@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
     switch (normalizedRole) {
       case 'super-admin':
-        router.push('/super-admin/dashboard');
+        router.push('/admin/dashboard');
         break;
       case 'org-manager':
       case 'manager':
@@ -221,7 +221,7 @@ export default function LoginPage() {
                     type="text"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="e.g. Acme Corp"
                     required
                     autoFocus

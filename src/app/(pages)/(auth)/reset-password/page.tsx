@@ -53,14 +53,14 @@ function RequestResetForm() {
     return (
       <div className="text-center space-y-4">
         <div className="h-12 w-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Check your email</h2>
         <p className="text-gray-600">
           We have sent a password reset link to <strong>{email}</strong>.
         </p>
         <p className="text-sm text-gray-500">
-          Didn't receive it? <button onClick={() => setSent(false)} className="text-blue-600 hover:underline">Try again</button>
+          Didn&apos;t receive it? <button onClick={() => setSent(false)} className="text-blue-600 hover:underline">Try again</button>
         </p>
       </div>
     );
@@ -70,14 +70,14 @@ function RequestResetForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Forgot Password?</h2>
-        <p className="text-sm text-gray-600 mt-1">Enter your email and we'll send you a reset link.</p>
+        <p className="text-sm text-gray-600 mt-1">Enter your email and we&apos;ll send you a reset link.</p>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
         <input
           type="email"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -89,13 +89,12 @@ function RequestResetForm() {
       <button
         type="submit"
         disabled={loading || !email}
-        className={`w-full rounded-lg py-2.5 text-sm font-medium text-white transition-colors ${
-          loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-        }`}
+        className={`w-full rounded-lg py-2.5 text-sm font-medium text-white transition-colors ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          }`}
       >
         {loading ? "Sending Link..." : "Send Reset Link"}
       </button>
-      
+
       <div className="text-center mt-4">
         <a href="/login" className="text-sm text-gray-600 hover:text-gray-900">Back to Login</a>
       </div>
@@ -111,7 +110,7 @@ function ResetPasswordForm({ token }: { token: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const parsed = resetSchema.safeParse({ password, confirmPassword });
     if (!parsed.success) {
       toast.error(parsed.error.errors[0]?.message ?? "Invalid input");
@@ -120,11 +119,11 @@ function ResetPasswordForm({ token }: { token: string }) {
 
     setLoading(true);
     try {
-      await api.post("/auth/reset-password", { 
-        token, 
-        password: parsed.data.password 
+      await api.post("/auth/reset-password", {
+        token,
+        password: parsed.data.password
       });
-      
+
       toast.success("Password reset successful! Please log in.");
       router.push("/login");
     } catch (err: unknown) {
@@ -145,7 +144,7 @@ function ResetPasswordForm({ token }: { token: string }) {
         <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
         <input
           type="password"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="Minimum 8 characters"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -157,7 +156,7 @@ function ResetPasswordForm({ token }: { token: string }) {
         <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
         <input
           type="password"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="Re-enter new password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -168,9 +167,8 @@ function ResetPasswordForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={loading || !password}
-        className={`w-full rounded-lg py-2.5 text-sm font-medium text-white transition-colors ${
-          loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-        }`}
+        className={`w-full rounded-lg py-2.5 text-sm font-medium text-white transition-colors ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          }`}
       >
         {loading ? "Updating..." : "Set New Password"}
       </button>

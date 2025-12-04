@@ -3,13 +3,13 @@ import toast from "react-hot-toast";
 import { API_ROUTES } from "@/utils/api";
 import { getFriendlyError } from "@/utils/errors";
 import { confirmWithAlert } from "@/utils/confirm";
-import api from "@/utils/api"; // Ensure we use the configured API instance
-
+import api from "@/utils/api";
 export type Org = {
   id: string;
   name: string;
   status?: string;
   createdAt?: string;
+  currentUserCount?: number;
 };
 export type User = {
   id: string;

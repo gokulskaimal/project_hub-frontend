@@ -1,51 +1,63 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
-import type { RootState, AppDispatch } from "@/store/store";
-import { logout, hydrateFromStorage, fetchProfile } from "@/features/auth/authSlice";
-import { LayoutDashboard, Users, Building2, CreditCard, LogOut, Menu, X } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '@/store/store';
+import { logout, fetchProfile } from '@/features/auth/authSlice';
+import Link from 'next/link';
+import UserModal from '@/components/modals/UserModal';
+import { useMemberProfile } from '@/hooks/useMemberProfile';
+import { LayoutDashboard, Users, Mail, CreditCard, LogOut, Menu, X } from 'lucide-react';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn, role, user } = useSelector((s: RootState) => s.auth);
-  const router = useRouter();
+
+
+export default function ManagerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const [isReady, setIsReady] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { accessToken } = useSelector((state: RootState) => state.auth)
 
   useEffect(() => {
-    dispatch(hydrateFromStorage());
-    setIsReady(true);
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (isReady && isLoggedIn && !user) {
+    if (accessToken && !user) {
       dispatch(fetchProfile());
     }
-  }, [isReady, isLoggedIn, user, dispatch]);
+  }, [accessToken, user, dispatch]);
 
-  useEffect(() => {
-    if (isReady && (!isLoggedIn || role !== "super-admin")) {
-      router.push("/login");
-    }
-  }, [isReady, isLoggedIn, role, router]);
+  const profileHook = useMemberProfile(accessToken)
+  const [userModalMode, setUserModalMode] = useState<'view' | 'edit'>('view')
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
 
   const handleLogout = async () => {
     await dispatch(logout());
     router.push('/login');
   };
 
-  const sidebarLinks = [
-    { name: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Organizations', href: '/admin/organizations', icon: Building2 },
-    { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Plans', href: '/admin/plans', icon: CreditCard },
-  ];
+  const openProfile = () => {
+    setUserModalMode('view')
+    setIsUserModalOpen(true)
+  }
 
-  if (!isReady || !isLoggedIn || role !== "super-admin") return null;
+  const sidebarLinks = [
+    { name: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
+    { name: 'Members', href: '/manager/members', icon: Users },
+    { name: 'Invites', href: '/manager/invites', icon: Mail },
+    { name: 'Plans', href: '/manager/plans', icon: CreditCard },
+
+
+    // { name: 'Projects', href: '/manager/projects' },
+    // { name: 'Kanban Board', href: '/manager/kanban' },
+    // { name: 'Calendar', href: '/manager/calendar' },
+    // { name: 'Chat', href: '/manager/chat' },
+    // { name: 'Tickets', href: '/manager/tickets' },
+    // { name: 'Team', href: '/manager/team' },
+    // { name: 'Billing', href: '/manager/billing' },
+    // { name: 'Settings', href: '/manager/settings', borderTop: true },
+  ];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -53,7 +65,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
-
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-16 px-6 border-b border-gray-200 flex items-center justify-between">
@@ -97,7 +108,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
@@ -107,21 +117,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
           <div className="flex-1" /> {/* Spacer */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 pl-1 pr-3 py-1">
+            <button
+              onClick={openProfile}
+              className="flex items-center gap-3 hover:bg-gray-50 rounded-full pl-1 pr-3 py-1 transition-colors border border-transparent hover:border-gray-200"
+            >
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm">
-                {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'}
+                {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin'}</p>
-                <p className="text-xs text-gray-500">Super Admin</p>
+                <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                <p className="text-xs text-gray-500">{user?.role || 'Manager'}</p>
               </div>
-            </div>
+            </button>
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-8">
           {children}
         </main>
       </div>
+      <UserModal
+        isOpen={isUserModalOpen}
+        mode={userModalMode}
+        onClose={() => setIsUserModalOpen(false)}
+        setMode={setUserModalMode}
+        profile={profileHook}
+      />
     </div>
   );
 }

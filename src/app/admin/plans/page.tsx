@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import api, { API_ROUTES } from "../../../utils/api";
 import { Plan } from "../../../types/plan";
 import { Plus, Edit2, Trash2, X, Search, ArrowUpDown, CreditCard, CheckCircle, Ban, RefreshCw } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function AdminPlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -27,7 +28,6 @@ export default function AdminPlansPage() {
     currency: "INR",
     type: "STARTER",
     features: [""],
-    razorpayPlanId: "",
     isActive: true,
   });
 
@@ -118,7 +118,6 @@ export default function AdminPlansPage() {
         currency: "INR",
         type: "STARTER",
         features: [""],
-        razorpayPlanId: "",
         isActive: true,
       });
     }
@@ -164,7 +163,18 @@ export default function AdminPlansPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this plan?")) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This will permanently delete the plan. You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!"
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       await api.delete(`${API_ROUTES.ADMIN.PLANS}/${id}`);
       toast.success("Plan deleted successfully");
@@ -407,17 +417,7 @@ export default function AdminPlansPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Plan ID</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.razorpayPlanId}
-                    onChange={(e) => setFormData({ ...formData, razorpayPlanId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white"
-                    placeholder="plan_..."
-                  />
-                </div>
+
               </div>
 
               <div>

@@ -30,6 +30,8 @@ export const API_ROUTES = {
   MANAGER: {
     MEMBERS: "/manager/members",
     PLANS: "/plans", // Public route for listing plans
+    INVITATIONS: "/manager/invitations",
+    ORGANIZATION: "/manager/organization",
   },
 } as const;
 

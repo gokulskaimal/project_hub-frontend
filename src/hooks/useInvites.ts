@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { z } from "zod";
 
 export type InviteForm = {
   email: string;
-  role: "Team Member" | "Admin" | "Manager";
+  role: "Team Member" | "Manager";
   expiry: "7 Days" | "14 Days" | "30 Days";
 };
+
+const inviteSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  role: z.enum(["Team Member", "Manager"]),
+  expiry: z.enum(["7 Days", "14 Days", "30 Days"]),
+});
 
 export const useInvites = () => {
   const [invites, setInvites] = useState<InviteForm[]>([
@@ -29,15 +36,25 @@ export const useInvites = () => {
       prev.map((it, i) => (i === index ? { ...it, [field]: value } : it)),
     );
 
-  const canSend = invites.every(
-    (i) => i.email.trim().length > 3 && i.email.includes("@"),
-  );
+  const validationResult = useMemo(() => {
+    const errors: Record<number, string> = {};
+    const isValid = invites.every((invite, index) => {
+      const result = inviteSchema.safeParse(invite);
+      if (!result.success) {
+        errors[index] = result.error.errors[0].message;
+        return false;
+      }
+      return true;
+    });
+    return { isValid, errors };
+  }, [invites]);
 
   return {
     invites,
     addInvite,
     removeInvite,
     updateInvite,
-    canSend,
+    canSend: validationResult.isValid,
+    errors: validationResult.errors,
   };
 };

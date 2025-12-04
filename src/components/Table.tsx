@@ -29,7 +29,7 @@ export default function Table<T extends { id?: string | number }>({ columns, dat
           ))}
         </tbody>
       </table>
-    </div>
+    </div> 
   )
 }
 

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { useAdminData } from "@/hooks/useAdminData";
-import { Building, Trash2, Ban, CheckCircle, RefreshCw, Search, ArrowUpDown, Building2 } from "lucide-react";
+import { Building, Trash2, Ban, CheckCircle, RefreshCw, Search, ArrowUpDown, Building2, Users } from "lucide-react";
 
 export default function AdminOrgsPage() {
   const { accessToken } = useSelector((s: RootState) => s.auth);
@@ -27,7 +27,7 @@ export default function AdminOrgsPage() {
     // Search
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter(org => 
+      result = result.filter(org =>
         org.name.toLowerCase().includes(lowerTerm)
       );
     }
@@ -82,8 +82,8 @@ export default function AdminOrgsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Organizations</h1>
           <p className="text-gray-600 text-sm mt-1">Manage registered organizations and their status</p>
         </div>
-        <button 
-          onClick={actions.fetchData} 
+        <button
+          onClick={actions.fetchData}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
         >
           <RefreshCw size={16} />
@@ -127,9 +127,9 @@ export default function AdminOrgsPage() {
         {/* Search */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-          <input 
-            type="text" 
-            placeholder="Search by organization name..." 
+          <input
+            type="text"
+            placeholder="Search by organization name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 bg-white placeholder-gray-500"
@@ -138,8 +138,8 @@ export default function AdminOrgsPage() {
 
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-          <select 
-            value={filterStatus} 
+          <select
+            value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
@@ -150,14 +150,14 @@ export default function AdminOrgsPage() {
 
           {/* Sort Toggles */}
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-            <button 
+            <button
               onClick={() => toggleSort("name")}
               className={`px-3 py-2 text-sm flex items-center gap-1 ${sortBy === "name" ? "bg-blue-50 text-blue-700 font-medium" : "bg-white text-gray-700 hover:bg-gray-50"}`}
             >
               Name <ArrowUpDown size={14} />
             </button>
             <div className="w-px bg-gray-300"></div>
-            <button 
+            <button
               onClick={() => toggleSort("status")}
               className={`px-3 py-2 text-sm flex items-center gap-1 ${sortBy === "status" ? "bg-blue-50 text-blue-700 font-medium" : "bg-white text-gray-700 hover:bg-gray-50"}`}
             >
@@ -166,7 +166,7 @@ export default function AdminOrgsPage() {
           </div>
         </div>
       </div>
-      
+
       {data.loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -179,7 +179,6 @@ export default function AdminOrgsPage() {
             </div>
           ) : (
             filteredOrgs.map((org) => {
-              const isBlocked = org.status === 'BLOCKED' || org.status === 'SUSPENDED';
               const isActive = org.status === 'ACTIVE';
 
               return (
@@ -188,9 +187,8 @@ export default function AdminOrgsPage() {
                     <div className="p-2 bg-blue-50 rounded-lg">
                       <Building className="text-blue-600" size={20} />
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
-                      isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
                       {isActive ? <CheckCircle size={12} /> : <Ban size={12} />}
                       {(org.status || 'ACTIVE').toUpperCase()}
                     </span>
@@ -201,12 +199,16 @@ export default function AdminOrgsPage() {
                       {org.name}
                     </h3>
                     <p className="text-sm text-gray-600 mt-1">ID: {org.id.slice(0, 8)}...</p>
+                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+                      <Users size={16} />
+                      <span>{org.currentUserCount || 0} Total Members</span>
+                    </div>
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t border-gray-100">
                     {isActive ? (
-                      <button 
-                        onClick={() => actions.updateOrgStatus(org.id, 'SUSPENDED')} 
+                      <button
+                        onClick={() => actions.updateOrgStatus(org.id, 'SUSPENDED')}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                         disabled={data.loading}
                       >
@@ -214,8 +216,8 @@ export default function AdminOrgsPage() {
                         Block
                       </button>
                     ) : (
-                      <button 
-                        onClick={() => actions.updateOrgStatus(org.id, 'ACTIVE')} 
+                      <button
+                        onClick={() => actions.updateOrgStatus(org.id, 'ACTIVE')}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                         disabled={data.loading}
                       >
@@ -223,8 +225,8 @@ export default function AdminOrgsPage() {
                         Unblock
                       </button>
                     )}
-                    <button 
-                      onClick={() => actions.deleteOrg(org.id)} 
+                    <button
+                      onClick={() => actions.deleteOrg(org.id)}
                       className="flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete Organization"
                       disabled={data.loading}

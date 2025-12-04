@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-'use client'
+"use client";
+
 
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -30,11 +30,9 @@ export default function SignUpPage() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-
   const { email, otp, name, password, firstName, lastName, signupStep, error, loading, otpResendAvailableAt } = useSelector(selectSignupData);
 
   const [confirmPassword, setConfirmPassword] = useState('');
-  // Error states for inline validation
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [remainingMs, setRemainingMs] = useState<number>(0);
 
@@ -56,9 +54,9 @@ export default function SignUpPage() {
     };
 
     updateRemaining();
-    const interval = window.setInterval(updateRemaining, 1000);
+    const interval = setInterval(updateRemaining, 1000);
 
-    return () => window.clearInterval(interval);
+    return () => clearInterval(interval);
   }, [otpResendAvailableAt]);
 
   const isResendDisabled = useMemo(() => remainingMs > 0, [remainingMs]);
@@ -183,12 +181,9 @@ export default function SignUpPage() {
     }
 
     try {
-      // First, try to sign in without organization name
-      // If user is new and manager signup is required, backend will return "Organization Name Required"
       await dispatch(
         googleSignIn({ idToken: credential })
       ).unwrap();
-      // Success - user exists or already has org
       toast.success("Signed in successfully!");
     } catch (err: unknown) {
       const errorMessage = (err as Record<string, unknown>)?.message || (typeof err === "string" ? err : "Unknown error");
@@ -199,7 +194,6 @@ export default function SignUpPage() {
         setShowOrgModal(true);
         return;
       }
-      // Other errors
       if (typeof errorMessage === "string") {
         toast.error(errorMessage);
       } else {
@@ -242,7 +236,6 @@ export default function SignUpPage() {
 
           <div className="container max-w-[1400px] mx-auto px-8 py-24">
             <div className="flex items-start gap-12 justify-center">
-              {/* Left side - Sign up form */}
               <div className="flex-1 max-w-2xl">
                 <h1 className="text-5xl font-extrabold text-gray-900 mb-6">
                   Great outcomes start with{' '}
@@ -453,7 +446,7 @@ export default function SignUpPage() {
                   type="text"
                   value={googleOrgName}
                   onChange={(e) => setGoogleOrgName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="e.g. Acme Corp"
                   required
                   autoFocus

@@ -14,19 +14,20 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     actions.fetchData();
+    
+    const fetchPlansCount = async () => {
+      try {
+        const response = await api.get(API_ROUTES.ADMIN.PLANS);
+        if (response.data && Array.isArray(response.data.data)) {
+          setPlansCount(response.data.data.length);
+        }
+      } catch (error) {
+        console.error("Failed to fetch plans count", error);
+      }
+    };
+
     fetchPlansCount();
   }, [actions.fetchData]);
-
-  const fetchPlansCount = async () => {
-    try {
-      const response = await api.get(API_ROUTES.ADMIN.PLANS);
-      if (response.data && Array.isArray(response.data.data)) {
-        setPlansCount(response.data.data.length);
-      }
-    } catch (error) {
-      console.error("Failed to fetch plans count", error);
-    }
-  };
 
   const stats = [
     {
@@ -52,19 +53,22 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center">
-            <div className={`p-4 rounded-lg ${stat.color} bg-opacity-10 mr-4`}>
-              <stat.icon className={`w-8 h-8 ${stat.color.replace("bg-", "text-")}`} />
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center">
+              <div className={`p-4 rounded-lg ${stat.color} bg-opacity-10 mr-4`}>
+                <Icon className={`w-8 h-8 ${stat.color.replace("bg-", "text-")}`} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">{stat.label}</p>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {adminData.loading ? "..." : stat.value}
+                </h3>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{stat.label}</p>
-              <h3 className="text-2xl font-bold text-gray-900">
-                {adminData.loading ? "..." : stat.value}
-              </h3>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
