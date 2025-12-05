@@ -80,6 +80,26 @@ export default function ManagerPlansPage() {
 
       const { id: subscription_id, key_id } = response.data.data;
 
+      if (subscription_id.startsWith("sub_free_") || subscription_id.startsWith("sub_mock_")) {
+        // Bypass Razorpay for free/mock plans
+        try {
+          await api.post(
+            '/payments/verify',
+            {
+              razorpay_payment_id: `pay_mock_${Date.now()}`,
+              razorpay_order_id: `order_mock_${Date.now()}`,
+              razorpay_signature: `sig_mock_${Date.now()}`,
+              razorpay_subscription_id: subscription_id
+            },
+          );
+          toast.success('Subscription successful!');
+          fetchData();
+        } catch {
+          toast.error('Payment verification failed');
+        }
+        return;
+      }
+
 
 
       const options: RazorpayOptions = {

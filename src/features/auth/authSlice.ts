@@ -257,7 +257,7 @@ export const googleSignIn = createAsyncThunk<
 });
 
 export const loginUser = createAsyncThunk<
-  { accessToken: string; role: string },
+  { accessToken: string; role: string; user: UserProfile },
   { email: string; password: string },
   { rejectValue: string }
 >("auth/loginUser", async (credentials, thunkAPI) => {
@@ -448,6 +448,7 @@ const authSlice = createSlice({
       state.otpResendAvailableAt = null;
       state.accessToken = null;
       state.role = null;
+      state.user = null;
       try {
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
@@ -468,6 +469,7 @@ const authSlice = createSlice({
         state.error = null;
         state.accessToken = action.payload.accessToken;
         state.role = normalizeRole(action.payload.role);
+        state.user = action.payload.user;
         try {
           if (typeof window !== "undefined") {
             localStorage.setItem("accessToken", action.payload.accessToken);
@@ -484,6 +486,7 @@ const authSlice = createSlice({
             : "Failed to Login";
         state.isLoggedIn = false;
         state.accessToken = null;
+        state.user = null;
       })
       .addCase(sendOtp.pending, (state) => {
         state.loading = true;

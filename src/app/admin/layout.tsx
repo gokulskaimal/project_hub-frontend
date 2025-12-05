@@ -8,13 +8,21 @@ import type { RootState, AppDispatch } from "@/store/store";
 import { logout, hydrateFromStorage, fetchProfile } from "@/features/auth/authSlice";
 import { LayoutDashboard, Users, Building2, CreditCard, LogOut, Menu, X } from "lucide-react";
 
+import UserModal from "@/components/modals/UserModal";
+import { useMemberProfile } from "@/hooks/useMemberProfile";
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn, role, user } = useSelector((s: RootState) => s.auth);
+  const { isLoggedIn, role, user, accessToken } = useSelector((s: RootState) => s.auth);
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
   const [isReady, setIsReady] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Profile Modal State
+  const profileHook = useMemberProfile(accessToken);
+  const [userModalMode, setUserModalMode] = useState<'view' | 'edit'>('view');
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch(hydrateFromStorage());
@@ -36,6 +44,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const handleLogout = async () => {
     await dispatch(logout());
     router.push('/login');
+  };
+
+  const openProfile = () => {
+    setUserModalMode('view');
+    setIsUserModalOpen(true);
   };
 
   const sidebarLinks = [
@@ -107,7 +120,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
           <div className="flex-1" /> {/* Spacer */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 pl-1 pr-3 py-1">
+            <button
+              onClick={openProfile}
+              className="flex items-center gap-3 pl-1 pr-3 py-1 hover:bg-gray-50 rounded-full transition-colors border border-transparent hover:border-gray-200"
+            >
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm">
                 {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'}
               </div>
@@ -115,13 +131,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin'}</p>
                 <p className="text-xs text-gray-500">Super Admin</p>
               </div>
-            </div>
+            </button>
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-8">
           {children}
         </main>
       </div>
+
+      <UserModal
+        isOpen={isUserModalOpen}
+        mode={userModalMode}
+        onClose={() => setIsUserModalOpen(false)}
+        setMode={setUserModalMode}
+        profile={profileHook}
+      />
     </div>
   );
 }

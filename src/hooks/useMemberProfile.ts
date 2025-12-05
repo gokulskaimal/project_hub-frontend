@@ -30,6 +30,7 @@ export function useMemberProfile(token: string | null) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   // Password State
@@ -61,6 +62,7 @@ export function useMemberProfile(token: string | null) {
       setEmail(d.email || "");
       setFirstName(d.firstName || "");
       setLastName(d.lastName || "");
+      setOrganizationName(d.organizationName || "");
       setProfileImage(d.avatar || null);
     } catch (err) {
       toast.error(getFriendlyError(err, "Failed to load profile"));
@@ -136,26 +138,43 @@ export function useMemberProfile(token: string | null) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  return {
-    state: {
+  return useMemo(
+    () => ({
+      state: {
+        firstName,
+        lastName,
+        email,
+        organizationName,
+        profileImage,
+        passwords,
+        loading,
+        computedName,
+        computedInitial,
+      },
+      setters: { setFirstName, setLastName, setPasswords },
+      actions: {
+        loadProfile,
+        updateProfile,
+        changePassword,
+        handleImageUpload,
+        removeImage,
+        triggerFileInput: () => fileInputRef.current?.click(),
+      },
+      refs: { fileInputRef },
+    }),
+    [
       firstName,
       lastName,
       email,
+      organizationName,
       profileImage,
       passwords,
       loading,
       computedName,
       computedInitial,
-    },
-    setters: { setFirstName, setLastName, setPasswords },
-    actions: {
       loadProfile,
-      updateProfile,
-      changePassword,
-      handleImageUpload,
-      removeImage,
-      triggerFileInput: () => fileInputRef.current?.click(),
-    },
-    refs: { fileInputRef },
-  };
+      // updateProfile, changePassword, handleImageUpload, removeImage are not memoized but stable enough or depend on state implicitly.
+      // Ideally we should memoize them too, but for now memoizing the return object prevents the infinite loop if loadProfile is stable.
+    ],
+  );
 }

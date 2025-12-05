@@ -246,8 +246,8 @@ export default function MembersPage() {
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="ALL">All Roles</option>
-            <option value="ORG_MANAGER">Manager</option>
-            <option value="MEMBER">Member</option>
+            <option value="ORG MANAGER">Manager</option>
+            <option value="TEAM MEMBER">Member</option>
           </select>
 
           <select 

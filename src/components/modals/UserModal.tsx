@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Image from "next/image";
 import UserInfoView from "@/components/profile/UserInfoView";
 import EditUserForm from "@/components/profile/EditUserForm";
@@ -18,9 +19,16 @@ interface UserModalProps {
 export default function UserModal({ isOpen, mode, onClose, setMode, profile }: UserModalProps) {
   const { role } = useSelector((state: RootState) => state.auth);
 
+  const { state, setters, actions, refs } = profile;
+
+  useEffect(() => {
+    if (isOpen) {
+      actions.loadProfile();
+    }
+  }, [isOpen, actions.loadProfile]);
+
   if (!isOpen) return null;
 
-  const { state, setters, actions, refs } = profile;
   const isEdit = mode === 'edit';
   const displayRole = (role || 'MEMBER').toUpperCase().replace(/-/g, ' ');
 
@@ -116,6 +124,7 @@ export default function UserModal({ isOpen, mode, onClose, setMode, profile }: U
             name={state.computedName} 
             role={displayRole} 
             status="ACTIVE" 
+            organizationName={state.organizationName}
           />
         ) : (
           <EditUserForm

@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { MEMBER_LINKS } from "@/config/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/store";
 import { useRouter } from "next/navigation";
 import { fetchProfile } from "@/features/auth/authSlice";
+import UserModal from "@/components/modals/UserModal";
+import { useMemberProfile } from "@/hooks/useMemberProfile";
 
 export default function MemberLayout({
   children,
@@ -15,7 +17,11 @@ export default function MemberLayout({
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { user, isLoggedIn, loading } = useSelector((state: RootState) => state.auth);
+  const { user, isLoggedIn, loading, accessToken } = useSelector((state: RootState) => state.auth);
+  
+  const profileHook = useMemberProfile(accessToken);
+  const [userModalMode, setUserModalMode] = useState<'view' | 'edit'>('view');
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn && !user) {
@@ -54,12 +60,26 @@ export default function MemberLayout({
   }
 
   return (
-    <DashboardLayout 
-      title="Member Portal" 
-      avatarInitial={user?.firstName?.[0] || user?.email?.[0]}
-      onLogout={() => dispatch({ type: 'auth/logout' })}
-    >
-      {children}
-    </DashboardLayout>
+    <>
+      <DashboardLayout 
+        title="Member Portal" 
+        avatarInitial={user?.firstName?.[0] || user?.email?.[0]}
+        onLogout={() => dispatch({ type: 'auth/logout' })}
+        onAvatarClick={() => {
+          setUserModalMode('view');
+          setIsUserModalOpen(true);
+        }}
+      >
+        {children}
+      </DashboardLayout>
+
+      <UserModal
+        isOpen={isUserModalOpen}
+        mode={userModalMode}
+        onClose={() => setIsUserModalOpen(false)}
+        setMode={setUserModalMode}
+        profile={profileHook}
+      />
+    </>
   );
 }
