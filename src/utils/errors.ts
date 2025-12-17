@@ -16,9 +16,11 @@ export const getFriendlyError = (err: unknown, fallback: string): string => {
     if (typeof data === "string" && data.trim()) {
       serverMsg = data;
     } else if (data && typeof data === "object") {
-      const body: ErrorBody = data as ErrorBody;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: any = data;
       serverMsg =
-        body.error ||
+        body.error?.message || // Standardized backend error
+        body.error || // Legacy
         body.message ||
         body.detail ||
         (Array.isArray(body.errors) ? body.errors[0]?.message : undefined);
@@ -26,12 +28,24 @@ export const getFriendlyError = (err: unknown, fallback: string): string => {
 
     if (serverMsg && typeof serverMsg === "string") return serverMsg;
 
-    // 2. Fallback to generic HTTP status message
+    // 2. Fallback to the message mutated by axios interceptor (api.ts)
+
+    if (
+      err.message &&
+      !err.message.includes("Request failed with status code") &&
+      !err.message.includes("Network Error")
+    ) {
+      return err.message;
+    }
+
+    // 3. Fallback to generic HTTP status message
     switch (status) {
       case 400:
         return "There was a problem with your request. Please check the details and try again.";
       case 401:
-        return "Your session has expired. Please log in again.";
+        // Distinguish between Login (Credentials) and Session (Token) if possible, 
+        // but if no message was returned, safer to say "Authentication failed".
+        return "Authentication failed. Please check your credentials.";
       case 403:
         return "You do not have permission to perform this action.";
       case 404:

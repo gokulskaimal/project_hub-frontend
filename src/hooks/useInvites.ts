@@ -18,36 +18,50 @@ export const useInvites = () => {
     { email: "", role: "Team Member", expiry: "7 Days" },
   ]);
 
+  const [touched, setTouched] = useState<Set<number>>(new Set());
+
   const addInvite = () =>
     setInvites((i) => [
       ...i,
       { email: "", role: "Team Member", expiry: "7 Days" },
     ]);
 
-  const removeInvite = (index: number) =>
+  const removeInvite = (index: number) => {
     setInvites((i) => (i.length > 1 ? i.filter((_, k) => k !== index) : i));
+    setTouched((prev) => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+  };
 
   const updateInvite = (
     index: number,
     field: keyof InviteForm,
     value: InviteForm[keyof InviteForm],
-  ) =>
+  ) => {
     setInvites((prev) =>
       prev.map((it, i) => (i === index ? { ...it, [field]: value } : it)),
     );
+    if (!touched.has(index)) {
+      setTouched((prev) => new Set(prev).add(index));
+    }
+  };
 
   const validationResult = useMemo(() => {
     const errors: Record<number, string> = {};
     const isValid = invites.every((invite, index) => {
       const result = inviteSchema.safeParse(invite);
       if (!result.success) {
-        errors[index] = result.error.errors[0].message;
+        if (touched.has(index) && invite.email !== "") {
+           errors[index] = result.error.errors[0].message;
+        }
         return false;
       }
       return true;
     });
     return { isValid, errors };
-  }, [invites]);
+  }, [invites, touched]);
 
   return {
     invites,

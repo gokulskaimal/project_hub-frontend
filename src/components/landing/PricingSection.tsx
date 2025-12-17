@@ -37,6 +37,13 @@ declare global {
   }
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  timestamp: string;
+}
+
 export default function PricingSection() {
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -45,10 +52,10 @@ export default function PricingSection() {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const response = await axios.get<any>('/api/plans');
+        const response = await axios.get<ApiResponse<Plan[]>>('/api/plans');
         setPlans(response.data.data);
-      } catch {
+      } catch (error) {
+        console.error('Error loading plans:', error);
         toast.error('Failed to load plans');
       } finally {
         setLoading(false);

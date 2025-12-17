@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
 import { api, API_ROUTES } from "../../utils/api";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { getFriendlyError } from "../../utils/errors";
 
 export interface UserProfile {
   id: string;
@@ -92,37 +92,7 @@ export const acceptInvite = createAsyncThunk<
         lastName,
       });
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const d = err.response?.data as
-          | {
-              message?: string;
-              error?: string;
-              errors?: Array<{ message?: string }>;
-              detail?: string;
-            }
-          | string
-          | undefined;
-        if (typeof d === "string" && d.trim().length) {
-          return thunkAPI.rejectWithValue(d);
-        }
-        if (d && typeof d === "object") {
-          const obj = d as {
-            message?: string;
-            error?: string;
-            errors?: Array<{ message?: string }>;
-            detail?: string;
-          };
-          const firstValidation = Array.isArray(obj.errors)
-            ? obj.errors[0]?.message || null
-            : null;
-          const message =
-            obj.message || obj.error || obj.detail || firstValidation;
-          if (message && typeof message === "string") {
-            return thunkAPI.rejectWithValue(message);
-          }
-        }
-      }
-      return thunkAPI.rejectWithValue("Network error");
+      return thunkAPI.rejectWithValue(getFriendlyError(err, "Network error"));
     }
   },
 );
@@ -145,37 +115,7 @@ export const registerManager = createAsyncThunk<
     }
     return thunkAPI.rejectWithValue("Invalid register response");
   } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const d = err.response?.data as
-        | {
-            message?: string;
-            error?: string;
-            errors?: Array<{ message?: string }>;
-            detail?: string;
-          }
-        | string
-        | undefined;
-      if (typeof d === "string" && d.trim().length) {
-        return thunkAPI.rejectWithValue(d);
-      }
-      if (d && typeof d === "object") {
-        const obj = d as {
-          message?: string;
-          error?: string;
-          errors?: Array<{ message?: string }>;
-          detail?: string;
-        };
-        const firstValidation = Array.isArray(obj.errors)
-          ? obj.errors[0]?.message || null
-          : null;
-        const message =
-          obj.message || obj.error || obj.detail || firstValidation;
-        if (message && typeof message === "string") {
-          return thunkAPI.rejectWithValue(message);
-        }
-      }
-    }
-    return thunkAPI.rejectWithValue("Network error");
+    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network error"));
   }
 });
 
@@ -192,16 +132,9 @@ export const fetchProfile = createAsyncThunk<
     }
     return thunkAPI.rejectWithValue("Failed to load profile");
   } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const d = err.response?.data as
-        | { message?: string; error?: string }
-        | string
-        | undefined;
-      const message =
-        typeof d === "string" ? d : d?.message || d?.error || "Network error";
-      return thunkAPI.rejectWithValue(message);
-    }
-    return thunkAPI.rejectWithValue("Network error");
+    return thunkAPI.rejectWithValue(
+      getFriendlyError(err, "Failed to load profile"),
+    );
   }
 });
 
@@ -222,37 +155,7 @@ export const googleSignIn = createAsyncThunk<
     }
     return thunkAPI.rejectWithValue("Invalid Google sign-in response");
   } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const d = err.response?.data as
-        | {
-            message?: string;
-            error?: string;
-            errors?: Array<{ message?: string }>;
-            detail?: string;
-          }
-        | string
-        | undefined;
-      if (typeof d === "string" && d.trim().length) {
-        return thunkAPI.rejectWithValue(d);
-      }
-      if (d && typeof d === "object") {
-        const obj = d as {
-          message?: string;
-          error?: string;
-          errors?: Array<{ message?: string }>;
-          detail?: string;
-        };
-        const firstValidation = Array.isArray(obj.errors)
-          ? obj.errors[0]?.message || null
-          : null;
-        const message =
-          obj.message || obj.error || obj.detail || firstValidation;
-        if (message && typeof message === "string") {
-          return thunkAPI.rejectWithValue(message);
-        }
-      }
-    }
-    return thunkAPI.rejectWithValue("Network error");
+    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network error"));
   }
 });
 
@@ -276,37 +179,7 @@ export const loginUser = createAsyncThunk<
     }
     return thunkAPI.rejectWithValue("Invalid login response");
   } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const d = err.response?.data as
-        | {
-            message?: string;
-            error?: string;
-            errors?: Array<{ message?: string }>;
-            detail?: string;
-          }
-        | string
-        | undefined;
-      if (typeof d === "string" && d.trim().length) {
-        return thunkAPI.rejectWithValue(d);
-      }
-      if (d && typeof d === "object") {
-        const obj = d as {
-          message?: string;
-          error?: string;
-          errors?: Array<{ message?: string }>;
-          detail?: string;
-        };
-        const firstValidation = Array.isArray(obj.errors)
-          ? obj.errors[0]?.message || null
-          : null;
-        const message =
-          obj.message || obj.error || obj.detail || firstValidation;
-        if (message && typeof message === "string") {
-          return thunkAPI.rejectWithValue(message);
-        }
-      }
-    }
-    return thunkAPI.rejectWithValue("Network error");
+    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network error"));
   }
 });
 
@@ -318,14 +191,7 @@ export const sendOtp = createAsyncThunk<
   try {
     await api.post(API_ROUTES.AUTH.SEND_OTP, { email });
   } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const data = err.response?.data as
-        | { message?: string; error?: string }
-        | undefined;
-      const message = data?.message ?? data?.error;
-      if (message) return thunkAPI.rejectWithValue(message);
-    }
-    return thunkAPI.rejectWithValue("Network Error");
+    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network Error"));
   }
 });
 
@@ -337,14 +203,7 @@ export const resendOtp = createAsyncThunk<
   try {
     await api.post(API_ROUTES.AUTH.SEND_OTP, { email });
   } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const data = err.response?.data as
-        | { message?: string; error?: string }
-        | undefined;
-      const message = data?.message ?? data?.error;
-      if (message) return thunkAPI.rejectWithValue(message);
-    }
-    return thunkAPI.rejectWithValue("Network Error");
+    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network Error"));
   }
 });
 
@@ -364,14 +223,7 @@ export const verifyOtp = createAsyncThunk<
       return thunkAPI.rejectWithValue(message);
     }
   } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const data = err.response?.data as
-        | { message?: string; error?: string }
-        | undefined;
-      const message = data?.message ?? data?.error;
-      if (message) return thunkAPI.rejectWithValue(message);
-    }
-    return thunkAPI.rejectWithValue("Network Error");
+    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network Error"));
   }
 });
 
@@ -389,10 +241,8 @@ export const completeSignup = createAsyncThunk<
         firstName,
         lastName,
       });
-    } catch (err: any) {
-      if (err.response?.data?.message)
-        return thunkAPI.rejectWithValue(err.response.data.message);
-      return thunkAPI.rejectWithValue("Network Error");
+    } catch (err: unknown) {
+      return thunkAPI.rejectWithValue(getFriendlyError(err, "Network Error"));
     }
   },
 );
@@ -648,3 +498,4 @@ export const {
   hydrateFromStorage,
 } = authSlice.actions;
 export default authSlice.reducer;
+

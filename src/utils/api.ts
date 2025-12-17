@@ -1,5 +1,6 @@
 import axios from "axios";
 import toast from "react-hot-toast";
+import { startLoading, stopLoading } from "@/features/ui/uiSlice";
 
 export const API_BASE_URL = "/api";
 
@@ -33,6 +34,10 @@ export const API_ROUTES = {
     INVITATIONS: "/manager/invitations",
     ORGANIZATION: "/manager/organization",
   },
+    PROJECTS: {
+      ROOT : "/projects",
+      TASKS : "/projects/tasks"
+    }
 } as const;
 
 export const api = axios.create({
@@ -41,8 +46,49 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Dependency Injection for Store (to avoid circular dependency)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let appStore: any = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const injectStore = (store: any) => {
+  appStore = store;
+};
+
+// Request Counter to handle parallel requests
+let activeRequests = 0;
+
+const showLoader = () => {
+  if (activeRequests === 0 && appStore) {
+    appStore.dispatch(startLoading());
+  }
+  activeRequests++;
+};
+
+const hideLoader = () => {
+  activeRequests--;
+  if (activeRequests <= 0) {
+    activeRequests = 0;
+    if (appStore) {
+      appStore.dispatch(stopLoading());
+    }
+  }
+};
+
+// Extend AxiosRequestConfig to include our custom property
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    skipGlobalLoader?: boolean;
+  }
+}
+
 api.interceptors.request.use(
   (config) => {
+    // Trigger Global Loader unless explicitly skipped
+    if (!config.skipGlobalLoader) {
+      showLoader();
+    }
+
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("accessToken");
       if (token) {
@@ -52,13 +98,25 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+
     return Promise.reject(error);
   },
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (!response.config.skipGlobalLoader) {
+        hideLoader();
+    }
+    return response;
+  },
   (error) => {
+    // attempt to read config from error object
+    const config = error?.config || error?.response?.config;
+    if (!config?.skipGlobalLoader) {
+        hideLoader();
+    }
+    
     try {
       const data = error?.response?.data;
       const statusCode = error?.response?.status;
@@ -88,8 +146,9 @@ api.interceptors.response.use(
       const extracted =
         typeof data === "string" && data.trim()
           ? data
-          : data?.message ||
-            data?.error ||
+          : data?.error?.message || // Standardized Backend Error
+            data?.message ||
+            data?.error || // Legacy text
             data?.detail ||
             (Array.isArray(data?.errors) && data.errors[0]?.message) ||
             error?.message ||

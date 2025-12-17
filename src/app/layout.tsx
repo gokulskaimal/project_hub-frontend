@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/store/Providers";
 import { Toaster } from "react-hot-toast";
 import GlobalLoader from "@/components/ui/GlobalLoader";
+import NextTopLoader from 'nextjs-toploader';
 
 
 const geistSans = Geist({
@@ -32,6 +33,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+        <NextTopLoader color="#2563EB" showSpinner={false} />
         <GlobalLoader />
         {children}
         <Toaster position="top-right" />

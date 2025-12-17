@@ -21,6 +21,12 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
 
   const handleSend = async () => {
     if (!canSend) return;
+
+    const getDays = (str: string) => {
+        const match = str.match(/(\d+)/);
+        return match ? parseInt(match[0]) : 1;
+    };
+
     setIsSending(true);
     try {
       await Promise.all(
@@ -29,6 +35,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
             email: invite.email,
             role: invite.role === "Manager" ? "ORG MANAGER" : "TEAM MEMBER",
             orgId: user?.orgId,
+            expiresIn: getDays(invite.expiry)
           })
         )
       );
@@ -36,8 +43,9 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Failed to send invitations");
+      // Use the standardized message from api.ts interceptor
+      const message = error.message || "Failed to send invitations";
+      toast.error(message);
     } finally {
       setIsSending(false);
     }
@@ -69,7 +77,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
                       placeholder="colleague@company.com"
                       className={`w-full px-3 py-2 rounded-lg border ${
                         errors && errors[index] ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100'
-                      } focus:ring-2 outline-none transition-all text-sm`}
+                      } focus:ring-2 outline-none transition-all text-sm text-gray-900 placeholder-gray-500`}
                     />
                     {errors && errors[index] && (
                       <p className="text-xs text-red-500 mt-1">{errors[index]}</p>
@@ -81,7 +89,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
                       <select
                         value={invite.role}
                         onChange={(e) => updateInvite(index, 'role', e.target.value as any)}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm bg-white"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm bg-white text-gray-900"
                       >
                         <option value="Team Member">Team Member</option>
                         <option value="Manager">Manager</option>
@@ -92,7 +100,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
                       <select
                         value={invite.expiry}
                         onChange={(e) => updateInvite(index, 'expiry', e.target.value as any)}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm bg-white"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm bg-white text-gray-900"
                       >
                         <option value="7 Days">7 Days</option>
                         <option value="14 Days">14 Days</option>

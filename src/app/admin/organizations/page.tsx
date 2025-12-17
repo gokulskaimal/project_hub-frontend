@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { useAdminData } from "@/hooks/useAdminData";
 import { Building, Trash2, Ban, CheckCircle, RefreshCw, Search, ArrowUpDown, Building2, Users } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function AdminOrgsPage() {
   const { accessToken } = useSelector((s: RootState) => s.auth);
@@ -66,6 +67,55 @@ export default function AdminOrgsPage() {
       setSortOrder("asc");
     }
   };
+  const confirmBlockOrg = async(orgId : string) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes!'
+    })
+
+    if (result.isConfirmed) {
+      await actions.updateOrgStatus(orgId, 'SUSPENDED');
+      await actions.fetchData();
+    }
+  } 
+  const confirmUnblockOrg = async(orgId : string) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes!'
+    })
+
+    if (result.isConfirmed) {
+      await actions.updateOrgStatus(orgId, 'ACTIVE');
+      await actions.fetchData();
+    }
+  }
+
+  const confirmDeleteOrg = async(orgId : string) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes !'
+    })
+
+    if (result.isConfirmed) {
+      await actions.deleteOrg(orgId);
+      await actions.fetchData();
+    }
+  }
 
   // Stats
   const stats = useMemo(() => {
@@ -208,7 +258,8 @@ export default function AdminOrgsPage() {
                   <div className="flex gap-2 pt-4 border-t border-gray-100">
                     {isActive ? (
                       <button
-                        onClick={() => actions.updateOrgStatus(org.id, 'SUSPENDED')}
+                        onClick={() => confirmBlockOrg(org.id)}
+                        
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                         disabled={data.loading}
                       >
@@ -217,7 +268,7 @@ export default function AdminOrgsPage() {
                       </button>
                     ) : (
                       <button
-                        onClick={() => actions.updateOrgStatus(org.id, 'ACTIVE')}
+                        onClick={() => confirmUnblockOrg(org.id)}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                         disabled={data.loading}
                       >
@@ -226,7 +277,7 @@ export default function AdminOrgsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => actions.deleteOrg(org.id)}
+                      onClick={() => confirmDeleteOrg(org.id)}
                       className="flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete Organization"
                       disabled={data.loading}

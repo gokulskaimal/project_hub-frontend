@@ -8,6 +8,10 @@ import api from "@/utils/api";
 import { getFriendlyError } from "@/utils/errors";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
+import Link from "next/link";
 
 // --- Schemas ---
 const requestSchema = z.object({
@@ -28,14 +32,17 @@ function RequestResetForm() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = requestSchema.safeParse({ email });
     if (!parsed.success) {
+      setError(parsed.error.errors[0]?.message);
       toast.error(parsed.error.errors[0]?.message ?? "Invalid email");
       return;
     }
+    setError(undefined);
 
     setLoading(true);
     try {
@@ -73,30 +80,28 @@ function RequestResetForm() {
         <p className="text-sm text-gray-600 mt-1">Enter your email and we&apos;ll send you a reset link.</p>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-        <input
-          type="email"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={loading}
-          autoFocus
-        />
-      </div>
+      <Input
+        label="Email Address"
+        type="email"
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => { setEmail(e.target.value); setError(undefined); }}
+        disabled={loading}
+        error={error}
+        autoFocus
+      />
 
-      <button
+      <Button
         type="submit"
+        fullWidth
         disabled={loading || !email}
-        className={`w-full rounded-lg py-2.5 text-sm font-medium text-white transition-colors ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-          }`}
+        isLoading={loading}
       >
         {loading ? "Sending Link..." : "Send Reset Link"}
-      </button>
+      </Button>
 
       <div className="text-center mt-4">
-        <a href="/login" className="text-sm text-gray-600 hover:text-gray-900">Back to Login</a>
+        <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900">Back to Login</Link>
       </div>
     </form>
   );
@@ -107,15 +112,22 @@ function ResetPasswordForm({ token }: { token: string }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const parsed = resetSchema.safeParse({ password, confirmPassword });
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message ?? "Invalid input");
+      const newErrors: { password?: string; confirmPassword?: string } = {};
+      parsed.error.errors.forEach(err => {
+        if (err.path[0]) newErrors[err.path[0] as 'password' | 'confirmPassword'] = err.message;
+      });
+      setErrors(newErrors);
+      toast.error("Please fix the errors");
       return;
     }
+    setErrors({});
 
     setLoading(true);
     try {
@@ -140,38 +152,34 @@ function ResetPasswordForm({ token }: { token: string }) {
         <p className="text-sm text-gray-600 mt-1">Choose a strong new password for your account.</p>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-        <input
-          type="password"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          placeholder="Minimum 8 characters"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={loading}
-        />
-      </div>
+      <Input
+        label="New Password"
+        type="password"
+        placeholder="Minimum 8 characters"
+        value={password}
+        onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })); }}
+        disabled={loading}
+        error={errors.password}
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-        <input
-          type="password"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          placeholder="Re-enter new password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          disabled={loading}
-        />
-      </div>
+      <Input
+        label="Confirm Password"
+        type="password"
+        placeholder="Re-enter new password"
+        value={confirmPassword}
+        onChange={(e) => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: undefined })); }}
+        disabled={loading}
+        error={errors.confirmPassword}
+      />
 
-      <button
+      <Button
         type="submit"
+        fullWidth
         disabled={loading || !password}
-        className={`w-full rounded-lg py-2.5 text-sm font-medium text-white transition-colors ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-          }`}
+        isLoading={loading}
       >
         {loading ? "Updating..." : "Set New Password"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -195,11 +203,11 @@ export default function ResetPasswordPage() {
       <Header />
       <main className="relative flex-1 flex items-center justify-center py-16 bg-gradient-to-b from-[#F8FAFC] to-[#EBEFF5]">
         <div className="w-full max-w-md">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl sm:p-8">
+          <Card className="shadow-xl sm:p-8">
             <Suspense fallback={<div>Loading...</div>}>
               <ResetPasswordContent />
             </Suspense>
-          </div>
+          </Card>
         </div>
       </main>
       <Footer />

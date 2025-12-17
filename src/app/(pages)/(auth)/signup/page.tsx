@@ -25,6 +25,9 @@ import { selectSignupData } from "@/features/auth/selectors";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
 
 export default function SignUpPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -255,71 +258,65 @@ export default function SignUpPage() {
                 {/* Signup form steps */}
                 {signupStep === 1 && (
                   <div className="grid gap-3 mb-6 max-w-xl">
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                        <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 17 17">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33" d="M14.9964 5.33655L9.00242 9.15455C8.79902 9.27269 8.56798 9.33492 8.33275 9.33492C8.09753 9.33492 7.86649 9.27269 7.66309 9.15455L1.66309 5.33655" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33" d="M13.6631 3.33655H2.99642C2.26004 3.33655 1.66309 3.9335 1.66309 4.66988V12.6699C1.66309 13.4063 2.26004 14.0032 2.99642 14.0032H13.6631C14.3995 14.0032 14.9964 13.4063 14.9964 12.6699V4.66988C14.9964 3.9335 14.3995 3.33655 13.6631 3.33655Z" />
-                        </svg>
-                      </div>
-                      <input
+                      <Input
                         type="email"
                         placeholder="you@example.com"
-                        className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                         value={email}
                         onChange={(e) => { dispatch(setEmail(e.target.value)); setFieldErrors((prev) => ({ ...prev, email: '' })); }}
                         disabled={loading}
+                        error={fieldErrors.email}
+                        leftIcon={
+                          <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 17 17">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33" d="M14.9964 5.33655L9.00242 9.15455C8.79902 9.27269 8.56798 9.33492 8.33275 9.33492C8.09753 9.33492 7.86649 9.27269 7.66309 9.15455L1.66309 5.33655" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33" d="M13.6631 3.33655H2.99642C2.26004 3.33655 1.66309 3.9335 1.66309 4.66988V12.6699C1.66309 13.4063 2.26004 14.0032 2.99642 14.0032H13.6631C14.3995 14.0032 14.9964 13.4063 14.9964 12.6699V4.66988C14.9964 3.9335 14.3995 3.33655 13.6631 3.33655Z" />
+                          </svg>
+                        }
                       />
-                      {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
-                    </div>
-                    <div className="relative">
-                      <input
+                      <Input
                         type="text"
                         placeholder="Organization Name"
-                        className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                         value={name}
                         onChange={(e) => { dispatch(setName(e.target.value)); setFieldErrors((prev) => ({ ...prev, organizationName: '' })); }}
                         disabled={loading}
+                        error={fieldErrors.organizationName}
                       />
-                      {fieldErrors.organizationName && <p className="text-xs text-red-500 mt-1">{fieldErrors.organizationName}</p>}
-                    </div>
-                    <button
-                      className="h-10 px-6 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
+                    <Button
                       onClick={onRegisterManager}
                       disabled={loading || !email?.trim() || !name?.trim()}
+                      isLoading={loading}
                     >
                       {loading ? 'Creating...' : 'Create org & Send OTP'}
-                    </button>
+                    </Button>
                   </div>
                 )}
 
                 {signupStep === 2 && (
                   <>
                     <div className="flex items-center gap-3 mb-6 max-w-xl">
-                      <div className="flex-1 relative">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                          <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                          </svg>
-                        </div>
-                        <input
+                      <div className="flex-1">
+                        <Input
                           type="text"
                           placeholder="Enter 6-digit OTP"
-                          className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                           value={otp}
                           onChange={(e) => { dispatch(setOtp(e.target.value)); setFieldErrors((prev) => ({ ...prev, otp: '' })); }}
                           disabled={loading}
+                          error={fieldErrors.otp}
+                           leftIcon={
+                            <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                            </svg>
+                          }
                         />
-                        {fieldErrors.otp && <p className="text-xs text-red-500 mt-1">{fieldErrors.otp}</p>}
-                        {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                       </div>
-                      <button
-                        className="h-10 px-6 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
+                      <div className="mt-[-25px]"> 
+                       <Button
                         onClick={onVerifyOtp}
                         disabled={loading || otp.length !== 6}
+                        isLoading={loading}
                       >
                         {loading ? 'Verify OTP...' : 'Verify OTP'}
-                      </button>
+                      </Button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-600">
                       <span>
@@ -344,49 +341,46 @@ export default function SignUpPage() {
 
                 {signupStep === 3 && (
                   <div className="space-y-4 max-w-xl">
-                    <input
+                    <Input
                       type="text"
                       placeholder="First Name"
-                      className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                       value={firstName}
                       onChange={(e) => { dispatch(setFirstName(e.target.value)); setFieldErrors((prev) => ({ ...prev, firstName: '' })); }}
                       disabled={loading}
+                      error={fieldErrors.firstName}
                     />
-                    {fieldErrors.firstName && <p className="text-xs text-red-500 mt-1">{fieldErrors.firstName}</p>}
-                    <input
+                    <Input
                       type="text"
                       placeholder="Last Name"
-                      className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                       value={lastName}
                       onChange={(e) => { dispatch(setLastName(e.target.value)); setFieldErrors((prev) => ({ ...prev, lastName: '' })); }}
                       disabled={loading}
+                      error={fieldErrors.lastName}
                     />
-                    {fieldErrors.lastName && <p className="text-xs text-red-500 mt-1">{fieldErrors.lastName}</p>}
-                    <input
+                    <Input
                       type="password"
                       placeholder="Password"
-                      className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                       value={password}
                       onChange={(e) => { dispatch(setPassword(e.target.value)); setFieldErrors((prev) => ({ ...prev, password: '' })); }}
                       disabled={loading}
+                      error={fieldErrors.password}
                     />
-                    {fieldErrors.password && <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>}
-                    <input
+                    <Input
                       type="password"
                       placeholder="Confirm Password"
-                      className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                       value={confirmPassword}
                       onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, confirmPassword: '' })); }}
                       disabled={loading}
+                      error={fieldErrors.confirmPassword}
                     />
-                    {fieldErrors.confirmPassword && <p className="text-xs text-red-500 mt-1">{fieldErrors.confirmPassword}</p>}
-                    <button
-                      className="w-full h-10 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
+                    <Button
+                      fullWidth
                       onClick={onCompleteSignup}
                       disabled={loading || !firstName?.trim() || !lastName?.trim() || !name?.trim() || !password?.trim() || !confirmPassword?.trim()}
+                      isLoading={loading}
                     >
                       {loading ? 'Signing Up...' : 'Complete Signup'}
-                    </button>
+                    </Button>
                   </div>
                 )}
 
@@ -401,7 +395,7 @@ export default function SignUpPage() {
                   </Link>
                 </p>
 
-                <div className="relative my-6">
+                <div className="relative my-6 max-w-xl">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300" />
                   </div>
@@ -410,7 +404,7 @@ export default function SignUpPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-center">
+                <div className="flex justify-center max-w-xl">
                   <GoogleLogin
                     onSuccess={handleGoogleSignIn}
                     onError={() => {
@@ -429,7 +423,7 @@ export default function SignUpPage() {
       {/* Organization Name Modal for Google Signup */}
       {showOrgModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <Card className="w-full max-w-md shadow-xl" noPadding={false}>
             <h2 className="mb-2 text-xl font-bold text-gray-900">
               Create Organization
             </h2>
@@ -438,41 +432,37 @@ export default function SignUpPage() {
               please enter your Organization Name.
             </p>
             <form onSubmit={handleGoogleOrgSubmit}>
-              <div className="mb-4">
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Organization Name
-                </label>
-                <input
-                  type="text"
-                  value={googleOrgName}
-                  onChange={(e) => setGoogleOrgName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="e.g. Acme Corp"
-                  required
-                  autoFocus
-                />
-              </div>
+              <Input
+                label="Organization Name"
+                type="text"
+                value={googleOrgName}
+                onChange={(e) => setGoogleOrgName(e.target.value)}
+                placeholder="e.g. Acme Corp"
+                required
+                autoFocus
+                containerClassName="mb-4"
+              />
               <div className="flex justify-end gap-3">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => {
                     setShowOrgModal(false);
                     setPendingIdToken(null);
                   }}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={loading || !googleOrgName.trim()}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  isLoading={loading}
                 >
                   {loading ? "Creating..." : "Complete Signup"}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
       )}
 

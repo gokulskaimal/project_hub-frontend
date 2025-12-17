@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { useAdminData } from "@/hooks/useAdminData";
 import { User, Trash2, Ban, CheckCircle, RefreshCw, Mail, Building, Search, ArrowUpDown, Users } from "lucide-react";
+import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 
 export default function AdminUsersPage() {
   const { accessToken } = useSelector((s: RootState) => s.auth);
@@ -79,6 +81,55 @@ export default function AdminUsersPage() {
       setSortOrder("asc");
     }
   };
+  const confirmDeleteUser = async(userId : string) =>{
+    const result = await Swal.fire({
+      title : 'Are you sure?',
+      text : 'You want to delete this user?',
+      icon : 'warning',
+      showCancelButton : true,
+      confirmButtonText : 'Yes!',
+      cancelButtonText : 'No, cancel!',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+    })
+    if(result.isConfirmed){
+      await actions.deleteUser(userId);
+      actions.fetchData();
+    }
+  }
+
+  const confirmBlockUser = async(userId : string) =>{
+    const result = await Swal.fire({
+      title : 'Are you sure?',
+      text : 'You want to block this user?',
+      icon : 'warning',
+      showCancelButton : true,
+      confirmButtonText : 'Yes!',
+      cancelButtonText : 'No, cancel!',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+    })
+    if(result.isConfirmed){
+      await actions.updateUserStatus(userId,'BLOCKED');
+      actions.fetchData();
+    }
+  }
+  const confirmUnblockUser = async(userId : string) =>{
+    const result = await Swal.fire({
+      title : 'Are you sure?',
+      text : 'You want to unblock this user?',
+      icon : 'warning',
+      showCancelButton : true,
+      confirmButtonText : 'Yes!',
+      cancelButtonText : 'No, cancel!',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+    })
+    if(result.isConfirmed){
+      await actions.updateUserStatus(userId,'ACTIVE');
+      actions.fetchData();
+    }
+  }
 
   // Stats
   const stats = useMemo(() => {
@@ -254,7 +305,7 @@ export default function AdminUsersPage() {
                   <div className="flex gap-2 pt-4 border-t border-gray-100">
                     {isActive ? (
                       <button 
-                        onClick={() => actions.updateUserStatus(user.id, 'BLOCKED')} 
+                        onClick={() => confirmBlockUser(user.id)} 
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                         disabled={data.loading}
                       >
@@ -263,7 +314,7 @@ export default function AdminUsersPage() {
                       </button>
                     ) : (
                       <button 
-                        onClick={() => actions.updateUserStatus(user.id, 'ACTIVE')} 
+                        onClick={() => confirmUnblockUser(user.id)} 
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                         disabled={data.loading}
                       >
@@ -272,7 +323,7 @@ export default function AdminUsersPage() {
                       </button>
                     )}
                     <button 
-                      onClick={() => actions.deleteUser(user.id)} 
+                      onClick={() => confirmDeleteUser(user.id)} 
                       className="flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete User"
                       disabled={data.loading}

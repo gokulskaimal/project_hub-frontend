@@ -10,6 +10,9 @@ import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 // Components
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
 
 // Redux
 import { RootState, AppDispatch } from "@/store/store";
@@ -28,6 +31,7 @@ export default function LoginPage() {
 
   // Local state for form inputs (Performance Optimization)
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
 
   const { error, loading, isLoggedIn, role, accessToken } = useSelector((state: RootState) => state.auth);
 
@@ -39,6 +43,10 @@ export default function LoginPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error for field on change
+    if (formErrors[name as keyof typeof formErrors]) {
+      setFormErrors(prev => ({ ...prev, [name]: undefined }));
+    }
   };
 
   // Error/Redirect effects remain
@@ -84,7 +92,12 @@ export default function LoginPage() {
 
     const parsed = loginSchema.safeParse(formData);
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message ?? 'Invalid input');
+      const formattedErrors: { email?: string; password?: string } = {};
+      parsed.error.errors.forEach(err => {
+        if (err.path[0]) formattedErrors[err.path[0] as 'email' | 'password'] = err.message;
+      });
+      setFormErrors(formattedErrors);
+      toast.error('Please fix the errors');
       return;
     }
     // Dispatch login using local state data
@@ -138,52 +151,48 @@ export default function LoginPage() {
         <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[linear-gradient(135deg,rgba(36,99,235,0.25)_0%,rgba(119,80,226,0.25)_100%)] blur-[32px]" />
         <div className="relative flex min-h-full items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
           <div className="w-full max-w-md">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <Card className="shadow-sm sm:p-8">
               <div className="mb-8 text-center">
                 <h1 className="mb-1 text-2xl font-bold text-gray-900">Welcome back</h1>
                 <p className="text-sm text-gray-600">Sign in to continue to Project Hub</p>
               </div>
 
               <form onSubmit={handleSubmit} className="mb-2 space-y-4">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                <Input
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  error={formErrors.email}
+                  leftIcon={
                     <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                     </svg>
-                  </div>
-                  <input
-                    name="email"
-                    onChange={handleChange}
-                    value={formData.email}
-                    type="email"
-                    placeholder="you@example.com"
-                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
+                  }
+                />
 
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                <Input
+                  name="password"
+                  type="password"
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={formErrors.password}
+                  leftIcon={
                     <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                     </svg>
-                  </div>
-                  <input
-                    name="password"
-                    onChange={handleChange}
-                    value={formData.password}
-                    type="password"
-                    placeholder="Password"
-                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
+                  }
+                />
 
-                <button
+                <Button
                   type="submit"
-                  disabled={loading}
-                  className={`mb-6 w-full rounded-lg py-2.5 text-sm font-medium text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  fullWidth
+                  isLoading={loading}
                 >
                   {loading ? 'Signing in...' : 'Sign in'}
-                </button>
+                </Button>
               </form>
 
               <div className="mb-6 flex items-center justify-between">
@@ -204,47 +213,45 @@ export default function LoginPage() {
                   text="signin_with"
                 />
               </div>
-            </div>
+            </Card>
           </div>
         </div>
 
         {/* Organization Name Modal */}
         {showOrgModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <Card className="w-full max-w-md shadow-xl" noPadding={false}>
               <h2 className="mb-2 text-xl font-bold text-gray-900">Create Organization</h2>
               <p className="mb-4 text-sm text-gray-600">To complete your signup as a Manager, please enter your Organization Name.</p>
               <form onSubmit={handleOrgSubmit}>
-                <div className="mb-4">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Organization Name</label>
-                  <input
-                    type="text"
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="e.g. Acme Corp"
-                    required
-                    autoFocus
-                  />
-                </div>
+                <Input
+                  label="Organization Name"
+                  type="text"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  placeholder="e.g. Acme Corp"
+                  required
+                  autoFocus
+                  containerClassName="mb-4"
+                />
                 <div className="flex justify-end gap-3">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => { setShowOrgModal(false); setPendingIdToken(null); }}
-                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={loading}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    isLoading={loading}
                   >
                     {loading ? "Creating..." : "Complete Signup"}
-                  </button>
+                  </Button>
                 </div>
               </form>
-            </div>
+            </Card>
           </div>
         )}
       </main>
