@@ -24,12 +24,22 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
     if (accessToken && !user) {
       dispatch(fetchProfile());
     }
+    if (user && user.role !== 'ORG_MANAGER' && user.role !== 'admin') { // Basic protection
+        if (user.role === 'TEAM MEMBER' || user.role === 'member') {
+            router.push('/member/dashboard');
+        }
+    }
   }, [accessToken, user, dispatch]);
 
-  const profileHook = useMemberProfile(accessToken)
+   const profileHook = useMemberProfile(accessToken)
   const [userModalMode, setUserModalMode] = useState<'view' | 'edit'>('view')
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
 
   const handleLogout = async () => {
@@ -146,15 +156,25 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
             <button
               onClick={openProfile}
               className="flex items-center gap-3 hover:bg-gray-50 rounded-full pl-1 pr-3 py-1 transition-colors border border-transparent hover:border-gray-200"
+              suppressHydrationWarning
             >
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm">
-                {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+              <div 
+                className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm"
+                suppressHydrationWarning
+              >
+                {!isMounted ? 'U' : (user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U')}
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]" title={user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || user?.firstName || 'User')}>
-                  {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || user?.firstName || 'User')}
+                <p 
+                    className="text-sm font-medium text-gray-900 truncate max-w-[200px]" 
+                    title={!isMounted ? 'User' : (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || user?.firstName || 'User'))}
+                    suppressHydrationWarning
+                >
+                  {!isMounted ? 'User' : (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || user?.firstName || 'User'))}
                 </p>
-                <p className="text-xs text-gray-500 truncate max-w-[200px]">{user?.role || 'Manager'}</p>
+                <p className="text-xs text-gray-500 truncate max-w-[200px]" suppressHydrationWarning>
+                  {!isMounted ? 'Manager' : (user?.role || 'Manager')}
+                </p>
               </div>
             </button>
           </div>

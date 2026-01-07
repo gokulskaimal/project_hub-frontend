@@ -6,6 +6,7 @@ import CreateProjectModal from "@/components/modals/CreateProjectModal";
 import EditProjectModal from "@/components/modals/EditProjectModal";
 import api, { API_ROUTES } from "@/utils/api";
 import { Plus, Search, Filter, Calendar, Users, MoreHorizontal, ArrowRight, Trash2, Edit2, X } from "lucide-react";
+import Link from "next/link";
 import toast from "react-hot-toast";
 
 interface Project {
@@ -18,6 +19,8 @@ interface Project {
     priority: string;
     tags?: string[];
     teamMemberIds?: string[];
+    progress?: number;
+    budget?: number;
 }
 
 export default function ProjectsPage() {
@@ -136,6 +139,16 @@ export default function ProjectsPage() {
 
     return (
         <DashboardLayout title="Projects">
+            {/* Header Actions - Moved New Project here */}
+                <div className="flex justify-end mt-4 mb-6">
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm hover:shadow"
+                    >
+                        <Plus className="w-4 h-4" />
+                        New Project
+                    </button>
+                </div>
             <div className="space-y-8">
                 
                 {/* Stats Cards */}
@@ -178,16 +191,7 @@ export default function ProjectsPage() {
                     </div>
                 </div>
 
-                {/* Header Actions - Moved New Project here */}
-                <div className="flex justify-end -mt-16 mb-6">
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm hover:shadow"
-                    >
-                        <Plus className="w-4 h-4" />
-                        New Project
-                    </button>
-                </div>
+                
 
                 {/* Controls - Admin Style */}
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
@@ -209,6 +213,8 @@ export default function ProjectsPage() {
                             <select 
                                 value={statusFilter} 
                                 onChange={(e) => setStatusFilter(e.target.value)}
+                                aria-label="Filter projects by status"
+                                title="Filter projects by status"
                                 className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
                             >
                                 <option value="ALL">All Status</option>
@@ -224,6 +230,8 @@ export default function ProjectsPage() {
                             <select 
                                 value={priorityFilter} 
                                 onChange={(e) => setPriorityFilter(e.target.value)}
+                                aria-label="Filter projects by priority"
+                                title="Filter projects by priority"
                                 className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
                             >
                                 <option value="ALL">All Priority</option>
@@ -285,6 +293,8 @@ export default function ProjectsPage() {
                                         <div className="relative">
                                             <button 
                                                 onClick={(e) => toggleActionMenu(project.id, e)}
+                                                aria-label="Project actions menu"
+                                                title="Project actions menu"
                                                 className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600 transition-colors"
                                             >
                                                 <MoreHorizontal className="w-4 h-4" />
@@ -338,17 +348,20 @@ export default function ProjectsPage() {
                                 <div className="px-6 pb-6 pt-2">
                                     <div className="flex justify-between text-xs mb-1.5">
                                         <span className="font-medium text-gray-700">Progress</span>
-                                        <span className="text-gray-500">0%</span>
+                                        <span className="text-gray-500">{project.progress || 0}%</span>
                                     </div>
                                     <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-blue-600 w-[0%] rounded-full transition-all duration-500"></div>
+                                        <div 
+                                            className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                                            style={{ width: `${project.progress || 0}%` }}
+                                        ></div>
                                     </div>
                                 </div>
 
                                 <div className="border-t border-gray-50 p-4 bg-gray-50/30 flex justify-end">
-                                    <button className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 group-hover:gap-2 transition-all">
+                                    <Link href={`/manager/projects/${project.id}`} className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 group-hover:gap-2 transition-all">
                                         View Details <ArrowRight className="w-4 h-4" />
-                                    </button>
+                                    </Link>
                                 </div>
                             </div>
                         ))}

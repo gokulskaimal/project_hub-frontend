@@ -1,3 +1,4 @@
+import { Input } from '@/components/ui/Input';
 import { useState, useEffect } from 'react';
 import { X, Loader2, ArrowRight, ArrowLeft, Calendar, Users, Target, Check, Search } from 'lucide-react';
 import api, { API_ROUTES } from '@/utils/api';
@@ -32,7 +33,9 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
     status: 'PLANNING',
     priority: 'MEDIUM',
     tags: [] as string[],
-    teamMemberIds: [] as string[]
+    teamMemberIds: [] as string[],
+    budget: 0,
+    progress: 0
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -107,7 +110,8 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       toast.success('Project created successfully');
       setFormData({ 
           name: '', description: '', startDate: '', endDate: '', 
-          status: 'PLANNING', priority: 'MEDIUM', tags: [], teamMemberIds: [] 
+          status: 'PLANNING', priority: 'MEDIUM', tags: [], teamMemberIds: [],
+          budget: 0, progress: 0 
       });
       setStep(1);
       onSuccess();
@@ -176,14 +180,15 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
              {step === 1 && (
                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Project Name <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
+                        <Input
+                          label="Project Name"
+                          required
                           autoFocus
+                          size="lg"
+                          type="text"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           placeholder="e.g. Website Overhaul"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
                         />
                       </div>
                       <div>
@@ -193,7 +198,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           placeholder="What is this project about?"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm resize-none text-gray-900 placeholder-gray-500"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm resize-none text-gray-900 placeholder-gray-500 shadow-sm"
                         />
                       </div>
                  </div>
@@ -204,21 +209,21 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                       <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2">Start Date</label>
-                            <input
+                            <Input
+                            label="Start Date"
                             type="date"
+                            size="lg"
                             value={formData.startDate}
                             onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm text-gray-900"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2">End Date</label>
-                            <input
+                            <Input
+                            label="End Date"
                             type="date"
+                            size="lg"
                             value={formData.endDate}
                             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm text-gray-900"
                             />
                         </div>
                       </div>
@@ -229,7 +234,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                              <select
                                 value={formData.priority}
                                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm"
                              >
                                 <option value="LOW">Low</option>
                                 <option value="MEDIUM">Medium</option>
@@ -242,7 +247,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                              <select
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm"
                              >
                                 <option value="PLANNING">Planning</option>
                                 <option value="ACTIVE">Active</option>
@@ -262,13 +267,14 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                               ))}
                           </div>
                           <div className="flex gap-2">
-                             <input 
+                             <Input 
                                type="text" 
                                value={tagInput}
+                               size='lg'
+                               containerClassName="flex-1"
                                onChange={(e) => setTagInput(e.target.value)}
                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                                placeholder="Type tag & press enter"
-                               className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
                              />
                              <button onClick={addTag} type="button" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium text-sm transition-colors">Add</button>
                           </div>
@@ -280,13 +286,13 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
              {step === 3 && (
                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300 h-full flex flex-col">
                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input 
-                           type="text"
-                           value={memberSearch}
-                           onChange={(e) => setMemberSearch(e.target.value)}
-                           placeholder="Search team members..." 
-                           className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
+                        <Input
+                            leftIcon={<Search className="w-4 h-4" />}
+                            size='lg'
+                            type="text"
+                            value={memberSearch}
+                            onChange={(e) => setMemberSearch(e.target.value)}
+                            placeholder="Search team members..." 
                         />
                      </div>
                      <p className="text-sm text-gray-500 font-medium">Select members needed for this project</p>

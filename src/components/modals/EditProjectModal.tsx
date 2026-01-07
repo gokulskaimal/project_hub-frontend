@@ -1,5 +1,6 @@
+import { Input } from '@/components/ui/Input';
 import { useState, useEffect } from 'react';
-import { X, Loader2, Save, Calendar, Users, Target, Check, Search, Tag } from 'lucide-react';
+import { X, Loader2, Save, Calendar, Users, Target, Check, Search, Tag, Edit2 } from 'lucide-react';
 import api, { API_ROUTES } from '@/utils/api';
 import toast from 'react-hot-toast';
 
@@ -13,6 +14,8 @@ interface Project {
     priority: string;
     tags?: string[];
     teamMemberIds?: string[];
+    progress?: number;
+    budget?: number;
 }
 
 interface EditProjectModalProps {
@@ -44,7 +47,9 @@ export default function EditProjectModal({ isOpen, onClose, onSuccess, project }
     status: 'ACTIVE',
     priority: 'MEDIUM',
     tags: [] as string[],
-    teamMemberIds: [] as string[]
+    teamMemberIds: [] as string[],
+    budget: 0,
+    progress: 0
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -60,7 +65,9 @@ export default function EditProjectModal({ isOpen, onClose, onSuccess, project }
             status: project.status || 'ACTIVE',
             priority: project.priority || 'MEDIUM',
             tags: project.tags || [],
-            teamMemberIds: project.teamMemberIds || []
+            teamMemberIds: project.teamMemberIds || [],
+            budget: project.budget || 0,
+            progress: project.progress || 0
         });
         fetchMembers();
         setActiveTab('details');
@@ -158,12 +165,11 @@ export default function EditProjectModal({ isOpen, onClose, onSuccess, project }
              {activeTab === 'details' && (
                  <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Project Name</label>
-                        <input
+                        <Input
+                          label="PROJECT NAME"
                           type="text"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm text-gray-900"
                         />
                       </div>
                       
@@ -209,21 +215,41 @@ export default function EditProjectModal({ isOpen, onClose, onSuccess, project }
 
                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Start Date</label>
-                                <input
-                                type="date"
-                                value={formData.startDate}
-                                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm text-gray-900"
+                                <Input
+                                label="BUDGET ($)"
+                                type="number"
+                                min={0}
+                                value={formData.budget}
+                                onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">End Date</label>
-                                <input
+                                <Input
+                                label="PROGRESS (%)"
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={formData.progress}
+                                onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
+                                />
+                            </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Input
+                                label="START DATE"
+                                type="date"
+                                value={formData.startDate}
+                                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                label="END DATE"
                                 type="date"
                                 value={formData.endDate}
                                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm text-gray-900"
                                 />
                             </div>
                        </div>
@@ -239,13 +265,13 @@ export default function EditProjectModal({ isOpen, onClose, onSuccess, project }
                               ))}
                           </div>
                           <div className="flex gap-2">
-                             <input 
+                             <Input 
                                type="text" 
                                value={tagInput}
+                               containerClassName="flex-1"
                                onChange={(e) => setTagInput(e.target.value)}
                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                                placeholder="Add a tag..."
-                               className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
                              />
                              <button onClick={addTag} type="button" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors border border-gray-200">Add</button>
                           </div>
@@ -256,13 +282,12 @@ export default function EditProjectModal({ isOpen, onClose, onSuccess, project }
              {activeTab === 'team' && (
                  <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200 h-full flex flex-col">
                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input 
+                        <Input 
+                           leftIcon={<Search className="w-4 h-4" />}
                            type="text"
                            value={memberSearch}
                            onChange={(e) => setMemberSearch(e.target.value)}
                            placeholder="Search team members..." 
-                           className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
                         />
                      </div>
                      

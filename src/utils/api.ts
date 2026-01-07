@@ -37,7 +37,10 @@ export const API_ROUTES = {
     PROJECTS: {
       ROOT : "/projects",
       TASKS : "/projects/tasks"
-    }
+  },
+  ORGANIZATION: {
+      USERS: "/organization/users"
+  }
 } as const;
 
 export const api = axios.create({

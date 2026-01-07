@@ -6,6 +6,7 @@ interface CardProps {
   noPadding?: boolean;
 }
 
+// Basic Card Container
 export const Card: React.FC<CardProps> = ({
   children,
   className = "",
@@ -19,3 +20,19 @@ export const Card: React.FC<CardProps> = ({
     </div>
   );
 };
+
+// Card Header
+export const CardHeader: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
+  <div className={`mb-4 ${className}`}>{children}</div>
+);
+
+// Card Title
+export const CardTitle: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
+  <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>{children}</h3>
+);
+
+// Card Content
+export const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
+  <div className={className}>{children}</div>
+);
+

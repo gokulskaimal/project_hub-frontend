@@ -1,74 +1,125 @@
+import { Input } from '@/components/ui/Input';
 import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import api, { API_ROUTES } from '@/utils/api';
 import toast from 'react-hot-toast';
+import { PRIORITY_LEVELS } from '@/utils/constants';
+import { z } from 'zod';
+
+// Zod Schema
+// Zod Schema
+const taskSchema = z.object({
+  title: z.string().trim().min(3, "Title must be at least 3 characters"),
+  description: z.string().trim().optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+  dueDate: z.string().optional(),
+  assignedTo: z.string().optional(),
+});
+
+// [NEW] Add Task interface (or import it if available)
+interface Task {
+    id: string;
+    title: string;
+    description?: string;
+    priority: string;
+    dueDate?: string;
+    assignedTo?: string; // ID of assigned user
+    status?: string;
+}
+
+interface Member {
+    id: string; // adapted from backend _id or id
+    _id?: string;
+    firstName: string;
+    lastName?: string;
+    email: string;
+}
 
 interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   projectId: string;
+  task?: Task | null;
+  projectMembers: Member[]; // [NEW] Accept filtered members from parent
 }
 
-interface User {
-    _id: string; // The backend uses _id for the response from /manager/members or sometimes id? Note: ManagerController usually returns User Document.
-    // Actually ManagerController.getAllMembers returns Member[] which is User[]
-    // Let's assume the shape is { id: string, name: string, email: string }
-    id: string; 
-    firstName: string;
-    lastName?: string;
-    email: string;
-}
-
-export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId }: CreateTaskModalProps) {
+export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, task, projectMembers }: CreateTaskModalProps) {
   const [loading, setLoading] = useState(false);
-  const [members, setMembers] = useState<User[]>([]);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'MEDIUM',
+    priority: PRIORITY_LEVELS.MEDIUM as string,
     dueDate: '',
     assignedTo: ''
   });
 
+  const isEditing = !!task;
+
   useEffect(() => {
     if (isOpen) {
-        fetchMembers();
+        setFormErrors({});
+        // [UPDATED] Populate form
+        if (task) {
+            setFormData({
+                title: task.title,
+                description: task.description || '',
+                priority: task.priority || PRIORITY_LEVELS.MEDIUM,
+                dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+                assignedTo: task.assignedTo || ''
+            });
+        } else {
+             setFormData({ title: '', description: '', priority: PRIORITY_LEVELS.MEDIUM, dueDate: '', assignedTo: '' });
+        }
     }
-  }, [isOpen]);
+  }, [isOpen, task]);
 
-  const fetchMembers = async () => {
-      try {
-          const res = await api.get(API_ROUTES.MANAGER.MEMBERS);
-          // Backend Response Standard: { success: true, data: [...] }
-          // Members data usually comes as `res.data.data`
-          setMembers(res.data.data || []);
-      } catch (error) {
-          console.error("Failed to fetch members", error);
-      }
-  }
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title) return;
+    setFormErrors({});
+
+    // Validate using Zod
+    const result = taskSchema.safeParse(formData);
+    if (!result.success) {
+        const errors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+            if (err.path[0]) {
+                errors[err.path[0] as string] = err.message;
+            }
+        });
+        setFormErrors(errors);
+        return;
+    }
 
     setLoading(true);
     try {
-      // Backend expects /api/projects/:projectId/tasks
-      await api.post(`${API_ROUTES.PROJECTS.ROOT}/${projectId}/tasks`, {
-        ...formData,
-        projectId,
-        assignedTo: formData.assignedTo || undefined // Send undefined if empty string
-      });
-      toast.success('Task created successfully');
-      setFormData({ title: '', description: '', priority: 'MEDIUM', dueDate: '', assignedTo: '' });
+      if (isEditing && task) {
+          // [UPDATED] Update Logic
+          await api.put(`${API_ROUTES.PROJECTS.TASKS}/${task.id}`, {
+              ...formData,
+              priority: formData.priority,
+              assignedTo: formData.assignedTo || undefined
+          });
+          toast.success('Task updated successfully');
+      } else {
+          // Create Logic
+          await api.post(`${API_ROUTES.PROJECTS.ROOT}/${projectId}/tasks`, {
+            ...formData,
+            projectId,
+            assignedTo: formData.assignedTo || undefined
+          });
+          toast.success('Task created successfully');
+      }
+      
       onSuccess();
       onClose();
     } catch (error: any) {
-       // handled by interceptor
-       const message = error.message || "Failed to create task";
+       const message = error.message || "Failed to save task";
        toast.error(message);
     } finally {
       setLoading(false);
@@ -77,9 +128,9 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-          <h2 className="text-lg font-semibold text-gray-900">Add New Task</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{isEditing ? 'Edit Task' : 'Add New Task'}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -87,14 +138,13 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId 
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Task Title <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              required
+            <Input
+              label="Task Title"
+              required // Keep HTML required for basic UX, Zod for robust check
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g. Design Homepage"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
+              error={formErrors.title}
             />
           </div>
           
@@ -105,8 +155,9 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId 
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Task details..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm resize-none text-gray-900 placeholder-gray-500"
+              className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm resize-none text-gray-900 placeholder-gray-500 shadow-sm"
             />
+            {formErrors.description && <p className="text-xs text-red-500 mt-1">{formErrors.description}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -114,22 +165,22 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId 
                 <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                 <select
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900"
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm"
                 >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                    <option value="CRITICAL">Critical</option>
+                    {Object.values(PRIORITY_LEVELS).map(level => (
+                        <option key={level} value={level}>{level.charAt(0) + level.slice(1).toLowerCase()}</option>
+                    ))}
                 </select>
+                {formErrors.priority && <p className="text-xs text-red-500 mt-1">{formErrors.priority}</p>}
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input
+                <Input
+                label="Due Date"
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm text-gray-900"
+                error={formErrors.dueDate}
                 />
             </div>
           </div>
@@ -139,15 +190,16 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId 
             <select
                 value={formData.assignedTo}
                 onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900"
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm"
             >
                 <option value="">Unassigned</option>
-                {members.map(member => (
+                {projectMembers.map(member => (
                     <option key={member.id || member._id} value={member.id || member._id}>
                         {member.firstName} {member.lastName} ({member.email})
                     </option>
                 ))}
             </select>
+            {formErrors.assignedTo && <p className="text-xs text-red-500 mt-1">{formErrors.assignedTo}</p>}
           </div>
 
           <div className="pt-4 flex justify-end gap-3">
@@ -169,7 +221,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId 
                   Saving...
                 </>
               ) : (
-                'Create Task'
+                isEditing ? 'Update Task' : 'Create Task'
               )}
             </button>
           </div>

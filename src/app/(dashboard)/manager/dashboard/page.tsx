@@ -82,10 +82,11 @@ export default function ManagerDashboardPage() {
     <DashboardLayout title="Overview">
       <div className="space-y-8">
         {/* Header Actions */}
-         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        {/* Header Actions */}
+         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
              <div>
-                 <h2 className="text-sm font-semibold text-gray-900">Quick Actions</h2>
-                 <p className="text-xs text-gray-500">Common tasks for you</p>
+                 <h2 className="text-lg font-bold text-gray-900">Dashboard Overview</h2>
+                 <p className="text-sm text-gray-500">Manage your team and projects efficiently.</p>
              </div>
              <div className="flex gap-3">
                 <button
@@ -111,12 +112,12 @@ export default function ManagerDashboardPage() {
             const Icon = stat.icon;
             return (
               <Link key={index} href={stat.link} className="block group">
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex items-center transition-all duration-200 hover:shadow-md hover:-translate-y-1">
-                    <div className={`p-4 rounded-xl ${stat.bgColor} mr-5 transition-colors group-hover:bg-opacity-80`}>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center transition-all duration-200 hover:shadow-md hover:-translate-y-1">
+                    <div className={`p-3 rounded-lg ${stat.bgColor} mr-4 transition-colors group-hover:bg-opacity-80`}>
                         <Icon className={`w-6 h-6 ${stat.textColor}`} />
                     </div>
                     <div>
-                        <p className="text-sm text-gray-500 font-medium mb-1">{stat.label}</p>
+                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">{stat.label}</p>
                         <h3 className="text-2xl font-bold text-gray-900">
                         {loading ? "..." : stat.value}
                         </h3>
@@ -131,13 +132,15 @@ export default function ManagerDashboardPage() {
         </div>
 
         {/* Recent Activity Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-6">
-              <Activity className="w-5 h-5 text-gray-400" />
-              <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-gray-400" />
+                <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
+              </div>
           </div>
           
-          <div className="text-center py-16 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+          <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
                  <Activity className="w-6 h-6" />
              </div>

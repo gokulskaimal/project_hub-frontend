@@ -11,68 +11,28 @@ import toast from "react-hot-toast";
 export default function AdminUsersPage() {
   const { accessToken } = useSelector((s: RootState) => s.auth);
   const { data, actions } = useAdminData(accessToken);
-
-  // Search, Filter, Sort State
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterRole, setFilterRole] = useState("ALL");
-  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [page , setPage] = useState(1)
+  const [limit] = useState(10)
+  const [search , setSearch] = useState("")
+  const [role , setRole] = useState("ALL")
+  const [status, setStatus] = useState("ALL")
+  // Sort State (Client-side usage or future server-side)
   const [sortBy, setSortBy] = useState("email");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  useEffect(() => {
-    actions.fetchData();
-  }, [actions.fetchData]);
+  useEffect(()=>{
+    const timeoutId = setTimeout(() =>{
+      actions.fetchUsers({page,limit,search,role,status})
+    },500)
+    return () => clearTimeout(timeoutId)
+  },[page,limit,search,role,status])
 
-  // Derived Data
-  const filteredUsers = useMemo(() => {
-    let result = [...data.users];
+  const handleFilterChange = (setter : any , value : any) => {
+    setter(value)
+    setPage(1)
+  }
 
-    // Search
-    if (searchTerm) {
-      const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter(user => 
-        user.email.toLowerCase().includes(lowerTerm) ||
-        (user.orgId && user.orgId.toLowerCase().includes(lowerTerm)) ||
-        (user.firstName && user.firstName.toLowerCase().includes(lowerTerm)) ||
-        (user.lastName && user.lastName.toLowerCase().includes(lowerTerm))
-      );
-    }
-
-    // Filter
-    if (filterRole !== "ALL") {
-      result = result.filter(user => user.role === filterRole);
-    }
-    if (filterStatus !== "ALL") {
-      result = result.filter(user => (user.status || 'ACTIVE') === filterStatus);
-    }
-
-    // Sort
-    result.sort((a, b) => {
-      let valA = "";
-      let valB = "";
-
-      if (sortBy === "email") {
-        valA = a.email.toLowerCase();
-        valB = b.email.toLowerCase();
-      } else if (sortBy === "role") {
-        valA = a.role || "";
-        valB = b.role || "";
-      } else if (sortBy === "status") {
-        valA = a.status || "ACTIVE";
-        valB = b.status || "ACTIVE";
-      } else if (sortBy === "name") {
-        valA = (a.firstName || "").toLowerCase();
-        valB = (b.firstName || "").toLowerCase();
-      }
-
-      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }, [data.users, searchTerm, filterRole, filterStatus, sortBy, sortOrder]);
-
+  // Handlers
   const toggleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -94,7 +54,7 @@ export default function AdminUsersPage() {
     })
     if(result.isConfirmed){
       await actions.deleteUser(userId);
-      actions.fetchData();
+      actions.fetchUsers({ page, limit, search, role, status });
     }
   }
 
@@ -111,7 +71,7 @@ export default function AdminUsersPage() {
     })
     if(result.isConfirmed){
       await actions.updateUserStatus(userId,'BLOCKED');
-      actions.fetchData();
+      actions.fetchUsers({ page, limit, search, role, status });
     }
   }
   const confirmUnblockUser = async(userId : string) =>{
@@ -127,17 +87,18 @@ export default function AdminUsersPage() {
     })
     if(result.isConfirmed){
       await actions.updateUserStatus(userId,'ACTIVE');
-      actions.fetchData();
+      actions.fetchUsers({ page, limit, search, role, status });
     }
   }
 
-  // Stats
+  // Stats (Using Total from Server Response)
   const stats = useMemo(() => {
-    const total = data.users.length;
-    const active = data.users.filter(u => (u.status || 'ACTIVE') === 'ACTIVE').length;
-    const blocked = data.users.filter(u => (u.status || 'ACTIVE') !== 'ACTIVE').length;
-    return { total, active, blocked };
-  }, [data.users]);
+    const total = data.users.total || 0;
+    // Active/Blocked counts are not returned by the paginated API for the whole DB
+    // We would need separate API endpoints for stats to be accurate.
+    // For now, we display Total, and maybe placeholders or remove the others.
+    return { total, active: 0, blocked: 0 }; 
+  }, [data.users.total]);
 
   return (
     <div className="p-8 text-gray-900">
@@ -147,7 +108,7 @@ export default function AdminUsersPage() {
           <p className="text-gray-600 text-sm mt-1">Manage all registered users</p>
         </div>
         <button 
-          onClick={actions.fetchData} 
+          onClick={() => actions.fetchUsers({ page, limit, search, role, status })} 
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
         >
           <RefreshCw size={16} />
@@ -194,8 +155,8 @@ export default function AdminUsersPage() {
           <input 
             type="text" 
             placeholder="Search by name, email or org..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={search}
+            onChange={(e) => handleFilterChange(setSearch,e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 bg-white placeholder-gray-500"
           />
         </div>
@@ -203,8 +164,8 @@ export default function AdminUsersPage() {
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
           <select 
-            value={filterRole} 
-            onChange={(e) => setFilterRole(e.target.value)}
+            value={role} 
+            onChange={(e) => handleFilterChange(setRole, e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="ALL">All Roles</option>
@@ -213,8 +174,8 @@ export default function AdminUsersPage() {
           </select>
 
           <select 
-            value={filterStatus} 
-            onChange={(e) => setFilterStatus(e.target.value)}
+            value={status} 
+            onChange={(e) => handleFilterChange(setStatus, e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="ALL">All Status</option>
@@ -262,12 +223,12 @@ export default function AdminUsersPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.length === 0 ? (
+          {data.users.items.length === 0 ? (
             <div className="col-span-full text-center py-12 text-gray-600">
               No users found matching your criteria.
             </div>
           ) : (
-            filteredUsers.map((user) => {
+            data.users.items.map((user) => {
               const isBlocked = user.status === 'BLOCKED' || user.status === 'SUSPENDED';
               const isActive = user.status === 'ACTIVE';
 
@@ -337,6 +298,29 @@ export default function AdminUsersPage() {
           )}
         </div>
       )}
+
+      {/* Pagination Controls */}
+      <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl border border-gray-200">
+          <span className="text-sm text-gray-600">
+             Page {data.users.page} of {data.users.totalPages} ({data.users.total} users)
+          </span>
+          <div className="flex gap-2">
+             <button 
+                disabled={data.users.page <= 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+             >
+                Previous
+             </button>
+             <button 
+                disabled={data.users.page >= data.users.totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+             >
+                Next
+             </button>
+          </div>
+       </div>
     </div>
   );
 }

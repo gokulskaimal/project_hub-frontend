@@ -9,11 +9,14 @@ import { Users, Building2, CreditCard } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const { accessToken } = useSelector((s: RootState) => s.auth);
+  // data now contains { orgs: PaginatedResponse, users: PaginatedResponse }
   const { data: adminData, actions } = useAdminData(accessToken);
   const [plansCount, setPlansCount] = useState(0);
 
   useEffect(() => {
-    actions.fetchData();
+    // Fetch just 1 item to get the total count efficiently
+    actions.fetchOrgs({ limit: 1 });
+    actions.fetchUsers({ limit: 1 });
     
     const fetchPlansCount = async () => {
       try {
@@ -27,18 +30,18 @@ export default function AdminDashboardPage() {
     };
 
     fetchPlansCount();
-  }, [actions.fetchData]);
+  }, [actions.fetchOrgs, actions.fetchUsers]);
 
   const stats = [
     {
       label: "Total Organizations",
-      value: adminData.orgs.length,
+      value: adminData.orgs.total || 0, // Updated to use .total
       icon: Building2,
       color: "bg-blue-500",
     },
     {
       label: "Total Users",
-      value: adminData.users.length,
+      value: adminData.users.total || 0, // Updated to use .total
       icon: Users,
       color: "bg-green-500",
     },

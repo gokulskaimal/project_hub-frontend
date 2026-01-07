@@ -4,6 +4,7 @@ import { Provider } from "react-redux"
 import {store} from '@/store/store'
 import { GoogleOAuthProvider } from "@react-oauth/google"
 import { injectStore } from "@/utils/api"
+import { fetchProfile } from "@/features/auth/authSlice";
 
 // Inject store into api interceptors to avoid circular dependency
 injectStore(store);
@@ -12,6 +13,13 @@ export default function Providers({children} : {children : React.ReactNode}){
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
     
     React.useEffect(() => {
+        // [NEW] Restore User Profile on Refresh
+        const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+        if (token) {
+             // Dispatching directly to store since we are in the Provider wrapper
+             store.dispatch(fetchProfile());
+        }
+
         // Debugging: Log client ID and origin
         if (typeof window !== 'undefined') {
             console.log('[GoogleOAuth] Client ID:', clientId.substring(0, 20) + '...')

@@ -11,62 +11,24 @@ export default function AdminOrgsPage() {
   const { accessToken } = useSelector((s: RootState) => s.auth);
   const { data, actions } = useAdminData(accessToken);
 
-  // Search, Filter, Sort State
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [sortBy, setSortBy] = useState("name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  // Pagination & Filter State
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
 
   useEffect(() => {
-    actions.fetchData();
-  }, [actions.fetchData]);
+    const timeoutId = setTimeout(() => {
+        actions.fetchOrgs({ page, limit, search, status });
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [page, limit, search, status, actions.fetchOrgs]);
 
-  // Derived Data
-  const filteredOrgs = useMemo(() => {
-    let result = [...data.orgs];
-
-    // Search
-    if (searchTerm) {
-      const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter(org =>
-        org.name.toLowerCase().includes(lowerTerm)
-      );
-    }
-
-    // Filter
-    if (filterStatus !== "ALL") {
-      result = result.filter(org => (org.status || 'ACTIVE') === filterStatus);
-    }
-
-    // Sort
-    result.sort((a, b) => {
-      let valA = "";
-      let valB = "";
-
-      if (sortBy === "name") {
-        valA = a.name.toLowerCase();
-        valB = b.name.toLowerCase();
-      } else if (sortBy === "status") {
-        valA = a.status || "ACTIVE";
-        valB = b.status || "ACTIVE";
-      }
-
-      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }, [data.orgs, searchTerm, filterStatus, sortBy, sortOrder]);
-
-  const toggleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
-    }
+  const handleFilterChange = (setter: any, value: any) => {
+      setter(value);
+      setPage(1);
   };
+
   const confirmBlockOrg = async(orgId : string) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
@@ -80,7 +42,7 @@ export default function AdminOrgsPage() {
 
     if (result.isConfirmed) {
       await actions.updateOrgStatus(orgId, 'SUSPENDED');
-      await actions.fetchData();
+      await actions.fetchOrgs({ page, limit, search, status });
     }
   } 
   const confirmUnblockOrg = async(orgId : string) => {
@@ -96,7 +58,7 @@ export default function AdminOrgsPage() {
 
     if (result.isConfirmed) {
       await actions.updateOrgStatus(orgId, 'ACTIVE');
-      await actions.fetchData();
+      await actions.fetchOrgs({ page, limit, search, status });
     }
   }
 
@@ -113,17 +75,14 @@ export default function AdminOrgsPage() {
 
     if (result.isConfirmed) {
       await actions.deleteOrg(orgId);
-      await actions.fetchData();
+      await actions.fetchOrgs({ page, limit, search, status });
     }
   }
 
   // Stats
   const stats = useMemo(() => {
-    const total = data.orgs.length;
-    const active = data.orgs.filter(o => (o.status || 'ACTIVE') === 'ACTIVE').length;
-    const suspended = data.orgs.filter(o => (o.status || 'ACTIVE') !== 'ACTIVE').length;
-    return { total, active, suspended };
-  }, [data.orgs]);
+    return { total: data.orgs.total || 0 };
+  }, [data.orgs.total]);
 
   return (
     <div className="p-8 text-gray-900">
@@ -133,7 +92,7 @@ export default function AdminOrgsPage() {
           <p className="text-gray-600 text-sm mt-1">Manage registered organizations and their status</p>
         </div>
         <button
-          onClick={actions.fetchData}
+          onClick={() => actions.fetchOrgs({page, limit, search, status})}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
         >
           <RefreshCw size={16} />
@@ -152,24 +111,7 @@ export default function AdminOrgsPage() {
             <h3 className="text-2xl font-bold text-gray-900">{stats.total}</h3>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-          <div className="p-3 bg-green-50 rounded-lg text-green-600">
-            <CheckCircle size={24} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-600">Active Orgs</p>
-            <h3 className="text-2xl font-bold text-gray-900">{stats.active}</h3>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-          <div className="p-3 bg-red-50 rounded-lg text-red-600">
-            <Ban size={24} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-600">Suspended Orgs</p>
-            <h3 className="text-2xl font-bold text-gray-900">{stats.suspended}</h3>
-          </div>
-        </div>
+        {/* Removed specific status stats as they require separate API endpoints */}
       </div>
 
       {/* Controls */}
@@ -180,8 +122,8 @@ export default function AdminOrgsPage() {
           <input
             type="text"
             placeholder="Search by organization name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={search}
+            onChange={(e) => handleFilterChange(setSearch, e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 bg-white placeholder-gray-500"
           />
         </div>
@@ -189,31 +131,14 @@ export default function AdminOrgsPage() {
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
           <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            value={status}
+            onChange={(e) => handleFilterChange(setStatus, e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="ALL">All Status</option>
             <option value="ACTIVE">Active</option>
             <option value="SUSPENDED">Suspended</option>
           </select>
-
-          {/* Sort Toggles */}
-          <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-            <button
-              onClick={() => toggleSort("name")}
-              className={`px-3 py-2 text-sm flex items-center gap-1 ${sortBy === "name" ? "bg-blue-50 text-blue-700 font-medium" : "bg-white text-gray-700 hover:bg-gray-50"}`}
-            >
-              Name <ArrowUpDown size={14} />
-            </button>
-            <div className="w-px bg-gray-300"></div>
-            <button
-              onClick={() => toggleSort("status")}
-              className={`px-3 py-2 text-sm flex items-center gap-1 ${sortBy === "status" ? "bg-blue-50 text-blue-700 font-medium" : "bg-white text-gray-700 hover:bg-gray-50"}`}
-            >
-              Status <ArrowUpDown size={14} />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -223,12 +148,12 @@ export default function AdminOrgsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredOrgs.length === 0 ? (
+          {data.orgs.items.length === 0 ? (
             <div className="col-span-full text-center py-12 text-gray-600">
               No organizations found matching your criteria.
             </div>
           ) : (
-            filteredOrgs.map((org) => {
+            data.orgs.items.map((org) => {
               const isActive = org.status === 'ACTIVE';
 
               return (
@@ -259,7 +184,6 @@ export default function AdminOrgsPage() {
                     {isActive ? (
                       <button
                         onClick={() => confirmBlockOrg(org.id)}
-                        
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                         disabled={data.loading}
                       >
@@ -291,6 +215,30 @@ export default function AdminOrgsPage() {
           )}
         </div>
       )}
+
+      {/* Pagination Controls */}
+      <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl border border-gray-200">
+          <span className="text-sm text-gray-600">
+             Page {data.orgs.page} of {data.orgs.totalPages} ({data.orgs.total} organizations)
+          </span>
+          <div className="flex gap-2">
+             <button 
+                disabled={data.orgs.page <= 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+             >
+                Previous
+             </button>
+             <button 
+                disabled={data.orgs.page >= data.orgs.totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+             >
+                Next
+             </button>
+          </div>
+       </div>
     </div>
   );
 }
+
