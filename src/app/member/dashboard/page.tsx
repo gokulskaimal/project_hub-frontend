@@ -57,7 +57,7 @@ export default function MemberDashboard() {
            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome back, {user?.firstName}</h1>
            <p className="text-gray-500 mt-2">Here's what's happening today.</p>
         </div>
-        <div className="text-sm text-gray-400 font-medium">
+        <div className="text-sm text-gray-900 font-medium">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </div>
       </div>

@@ -21,6 +21,12 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const baseStyles =
     "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
@@ -40,6 +46,10 @@ export const Button: React.FC<ButtonProps> = ({
     lg: "px-6 py-3 text-base",
   };
 
+  // During SSR and initial hydration, we ignore the isLoading prop to prevent mismatch if state differs
+  const showLoading = isMounted && isLoading;
+  const isDisabled = isMounted ? (disabled || isLoading) : disabled;
+
   return (
     <button
       className={`
@@ -49,10 +59,10 @@ export const Button: React.FC<ButtonProps> = ({
         ${fullWidth ? "w-full" : ""}
         ${className}
       `}
-      disabled={disabled || isLoading}
+      disabled={isDisabled}
       {...props}
     >
-      {isLoading && (
+      {showLoading && (
         <svg
           className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
           xmlns="http://www.w3.org/2000/svg"
@@ -74,9 +84,9 @@ export const Button: React.FC<ButtonProps> = ({
           ></path>
         </svg>
       )}
-      {!isLoading && leftIcon && <span className="mr-2">{leftIcon}</span>}
+      {!showLoading && leftIcon && <span className="mr-2">{leftIcon}</span>}
       {children}
-      {!isLoading && rightIcon && <span className="ml-2">{rightIcon}</span>}
+      {!showLoading && rightIcon && <span className="ml-2">{rightIcon}</span>}
     </button>
   );
 };

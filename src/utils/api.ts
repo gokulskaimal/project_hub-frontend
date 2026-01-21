@@ -34,13 +34,13 @@ export const API_ROUTES = {
     INVITATIONS: "/manager/invitations",
     ORGANIZATION: "/manager/organization",
   },
-    PROJECTS: {
-      ROOT : "/projects",
-      TASKS : "/projects/tasks"
+  PROJECTS: {
+    ROOT: "/projects",
+    TASKS: "/projects/tasks",
   },
   ORGANIZATION: {
-      USERS: "/organization/users"
-  }
+    USERS: "/organization/users",
+  },
 } as const;
 
 export const api = axios.create({
@@ -50,10 +50,8 @@ export const api = axios.create({
 });
 
 // Dependency Injection for Store (to avoid circular dependency)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let appStore: any = null;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const injectStore = (store: any) => {
   appStore = store;
 };
@@ -101,7 +99,6 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-
     return Promise.reject(error);
   },
 );
@@ -109,7 +106,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     if (!response.config.skipGlobalLoader) {
-        hideLoader();
+      hideLoader();
     }
     return response;
   },
@@ -117,33 +114,31 @@ api.interceptors.response.use(
     // attempt to read config from error object
     const config = error?.config || error?.response?.config;
     if (!config?.skipGlobalLoader) {
-        hideLoader();
+      hideLoader();
     }
-    
+
     try {
       const data = error?.response?.data;
       const statusCode = error?.response?.status;
       const errorCode = data?.code;
 
       // Handle JWT token expiration
-      if (statusCode === 401 && errorCode === "TOKEN_EXPIRED") {
-        // Show toast notification
-        toast.error("Your session has expired. Please login again.");
-
+      if (statusCode === 401) {
         // Clear localStorage
-        if (typeof window !== "undefined") {
+        if (
+          typeof window !== "undefined" &&
+          !window.location.pathname.includes("/login")
+        ) {
+          // Show toast notification
+          toast.error("Your session has expired. Please login again.");
           localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-        }
-
-        // Redirect to login page
-        if (typeof window !== "undefined") {
+          localStorage.removeItem("role");
           setTimeout(() => {
             window.location.href = "/login";
-          }, 1000); // Give time for toast to be visible
-        }
+          }, 1000);
 
-        return Promise.reject(error);
+          return Promise.reject(error);
+        }
       }
 
       const extracted =

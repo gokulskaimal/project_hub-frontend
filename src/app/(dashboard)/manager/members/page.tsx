@@ -6,6 +6,7 @@ import { User, Trash2, Ban, CheckCircle, RefreshCw, Mail, Search, ArrowUpDown, U
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import InviteModal from "@/components/modals/InviteModal";
 
 interface Member {
   id: string;
@@ -20,6 +21,7 @@ interface Member {
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   
   // Search, Filter, Sort State
   const [searchTerm, setSearchTerm] = useState("");
@@ -171,15 +173,30 @@ export default function MembersPage() {
       <div className="space-y-6">
 
         {/* Header Actions */}
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-end mb-2 gap-3">
             <button 
                 onClick={fetchMembers}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-sm font-medium transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-medium transition-colors"
+                title="Refresh List"
             >
                 <RefreshCw size={16} />
-                Refresh Data
+                Refresh
+            </button>
+            
+            <button
+                onClick={() => setIsInviteModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-xl text-sm font-medium transition-colors shadow-sm hover:shadow"
+            >
+                <Mail size={16} />
+                Invite Member
             </button>
         </div>
+        
+        <InviteModal 
+            isOpen={isInviteModalOpen} 
+            onClose={() => setIsInviteModalOpen(false)}
+            onSuccess={fetchMembers}
+        />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

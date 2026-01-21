@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { api, API_ROUTES } from "../../utils/api";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { getFriendlyError } from "../../utils/errors";
@@ -51,25 +50,10 @@ const baseInitialState: AuthState = {
   user: null,
 };
 
-const loadPersistedAuth = (): Partial<AuthState> => {
-  try {
-    if (typeof window === "undefined") return {};
-    const token = localStorage.getItem("accessToken");
-    const role = localStorage.getItem("role");
-    if (token && role) {
-      return {
-        isLoggedIn: true,
-        accessToken: token,
-        role: normalizeRole(role),
-      };
-    }
-    return {};
-  } catch {
-    return {};
-  }
-};
+// [REMOVED] loadPersistedAuth (Moved to hydratoFromStorage action)
+// const loadPersistedAuth = ...
 
-const initialState: AuthState = { ...baseInitialState, ...loadPersistedAuth() };
+const initialState: AuthState = { ...baseInitialState };
 
 const normalizeRole = (role: string | null): string | null => {
   if (!role) return null;
@@ -477,11 +461,18 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "Failed to load profile";
+        state.isLoggedIn = false;
+        state.accessToken = null;
+        state.user = null;
+        state.role = null;
+        try {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("role");
+          }
+        } catch (err) {
+          console.log(err);
+        }
       });
   },
 });
@@ -498,4 +489,3 @@ export const {
   hydrateFromStorage,
 } = authSlice.actions;
 export default authSlice.reducer;
-
