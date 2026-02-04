@@ -125,12 +125,35 @@ export function useMemberProfile(token: string | null) {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setProfileImage(ev.target?.result as string);
-    reader.readAsDataURL(file);
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "profiles");
+
+      const res = await api.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data.success) {
+        setProfileImage(res.data.data.url);
+        toast.success("Image uploaded successfully");
+      }
+    } catch (err) {
+      toast.error(getFriendlyError(err, "Failed to upload image"));
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const removeImage = () => {
