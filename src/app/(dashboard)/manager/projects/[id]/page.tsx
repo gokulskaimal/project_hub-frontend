@@ -12,10 +12,12 @@ import { taskService, Task } from "@/services/taskService";
 import { userService, User } from "@/services/userService";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import { PRIORITY_LEVELS, PROJECT_STATUS } from "@/utils/constants";
-import { projectService, Project } from "@/services/projectService"; // Ensure this service exists
-import { useSocket } from "@/context/SocketContext";
+import ProjectChat from "@/components/chat/ProjectChat";
+import { MessageSquare } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { useSocket } from "@/context/SocketContext";
+import { projectService, Project } from "@/services/projectService";
 
 export default function ProjectDetailsPage() {
     const params = useParams();
@@ -31,6 +33,7 @@ export default function ProjectDetailsPage() {
     const [orgUsers, setOrgUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<"LIST" | "BOARD">("LIST");
+    const [activeTab, setActiveTab] = useState<"TASKS" | "CHAT">("TASKS");
 
     // Filter & Search State
     const [searchQuery, setSearchQuery] = useState("");
@@ -232,9 +235,44 @@ export default function ProjectDetailsPage() {
                 </div>
             </div>
 
+            {/* Tabs */}
+            <div className="flex items-center gap-4 border-b border-gray-200">
+                <button
+                    onClick={() => setActiveTab("TASKS")}
+                    className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+                        activeTab === "TASKS" 
+                            ? "text-blue-600 border-b-2 border-blue-600" 
+                            : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    <div className="flex items-center gap-2">
+                        <LayoutGrid className="w-4 h-4" />
+                        Tasks
+                    </div>
+                </button>
+                <button
+                    onClick={() => setActiveTab("CHAT")}
+                    className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+                        activeTab === "CHAT" 
+                            ? "text-blue-600 border-b-2 border-blue-600" 
+                            : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        Chat
+                    </div>
+                </button>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Main Content: Tasks */}
+                {/* Main Content: Tasks or Chat */}
                 <div className="lg:col-span-3 space-y-6">
+                    
+                    {activeTab === "CHAT" ? (
+                        <ProjectChat projectId={projectId} />
+                    ) : (
+                        <>
                     
                     {/* Summary Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -305,7 +343,7 @@ export default function ProjectDetailsPage() {
                                     <option key={user.id} value={user.id}>{user.firstName} {user.lastName}</option>
                                 ))}
                             </select>
-
+ 
                             {/* Status Filter */}
                             <div className="relative">
                                 <select
@@ -429,6 +467,8 @@ export default function ProjectDetailsPage() {
                             );
                             })}
                         </div>
+                    )}
+                        </>
                     )}
                 </div>
 

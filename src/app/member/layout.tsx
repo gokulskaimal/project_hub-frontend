@@ -10,6 +10,7 @@ import UserModal from "@/components/modals/UserModal";
 import { useMemberProfile } from "@/hooks/useMemberProfile";
 import NotificationBell from '@/components/notifications/NotificationBell';
 import SocketNotification from '@/components/notifications/SocketNotification';
+import ChatNotificationListener from '@/components/chat/ChatNotificationListener';
 import { LayoutDashboard, FolderKanban, CheckSquare, LogOut, Menu, X } from "lucide-react";
 
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
@@ -136,6 +137,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
           <div className="flex items-center gap-4 shrink-0 ml-auto">
              {/* Socket Notification Listener */}
              <SocketNotification />
+             <ChatNotificationListener />
              {/* Notification Bell */}
              <NotificationBell />
 

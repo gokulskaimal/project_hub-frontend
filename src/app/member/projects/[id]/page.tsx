@@ -14,6 +14,9 @@ import { RootState } from "@/store/store";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import { Plus } from "lucide-react";
 
+import ProjectChat from "@/components/chat/ProjectChat";
+import { MessageSquare } from "lucide-react";
+
 export default function MemberProjectDetailsPage() {
     const params = useParams();
     const router = useRouter();
@@ -23,6 +26,7 @@ export default function MemberProjectDetailsPage() {
     const [project, setProject] = useState<Project | null>(null);
     const [orgUsers, setOrgUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<"TASKS" | "CHAT">("TASKS");
 
     // Controls
     const [searchQuery, setSearchQuery] = useState("");
@@ -31,8 +35,10 @@ export default function MemberProjectDetailsPage() {
     const [viewAll, setViewAll] = useState(false); // Default to "My Tasks"
     const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
 
+
     // Get Current User
     const { user } = useSelector((state: RootState) => state.auth);
+    const isManager = user?.role === 'org-manager';
 
 
     const { socket, isConnected } = useSocket();
@@ -170,9 +176,44 @@ export default function MemberProjectDetailsPage() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+             {/* Tabs */}
+             <div className="flex items-center gap-4 border-b border-gray-200">
+                <button
+                    onClick={() => setActiveTab("TASKS")}
+                    className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+                        activeTab === "TASKS" 
+                            ? "text-blue-600 border-b-2 border-blue-600" 
+                            : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    <div className="flex items-center gap-2">
+                        <LayoutGrid className="w-4 h-4" />
+                        Tasks
+                    </div>
+                </button>
+                <button
+                    onClick={() => setActiveTab("CHAT")}
+                    className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+                        activeTab === "CHAT" 
+                            ? "text-blue-600 border-b-2 border-blue-600" 
+                            : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        Chat
+                    </div>
+                </button>
+            </div>
+
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Main Content: Tasks */}
                 <div className="lg:col-span-3 space-y-6">
+                     {activeTab === "CHAT" ? (
+                        <ProjectChat projectId={projectId} />
+                    ) : (
+                        <>
                     {/* Controls Bar */}
                     <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
                         {/* Search */}
@@ -192,13 +233,15 @@ export default function MemberProjectDetailsPage() {
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
 
                             {/* Create Task Button */}
-                            <button
-                                onClick={() => setIsCreateTaskModalOpen(true)}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Create Task</span>
-                            </button>
+                            {isManager && (
+                                <button
+                                    onClick={() => setIsCreateTaskModalOpen(true)}
+                                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Create Task</span>
+                                </button>
+                            )}
 
                             {/* View Toggle Button */}
                             <button
@@ -339,6 +382,8 @@ export default function MemberProjectDetailsPage() {
                             );
                             })}
                         </div>
+                    )}
+                        </>
                     )}
                 </div>
 

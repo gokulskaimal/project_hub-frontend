@@ -16,11 +16,13 @@ export default function SocketNotification() {
             // Add to Redux Store
             dispatch(addNotification(notification));
             
-            // Show Toast
-            toast(notification.message, {
-                icon: notification.type === 'SUCCESS' ? '✅' : 'ℹ️',
-                duration: 4000
-            });
+            // Show Toast only if it's NOT a chat message (ChatNotificationListener handles that)
+            if (notification.title !== "New Chat Message") {
+                toast(notification.message, {
+                    icon: notification.type === 'SUCCESS' ? '✅' : 'ℹ️',
+                    duration: 4000
+                });
+            }
         };
 
         socket.on("notification:new", handleNotification);

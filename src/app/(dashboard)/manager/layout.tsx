@@ -12,6 +12,7 @@ import { useMemberProfile } from '@/hooks/useMemberProfile';
 import { LayoutDashboard, Users, Mail, CreditCard, LogOut, Menu, X } from 'lucide-react';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import SocketNotification from '@/components/notifications/SocketNotification';
+import ChatNotificationListener from '@/components/chat/ChatNotificationListener';
 
 
 
@@ -27,13 +28,13 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
       dispatch(fetchProfile());
     }
     if (user && user.role !== 'ORG_MANAGER' && user.role !== 'admin') { // Basic protection
-        if (user.role === 'TEAM MEMBER' || user.role === 'member') {
-            router.push('/member/dashboard');
-        }
+      if (user.role === 'TEAM MEMBER' || user.role === 'member') {
+        router.push('/member/dashboard');
+      }
     }
   }, [accessToken, user, dispatch]);
 
-   const profileHook = useMemberProfile(accessToken)
+  const profileHook = useMemberProfile(accessToken)
   const [userModalMode, setUserModalMode] = useState<'view' | 'edit'>('view')
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -100,8 +101,8 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive
-                    ? 'text-blue-600 bg-blue-50 font-medium'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'text-blue-600 bg-blue-50 font-medium'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
@@ -127,13 +128,13 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
           <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden text-gray-500 shrink-0">
             <Menu className="w-6 h-6" />
           </button>
-          
+
           {/* Search Bar - Moved from DashboardLayout */}
 
           <div className="flex items-center gap-4 shrink-0 ml-auto">
-             {/* Socket Notification Listener */}
-             <SocketNotification />
-             {/* Notification Bell */}
+            {/* Socket Notification Listener */}
+            <SocketNotification />
+            {/* Notification Bell */}
             <NotificationBell />
 
             <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
@@ -143,17 +144,17 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
               className="flex items-center gap-3 hover:bg-gray-50 rounded-full pl-1 pr-3 py-1 transition-colors border border-transparent hover:border-gray-200"
               suppressHydrationWarning
             >
-              <div 
+              <div
                 className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm"
                 suppressHydrationWarning
               >
                 {!isMounted ? 'U' : (user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U')}
               </div>
               <div className="hidden md:block text-left">
-                <p 
-                    className="text-sm font-medium text-gray-900 truncate max-w-[200px]" 
-                    title={!isMounted ? 'User' : (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || user?.firstName || 'User'))}
-                    suppressHydrationWarning
+                <p
+                  className="text-sm font-medium text-gray-900 truncate max-w-[200px]"
+                  title={!isMounted ? 'User' : (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || user?.firstName || 'User'))}
+                  suppressHydrationWarning
                 >
                   {!isMounted ? 'User' : (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || user?.firstName || 'User'))}
                 </p>

@@ -2,6 +2,7 @@
 
 import React, { ReactNode } from "react";
 import SocketNotification from "../notifications/SocketNotification";
+import ChatNotificationListener from "../chat/ChatNotificationListener";
 
 type Props = {
   title: string;
@@ -18,6 +19,7 @@ export default function DashboardLayout({ title, children }: Props) {
   return (
     <div className="flex flex-col h-full">
       <SocketNotification />
+      <ChatNotificationListener />
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
