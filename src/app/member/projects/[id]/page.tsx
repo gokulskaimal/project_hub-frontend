@@ -7,8 +7,12 @@ import { toast } from "react-hot-toast";
 import { taskService, Task } from "@/services/taskService";
 import { userService, User } from "@/services/userService";
 import { projectService, Project } from "@/services/projectService";
-import { ArrowLeft, Search, Filter, Calendar, Users, Briefcase } from "lucide-react";
+import { ArrowLeft, Search, Filter, Calendar, Users, Briefcase, Eye, EyeOff, LayoutGrid } from "lucide-react";
 import { useSocket } from "@/context/SocketContext";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import CreateTaskModal from "@/components/modals/CreateTaskModal";
+import { Plus } from "lucide-react";
 
 export default function MemberProjectDetailsPage() {
     const params = useParams();
@@ -24,6 +28,12 @@ export default function MemberProjectDetailsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [priorityFilter, setPriorityFilter] = useState("ALL");
+    const [viewAll, setViewAll] = useState(false); // Default to "My Tasks"
+    const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+
+    // Get Current User
+    const { user } = useSelector((state: RootState) => state.auth);
+
 
     const { socket, isConnected } = useSocket();
 
@@ -66,18 +76,37 @@ export default function MemberProjectDetailsPage() {
     const loadData = async () => {
         try {
             setLoading(true);
-            // Parallel data fetching
             const [fetchedTasks, fetchedUsers, fetchedProject] = await Promise.all([
-                taskService.getProjetTasks(projectId),
-                userService.getOrganizationUsers(),
-                projectService.getProject(projectId)
+                taskService.getProjetTasks(projectId).catch(err => {
+                   console.error("Failed to fetch tasks", err);
+                   return [];
+                }),
+                userService.getOrganizationUsers().catch(err => {
+                    console.error("Failed to fetch users", err);
+                    return [];
+                }),
+                projectService.getProject(projectId).catch(err => {
+                    // Check if error is 404
+                    if (err?.response?.status === 404 || err?.message?.includes("not found")) {
+                        return null; // Handle specifically
+                    }
+                    throw err;
+                })
             ]);
+
+            if (!fetchedProject) {
+                toast.error("Project not found or has been deleted.");
+                router.push('/member/dashboard');
+                return;
+            }
+
             setTasks(fetchedTasks);
             setOrgUsers(fetchedUsers);
             setProject(fetchedProject);
         } catch (error: any) {
             toast.error("Failed to load project data");
             console.error(error);
+            router.push('/member/dashboard');
         } finally {
             setLoading(false);
         }
@@ -85,7 +114,6 @@ export default function MemberProjectDetailsPage() {
 
     const handleStatusChange = async (taskId: string, newStatus: string) => {
         try {
-            // Optimistic UI update
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus as any } : t));
             await taskService.updateTask(taskId, { status: newStatus as any });
             toast.success("Status updated");
@@ -105,6 +133,10 @@ export default function MemberProjectDetailsPage() {
         const user = orgUsers.find(u => u.id === userId);
         return user ? `${user.firstName} ${user.lastName}` : "Unknown User";
     }
+
+    // Get Team Members first to use in Filter logic if needed, 
+    // but typically we use orgUsers filtered by project member IDs
+    const teamMembers = orgUsers.filter(user => project?.teamMemberIds?.includes(user.id));
 
     if (loading) {
         return (
@@ -128,66 +160,16 @@ export default function MemberProjectDetailsPage() {
             (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesStatus = statusFilter === "ALL" || task.status === statusFilter;
         const matchesPriority = priorityFilter === "ALL" || task.priority === priorityFilter;
-        return matchesSearch && matchesStatus && matchesPriority;
+        
+        // Visibility Logic
+        const isAssignedToMe = task.assignedTo === user?.id;
+        const matchesVisibility = viewAll || isAssignedToMe;
+
+        return matchesSearch && matchesStatus && matchesPriority && matchesVisibility;
     });
 
-    // Get Team Members
-    const teamMembers = orgUsers.filter(user => project?.teamMemberIds?.includes(user.id));
-
     return (
-        <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
-
-            {/* Back Button */}
-            <button
-                onClick={() => router.back()}
-                className="flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors"
-            >
-                <ArrowLeft className="w-4 h-4 mr-1" /> Back to Projects
-            </button>
-
-
-
-            {/* Header Section */}
-            <Card className="p-6 bg-white border-gray-100 shadow-sm">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{project?.name || 'Project Tasks'}</h1>
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${project?.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                                    project?.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                                }`}>
-                                {project?.status}
-                            </span>
-                        </div>
-                        <p className="text-gray-500 text-sm max-w-2xl">{project?.description || `Project ID: ${projectId}`}</p>
-                    </div>
-                    <div className="flex items-center gap-6 bg-gray-50 px-6 py-3 rounded-xl border border-gray-100 self-stretch md:self-auto justify-between md:justify-start">
-                        <div className="text-center">
-                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Progress</p>
-                            <div className="flex items-center gap-2">
-                                <div className="w-12 h-12 relative flex items-center justify-center">
-                                    <svg className="transform -rotate-90 w-12 h-12">
-                                        <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-gray-200" />
-                                        <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={126} strokeDashoffset={126 - (126 * progress) / 100} className="text-blue-600 transition-all duration-1000 ease-out" />
-                                    </svg>
-                                    <span className="absolute text-[10px] font-bold">{progress}%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="w-px h-10 bg-gray-200"></div>
-                        <div className="text-center">
-                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Total</p>
-                            <p className="text-2xl font-bold text-gray-900">{totalTasks}</p>
-                        </div>
-                        <div className="w-px h-10 bg-gray-200"></div>
-                        <div className="text-center">
-                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Done</p>
-                            <p className="text-2xl font-bold text-green-600">{completedTasks}</p>
-                        </div>
-                    </div>
-                </div>
-            </Card>
-
+        <div className="space-y-6 animate-in fade-in duration-500">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Main Content: Tasks */}
                 <div className="lg:col-span-3 space-y-6">
@@ -195,18 +177,51 @@ export default function MemberProjectDetailsPage() {
                     <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
                         {/* Search */}
                         <div className="relative w-full md:max-w-md">
-                            <input
-                                type="text"
-                                placeholder="Search tasks..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black transition-all"
-                            />
-                            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search tasks..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black transition-all"
+                                />
+                                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            </div>
+
 
                         {/* Filters */}
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+
+                            {/* Create Task Button */}
+                            <button
+                                onClick={() => setIsCreateTaskModalOpen(true)}
+                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Create Task</span>
+                            </button>
+
+                            {/* View Toggle Button */}
+                            <button
+                                onClick={() => setViewAll(!viewAll)}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                    viewAll 
+                                        ? 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100' 
+                                        : 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100'
+                                }`}
+                            >
+                                {viewAll ? (
+                                    <>
+                                        <EyeOff className="w-4 h-4" />
+                                        <span>Show My Tasks Only</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Eye className="w-4 h-4" />
+                                        <span>View All Tasks</span>
+                                    </>
+                                )}
+                            </button>
+
                             <div className="relative">
                                 <select
                                     value={statusFilter}
@@ -244,7 +259,7 @@ export default function MemberProjectDetailsPage() {
                             <p className="text-gray-500 mt-1 text-sm">No tasks match your current filters.</p>
                             {(searchQuery || statusFilter !== "ALL" || priorityFilter !== "ALL") && (
                                 <button
-                                    onClick={() => { setSearchQuery(""); setStatusFilter("ALL"); setPriorityFilter("ALL") }}
+                                    onClick={() => { setSearchQuery(""); setStatusFilter("ALL"); setPriorityFilter("ALL"); }}
                                     className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium underline underline-offset-2"
                                 >
                                     Clear Filters
@@ -255,23 +270,21 @@ export default function MemberProjectDetailsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {filteredTasks.map((task) => (
                                 <div key={task.id} className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden">
+                                    {/* Task Card Content - Identical to previous version */}
                                     <div className="p-5 flex flex-col h-full">
-                                        {/* Header: Priority & Date */}
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex items-center gap-2">
                                                 <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider uppercase ${task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'bg-red-50 text-red-600 border border-red-100' :
-                                                        task.priority === 'MEDIUM' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-green-50 text-green-600 border border-green-100'
+                                                    task.priority === 'MEDIUM' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-green-50 text-green-600 border border-green-100'
                                                     }`}>
                                                     {task.priority}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        {/* Content */}
                                         <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">{task.title}</h3>
                                         <p className="text-sm text-gray-500 line-clamp-3 mb-4 flex-1">{task.description || "No description provided."}</p>
 
-                                        {/* Assignee & Date */}
                                         <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50 mb-4">
                                             <div className="flex items-center gap-2">
                                                 {task.assignedTo ? (
@@ -293,19 +306,18 @@ export default function MemberProjectDetailsPage() {
                                             )}
                                         </div>
 
-                                        {/* Footer: Status Action */}
                                         <div className="relative">
                                             <div className={`absolute inset-y-0 left-0 w-1 rounded-l-md ${task.status === 'DONE' ? 'bg-green-500' :
-                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-500' :
-                                                        task.status === 'REVIEW' ? 'bg-purple-500' : 'bg-gray-400'
+                                                task.status === 'IN_PROGRESS' ? 'bg-blue-500' :
+                                                    task.status === 'REVIEW' ? 'bg-purple-500' : 'bg-gray-400'
                                                 }`}></div>
                                             <select
                                                 value={task.status}
                                                 onChange={(e) => handleStatusChange(task.id, e.target.value)}
                                                 className={`w-full appearance-none pl-4 pr-8 py-2.5 rounded-lg text-sm font-semibold cursor-pointer outline-none border transition-all hover:bg-opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${task.status === 'DONE' ? 'bg-green-50 text-green-700 border-green-200' :
-                                                        task.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                            task.status === 'REVIEW' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                                'bg-gray-50 text-gray-700 border-gray-200'
+                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                        task.status === 'REVIEW' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                            'bg-gray-50 text-gray-700 border-gray-200'
                                                     }`}
                                             >
                                                 <option value="TODO">To Do</option>
@@ -321,9 +333,8 @@ export default function MemberProjectDetailsPage() {
                     )}
                 </div>
 
-                {/* Side Panel: Team & Details */}
+                {/* Side Panel: Team & Details - Unchanged */}
                 <div className="space-y-6">
-                    {/* Team Members */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
                         <div className="flex items-center gap-2 mb-4">
                             <Users className="w-4 h-4 text-gray-500" />
@@ -351,7 +362,6 @@ export default function MemberProjectDetailsPage() {
                         </div>
                     </div>
 
-                    {/* Project Info Card */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
                         <div className="flex items-center gap-2 mb-4">
                             <Briefcase className="w-4 h-4 text-gray-500" />
@@ -376,8 +386,8 @@ export default function MemberProjectDetailsPage() {
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Priority</p>
                                 <span className={`inline-flex px-2 py-1 rounded text-xs font-bold ${project?.priority === 'CRITICAL' ? 'bg-red-100 text-red-700' :
-                                        project?.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
-                                            project?.priority === 'MEDIUM' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                                    project?.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+                                        project?.priority === 'MEDIUM' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
                                     }`}>
                                     {project?.priority}
                                 </span>
@@ -386,6 +396,20 @@ export default function MemberProjectDetailsPage() {
                     </div>
                 </div>
             </div>
+            {/* Create Task Modal */}
+            <CreateTaskModal
+                isOpen={isCreateTaskModalOpen}
+                onClose={() => setIsCreateTaskModalOpen(false)}
+                onSuccess={() => {
+                    // Task creation handled by Socket, but we can refresh to be safe or rely on socket
+                    // socket listener will add it.
+                    // If socket fails, we might want to re-fetch? 
+                    // Let's rely on socket or just re-fetch tasks quietly.
+                    taskService.getProjetTasks(projectId).then(setTasks);
+                }}
+                projectId={projectId}
+                projectMembers={teamMembers}
+            />
         </div>
     );
 }

@@ -20,15 +20,20 @@ export const useSocket = () => useContext(SocketContext);
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-    const { accessToken, user } = useSelector((state: RootState) => state.auth)
+    const { accessToken, user , loading} = useSelector((state: RootState) => state.auth)
 
     useEffect(() => {
-        if (accessToken && user) {
+        if (accessToken && user && !loading) {
+            if(socket?.connected) return;
+
             const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000", {
                 auth: {
                     token: accessToken
                 },
-                withCredentials: true
+                withCredentials: true,
+                reconnection : true,
+                reconnectionAttempts : 5,
+                reconnectionDelay : 1000,
             })
 
             socketInstance.on("connect", () =>{
@@ -58,7 +63,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                  setIsConnected(false);
              }
         }
-    },[accessToken , user?.id])
+    },[accessToken , user?.id , loading])
 
     return(
         <SocketContext.Provider value={{socket , isConnected}}>

@@ -17,7 +17,9 @@ interface RazorpayResponse {
 
 interface RazorpayOptions {
   key: string | undefined;
-  subscription_id: string;
+  amount: number;
+  currency: string;
+  order_id: string; // Changed from subscription_id
   name: string;
   description: string;
   handler: (response: RazorpayResponse) => Promise<void>;
@@ -30,7 +32,8 @@ interface SubscriptionResponse {
   success: boolean;
   data: {
     id: string;
-    key_id: string;
+    amount: number;
+    currency: string;
   };
 }
 
@@ -77,24 +80,23 @@ export default function ManagerPlansPage() {
       }
 
       const response = await api.post<SubscriptionResponse>(
-        '/payments/subscription',
+        '/payments/order',
         { planId },
       );
 
-      const { id: subscription_id, key_id } = response.data.data;
+      const { id: order_id, amount, currency } = response.data.data;
 
-      if (subscription_id.startsWith("sub_free_") || subscription_id.startsWith("sub_mock_")) {
+      if (order_id.startsWith("order_mock_")) {
         try {
           await api.post(
             '/payments/verify',
             {
               razorpay_payment_id: `pay_mock_${Date.now()}`,
-              razorpay_order_id: `order_mock_${Date.now()}`,
+              razorpay_order_id: order_id,
               razorpay_signature: `sig_mock_${Date.now()}`,
-              razorpay_subscription_id: subscription_id
             },
           );
-          toast.success('Subscription successful!');
+          toast.success('Plan upgraded successfully!');
           fetchData();
         } catch {
           toast.error('Payment verification failed');
@@ -103,8 +105,10 @@ export default function ManagerPlansPage() {
       }
 
       const options: RazorpayOptions = {
-        key: key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        subscription_id: subscription_id,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: amount,
+        currency: currency,
+        order_id: order_id,
         name: "Project Hub",
         description: "Subscription",
         handler: async function (response: RazorpayResponse) {
@@ -114,8 +118,7 @@ export default function ManagerPlansPage() {
               {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                razorpay_subscription_id: response.razorpay_subscription_id
+                razorpay_signature: response.razorpay_signature
               },
             );
             toast.success('Subscription successful!');

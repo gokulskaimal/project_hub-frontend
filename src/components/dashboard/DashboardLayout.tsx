@@ -1,6 +1,7 @@
 "use client";
 
 import React, { ReactNode } from "react";
+import SocketNotification from "../notifications/SocketNotification";
 
 type Props = {
   title: string;
@@ -16,6 +17,7 @@ type Props = {
 export default function DashboardLayout({ title, children }: Props) {
   return (
     <div className="flex flex-col h-full">
+      <SocketNotification />
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>

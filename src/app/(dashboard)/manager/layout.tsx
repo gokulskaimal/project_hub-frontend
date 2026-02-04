@@ -10,6 +10,8 @@ import Link from 'next/link';
 import UserModal from '@/components/modals/UserModal';
 import { useMemberProfile } from '@/hooks/useMemberProfile';
 import { LayoutDashboard, Users, Mail, CreditCard, LogOut, Menu, X } from 'lucide-react';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import SocketNotification from '@/components/notifications/SocketNotification';
 
 
 
@@ -127,29 +129,12 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
           </button>
           
           {/* Search Bar - Moved from DashboardLayout */}
-          <div className="hidden md:flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg px-3 md:px-4 py-2 w-full max-w-xl">
-            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-600 outline-none"
-              placeholder="Search projects, tasks, users..."
-              aria-label="Global search"
-            />
-            <div className="hidden sm:flex items-center gap-1 bg-gray-100 border border-gray-200 rounded px-2 py-0.5">
-              <span className="text-xs text-gray-600 font-medium">⌘</span>
-              <span className="text-xs text-gray-600 font-medium">K</span>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-4 shrink-0">
-             {/* Notification Bell - Moved from DashboardLayout */}
-            <button type="button" className="relative p-2 rounded hover:bg-gray-50 focus:ring-2 focus:ring-gray-300 transition-colors" aria-label="View notifications">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 17h5l-5 5-5-5h5V7a3 3 0 116 0v10zM9 12H4l5-5 5 5H9v5a3 3 0 01-6 0v-5z" />
-              </svg>
-              <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
-            </button>
+          <div className="flex items-center gap-4 shrink-0 ml-auto">
+             {/* Socket Notification Listener */}
+             <SocketNotification />
+             {/* Notification Bell */}
+            <NotificationBell />
 
             <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
 
