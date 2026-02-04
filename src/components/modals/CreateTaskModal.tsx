@@ -1,3 +1,6 @@
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+
 import { Input } from '@/components/ui/Input';
 import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
@@ -7,7 +10,6 @@ import { PRIORITY_LEVELS } from '@/utils/constants';
 import { z } from 'zod';
 
 // Zod Schema
-// Zod Schema
 const taskSchema = z.object({
   title: z.string().trim().min(3, "Title must be at least 3 characters"),
   description: z.string().trim().optional(),
@@ -16,7 +18,6 @@ const taskSchema = z.object({
   assignedTo: z.string().optional(),
 });
 
-// [NEW] Add Task interface (or import it if available)
 interface Task {
     id: string;
     title: string;
@@ -48,6 +49,10 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
+  // Get User Role
+  const role = useSelector((state: RootState) => state.auth.role);
+  const isManager = role === 'org-manager';
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -57,6 +62,11 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
   });
 
   const isEditing = !!task;
+  const isDone = task?.status === 'DONE';
+  const isReview = task?.status === 'REVIEW';
+  
+  // Lock Logic
+  const isLocked = isEditing && (isDone || (!isManager && isReview));
 
   useEffect(() => {
     if (isOpen) {
@@ -137,6 +147,15 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {isLocked && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+              {isDone ? "This task is completed and cannot be edited." : "This task is under review by a manager."}
+            </div>
+          )}
+
           <div>
             <Input
               label="Task Title"
@@ -145,6 +164,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g. Design Homepage"
               error={formErrors.title}
+              disabled={isLocked}
             />
           </div>
           
@@ -155,7 +175,8 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Task details..."
-              className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm resize-none text-gray-900 placeholder-gray-500 shadow-sm"
+              disabled={isLocked}
+              className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm resize-none text-gray-900 placeholder-gray-500 shadow-sm ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
             />
             {formErrors.description && <p className="text-xs text-red-500 mt-1">{formErrors.description}</p>}
           </div>
@@ -166,7 +187,8 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
                 <select
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm"
+                    disabled={isLocked}
+                    className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 >
                     {Object.values(PRIORITY_LEVELS).map(level => (
                         <option key={level} value={level}>{level.charAt(0) + level.slice(1).toLowerCase()}</option>
@@ -181,6 +203,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 error={formErrors.dueDate}
+                disabled={isLocked}
                 />
             </div>
           </div>
@@ -190,7 +213,8 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
             <select
                 value={formData.assignedTo}
                 onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm"
+                disabled={isLocked}
+                className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm ${isLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
             >
                 <option value="">Unassigned</option>
                 {projectMembers.map(member => (
@@ -210,6 +234,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
             >
               Cancel
             </button>
+            {!isLocked && (
             <button
               type="submit"
               disabled={loading}
@@ -224,6 +249,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, projectId,
                 isEditing ? 'Update Task' : 'Create Task'
               )}
             </button>
+            )}
           </div>
         </form>
       </div>

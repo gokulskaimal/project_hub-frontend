@@ -268,7 +268,14 @@ export default function MemberProjectDetailsPage() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {filteredTasks.map((task) => (
+                            {filteredTasks.map((task) => {
+                                // Access Control Logic
+                                const isManager = user?.role === 'org-manager';
+                                const isDone = task.status === 'DONE';
+                                const isReview = task.status === 'REVIEW';
+                                const isLocked = isDone || (!isManager && isReview);
+
+                                return (
                                 <div key={task.id} className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden">
                                     {/* Task Card Content - Identical to previous version */}
                                     <div className="p-5 flex flex-col h-full">
@@ -314,21 +321,23 @@ export default function MemberProjectDetailsPage() {
                                             <select
                                                 value={task.status}
                                                 onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                                                className={`w-full appearance-none pl-4 pr-8 py-2.5 rounded-lg text-sm font-semibold cursor-pointer outline-none border transition-all hover:bg-opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${task.status === 'DONE' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                disabled={isLocked}
+                                                className={`w-full appearance-none pl-4 pr-8 py-2.5 rounded-lg text-sm font-semibold outline-none border transition-all hover:bg-opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${task.status === 'DONE' ? 'bg-green-50 text-green-700 border-green-200' :
                                                     task.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                         task.status === 'REVIEW' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                                                             'bg-gray-50 text-gray-700 border-gray-200'
-                                                    }`}
+                                                    } ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                                             >
                                                 <option value="TODO">To Do</option>
                                                 <option value="IN_PROGRESS">In Progress</option>
                                                 <option value="REVIEW">Review</option>
-                                                <option value="DONE">Done</option>
+                                                {(isManager || task.status === 'DONE') && <option value="DONE">Done</option>}
                                             </select>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            );
+                            })}
                         </div>
                     )}
                 </div>

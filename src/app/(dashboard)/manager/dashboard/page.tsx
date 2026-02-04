@@ -9,6 +9,7 @@ import InviteModal from "@/components/modals/InviteModal";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import Link from "next/link";
 import CreateProjectModal from "@/components/modals/CreateProjectModal";
+import { useSocket } from "@/context/SocketContext";
 
 export default function ManagerDashboardPage() {
   const { user } = useSelector((s: RootState) => s.auth);
@@ -47,6 +48,33 @@ export default function ManagerDashboardPage() {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  // [NEW] Real-time Updates
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleProjectCreated = (newProject: any) => {
+        if (newProject.status === 'ACTIVE') {
+            setStats(prev => ({ ...prev, activeProjects: prev.activeProjects + 1 }));
+            // Optionally fetchStats() to be safe or update local
+        }
+    };
+
+    const handleProjectUpdated = (updatedProject: any) => {
+        // Since we only track 'count' here, re-fetching is safest to handle status changes (e.g. Active -> Completed)
+        fetchStats(); 
+    };
+
+    socket.on("project:created", handleProjectCreated);
+    socket.on("project:updated", handleProjectUpdated);
+
+    return () => {
+        socket.off("project:created", handleProjectCreated);
+        socket.off("project:updated", handleProjectUpdated);
+    };
+  }, [socket, isConnected]);
 
   const statCards = [
     {

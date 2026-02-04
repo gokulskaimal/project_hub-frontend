@@ -7,12 +7,40 @@ import { projectService, Project } from "@/services/projectService";
 import { taskService, Task } from "@/services/taskService";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
+import { useSocket } from "@/context/SocketContext";
+import { toast } from "react-hot-toast";
 
 export default function MemberDashboard() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Real-time Updates
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // 1. New Project Assignment
+    const handleProjectAssigned = (newProject: Project) => {
+        setProjects(prev => [newProject, ...prev]);
+        toast.success(`New Project Assigned: ${newProject.name}`);
+    };
+
+    // 2. Project Updates (Status/Progress)
+    const handleProjectUpdated = (updatedProject: Project) => {
+        setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+    };
+
+    socket.on("project:assigned", handleProjectAssigned);
+    socket.on("project:updated", handleProjectUpdated);
+
+    return () => {
+        socket.off("project:assigned", handleProjectAssigned);
+        socket.off("project:updated", handleProjectUpdated);
+    };
+  }, [socket, isConnected]);
 
   useEffect(() => {
     const fetchData = async () => {

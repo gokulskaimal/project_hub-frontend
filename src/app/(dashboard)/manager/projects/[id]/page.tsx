@@ -14,11 +14,17 @@ import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import { PRIORITY_LEVELS, PROJECT_STATUS } from "@/utils/constants";
 import { projectService, Project } from "@/services/projectService"; // Ensure this service exists
 import { useSocket } from "@/context/SocketContext";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 export default function ProjectDetailsPage() {
     const params = useParams();
     const router = useRouter();
     const projectId = params.id as string;
+    
+    // Auth State
+    const role = useSelector((state: RootState) => state.auth.role);
+    const isManager = role === 'org-manager';
 
     const [project, setProject] = useState<Project | null>(null);
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -337,7 +343,15 @@ export default function ProjectDetailsPage() {
                         </div>
 ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {filteredTasks.map((task) => (
+                            {filteredTasks.map((task) => {
+                                const isDone = task.status === 'DONE';
+                                const isReview = task.status === 'REVIEW';
+                                
+                                // Lock Logic
+                                const isLocked = isDone || (!isManager && isReview);
+                                const canEdit = !isLocked;
+
+                                return (
                                 <div key={task.id} className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden relative">
                                     <div className="p-5 flex flex-col h-full">
                                         {/* Header: Priority */}
@@ -349,12 +363,16 @@ export default function ProjectDetailsPage() {
                                             </span>
                                             {/* Manager Actions */}
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-1 rounded-lg">
-                                                <Button variant="secondary" size="sm" onClick={() => openEditModal(task)} className="h-7 w-7 p-0 rounded-md border-gray-100 hover:bg-blue-50 text-gray-500 hover:text-blue-600">
-                                                    <Pencil size={12} />
-                                                </Button>
-                                                <Button variant="danger" size="sm" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 p-0 rounded-md border-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600">
-                                                    <Trash2 size={12} />
-                                                </Button>
+                                                {canEdit && (
+                                                    <Button variant="secondary" size="sm" onClick={() => openEditModal(task)} className="h-7 w-7 p-0 rounded-md border-gray-100 hover:bg-blue-50 text-gray-500 hover:text-blue-600">
+                                                        <Pencil size={12} />
+                                                    </Button>
+                                                )}
+                                                {isManager && (
+                                                    <Button variant="danger" size="sm" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 p-0 rounded-md border-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600">
+                                                        <Trash2 size={12} />
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
 
@@ -393,21 +411,23 @@ export default function ProjectDetailsPage() {
                                             <select
                                                 value={task.status}
                                                 onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                                                className={`w-full appearance-none pl-4 pr-8 py-2.5 rounded-lg text-sm font-semibold cursor-pointer outline-none border transition-all hover:bg-opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${task.status === 'DONE' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                disabled={isLocked}
+                                                className={`w-full appearance-none pl-4 pr-8 py-2.5 rounded-lg text-sm font-semibold outline-none border transition-all hover:bg-opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${task.status === 'DONE' ? 'bg-green-50 text-green-700 border-green-200' :
                                                         task.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                             task.status === 'REVIEW' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                                                                 'bg-gray-50 text-gray-700 border-gray-200'
-                                                    }`}
+                                                    } ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                                             >
                                                 <option value="TODO">To Do</option>
                                                 <option value="IN_PROGRESS">In Progress</option>
                                                 <option value="REVIEW">Review</option>
-                                                <option value="DONE">Done</option>
+                                                {(isManager || task.status === 'DONE') && <option value="DONE">Done</option>}
                                             </select>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            );
+                            })}
                         </div>
                     )}
                 </div>
