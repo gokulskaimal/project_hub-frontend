@@ -1,11 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import KanbanBoard from "@/components/dashboard/KanbanBoard";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import toast from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import Swal from "sweetalert2";
 import {
   Pencil,
@@ -16,22 +13,26 @@ import {
   CheckCircle2,
   Search,
   LayoutGrid,
-  List,
-  Plus,
   Clock,
   AlertCircle,
+  MessageSquare,
+  Plus,
+  Rows,
 } from "lucide-react";
+import TaskCalendar from "@/components/dashboard/TaskCalendar";
 import { taskService, Task } from "@/services/taskService";
 import { userService, User } from "@/services/userService";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
+// import { PRIORITY_LEVELS, PROJECT_STATUS } from "@/utils/constants"; // It seems this was unused or I should check if it was used. In step 21658 it was imported. Keeping it.
 import { PRIORITY_LEVELS, PROJECT_STATUS } from "@/utils/constants";
 import ProjectChat from "@/components/chat/ProjectChat";
-import { MessageSquare } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { useSocket } from "@/context/SocketContext";
 import { projectService, Project } from "@/services/projectService";
+import { Button } from "@/components/ui/Button";
 import UserAvatar from "@/components/ui/UserAvatar";
+// Removed explicit api import as we use services
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -46,8 +47,9 @@ export default function ProjectDetailsPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [orgUsers, setOrgUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"LIST" | "BOARD">("LIST");
-  const [activeTab, setActiveTab] = useState<"TASKS" | "CHAT">("TASKS");
+  const [activeTab, setActiveTab] = useState<"TASKS" | "CHAT" | "CALENDAR">(
+    "TASKS",
+  );
 
   // Filter & Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,8 +63,6 @@ export default function ProjectDetailsPage() {
   // Calculate stats
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "DONE").length;
-  const progress =
-    totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
   // Get Team Members
   const teamMembers = orgUsers.filter((user) =>
@@ -93,10 +93,6 @@ export default function ProjectDetailsPage() {
 
     return matchesSearch && matchesStatus && matchesAssignee;
   });
-
-  useEffect(() => {
-    loadData();
-  }, [projectId]);
 
   // [Real-time] Socket Listeners
   const { socket, isConnected } = useSocket();
@@ -132,12 +128,12 @@ export default function ProjectDetailsPage() {
     };
   }, [socket, isConnected, projectId]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       // Fetch Project Details, Tasks, and Users
       const [fetchedProject, fetchedTasks, fetchedUsers] = await Promise.all([
-        projectService.getProject(projectId), // Assuming this exists or create it
+        projectService.getProject(projectId),
         taskService.getProjetTasks(projectId),
         userService.getOrganizationUsers(),
       ]);
@@ -150,7 +146,11 @@ export default function ProjectDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const openCreateModal = () => {
     setEditingTask(null);
@@ -230,49 +230,6 @@ export default function ProjectDetailsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="-ml-2 text-gray-500 hover:text-gray-900"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {project?.name || "Loading Project..."}
-            </h1>
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                project?.status === "COMPLETED"
-                  ? "bg-green-100 text-green-700"
-                  : project?.status === "ON_HOLD"
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-blue-100 text-blue-700"
-              }`}
-            >
-              {project?.status?.replace("_", " ") || "ACTIVE"}
-            </span>
-          </div>
-          <p className="text-gray-500 text-sm max-w-2xl ml-9">
-            {project?.description}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 ml-9 md:ml-0">
-          <Button
-            onClick={openCreateModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Task</span>
-          </Button>
-        </div>
-      </div>
-
       {/* Tabs */}
       <div className="flex items-center gap-4 border-b border-gray-200">
         <button
@@ -284,8 +241,8 @@ export default function ProjectDetailsPage() {
           }`}
         >
           <div className="flex items-center gap-2">
-            <LayoutGrid className="w-4 h-4" />
-            Tasks
+            <Rows className="w-4 h-4" />
+            List
           </div>
         </button>
         <button
@@ -301,6 +258,19 @@ export default function ProjectDetailsPage() {
             Chat
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab("CALENDAR")}
+          className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+            activeTab === "CALENDAR"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Calendar
+          </div>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -308,6 +278,15 @@ export default function ProjectDetailsPage() {
         <div className="lg:col-span-3 space-y-6">
           {activeTab === "CHAT" ? (
             <ProjectChat projectId={projectId} />
+          ) : activeTab === "CALENDAR" ? (
+            <TaskCalendar
+              tasks={tasks}
+              projectId={projectId}
+              projectMembers={orgUsers}
+              onTaskUpdate={() =>
+                taskService.getProjetTasks(projectId).then(setTasks)
+              }
+            />
           ) : (
             <>
               {/* Summary Cards */}
@@ -392,6 +371,14 @@ export default function ProjectDetailsPage() {
 
                 {/* Filters */}
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                  <Button
+                    onClick={openCreateModal}
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm order-first md:order-last"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Create Task</span>
+                  </Button>
+
                   {/* Assignee Filter */}
                   <select
                     value={assigneeFilter}

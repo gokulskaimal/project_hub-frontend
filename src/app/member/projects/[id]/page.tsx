@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { toast } from "react-hot-toast";
@@ -27,6 +27,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 
 import ProjectChat from "@/components/chat/ProjectChat";
 import { MessageSquare } from "lucide-react";
+import TaskCalendar from "@/components/dashboard/TaskCalendar";
 
 export default function MemberProjectDetailsPage() {
   const params = useParams();
@@ -37,7 +38,9 @@ export default function MemberProjectDetailsPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [orgUsers, setOrgUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"TASKS" | "CHAT">("TASKS");
+  const [activeTab, setActiveTab] = useState<"TASKS" | "CHAT" | "CALENDAR">(
+    "TASKS",
+  );
 
   // Controls
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,43 +55,7 @@ export default function MemberProjectDetailsPage() {
 
   const { socket, isConnected } = useSocket();
 
-  useEffect(() => {
-    loadData();
-  }, [projectId]);
-
-  useEffect(() => {
-    if (!socket || !isConnected) return;
-
-    const handleTaskUpdated = (updatedTask: Task) => {
-      if (String(updatedTask.projectId) === String(projectId)) {
-        setTasks((prev) => {
-          const exists = prev.find((t) => t.id === updatedTask.id);
-          if (!exists) {
-            return [updatedTask, ...prev];
-          }
-          return prev.map((t) => (t.id === updatedTask.id ? updatedTask : t));
-        });
-        toast.success("Task updated");
-      }
-    };
-
-    const handleTaskCreated = (newTask: Task) => {
-      if (String(newTask.projectId) === String(projectId)) {
-        setTasks((prev) => [newTask, ...prev]);
-        toast.success(`New task: ${newTask.title}`);
-      }
-    };
-
-    socket.on("task:created", handleTaskCreated);
-    socket.on("task:updated", handleTaskUpdated);
-
-    return () => {
-      socket.off("task:created", handleTaskCreated);
-      socket.off("task:updated", handleTaskUpdated);
-    };
-  }, [socket, isConnected, projectId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [fetchedTasks, fetchedUsers, fetchedProject] = await Promise.all([
@@ -128,7 +95,11 @@ export default function MemberProjectDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, router]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
@@ -235,6 +206,19 @@ export default function MemberProjectDetailsPage() {
             Chat
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab("CALENDAR")}
+          className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+            activeTab === "CALENDAR"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Calendar
+          </div>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -242,6 +226,15 @@ export default function MemberProjectDetailsPage() {
         <div className="lg:col-span-3 space-y-6">
           {activeTab === "CHAT" ? (
             <ProjectChat projectId={projectId} />
+          ) : activeTab === "CALENDAR" ? (
+            <TaskCalendar
+              tasks={tasks}
+              projectId={projectId}
+              projectMembers={orgUsers}
+              onTaskUpdate={() =>
+                taskService.getProjetTasks(projectId).then(setTasks)
+              }
+            />
           ) : (
             <>
               {/* Controls Bar */}

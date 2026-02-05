@@ -76,6 +76,22 @@ const hideLoader = () => {
   }
 };
 
+// Flag to prevent multiple redirects/toasts
+let isRedirecting = false;
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Extend AxiosRequestConfig to include our custom property
 declare module "axios" {
   export interface AxiosRequestConfig {
@@ -110,7 +126,7 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
     // attempt to read config from error object
     const config = error?.config || error?.response?.config;
     if (!config?.skipGlobalLoader) {
@@ -129,15 +145,67 @@ api.interceptors.response.use(
           typeof window !== "undefined" &&
           !window.location.pathname.includes("/login")
         ) {
-          // Show toast notification
-          toast.error("Your session has expired. Please login again.");
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("role");
-          setTimeout(() => {
-            window.location.href = "/login";
-          }, 1000);
+          // Prevent infinite loop if the refresh endpoint itself returns 401
+          if (config.url?.includes(API_ROUTES.AUTH.REFRESH)) {
+            return Promise.reject(error);
+          }
 
-          return Promise.reject(error);
+          if (isRefreshing) {
+            // Queue the request
+            return new Promise((resolve, reject) => {
+              failedQueue.push({ resolve, reject });
+            })
+              .then((token) => {
+                if (config.headers) {
+                  config.headers.Authorization = `Bearer ${token}`;
+                }
+                return api(config);
+              })
+              .catch((err) => Promise.reject(err));
+          }
+
+          if (isRedirecting) {
+            return Promise.reject(error);
+          }
+
+          config._retry = true;
+          isRefreshing = true;
+
+          try {
+            // Attempt to refresh token
+            // We use a fresh axios instance to avoid interceptor loops if needed,
+            // but here we just check the URL above.
+            const refreshResponse = await api.post(API_ROUTES.AUTH.REFRESH);
+            const { accessToken } = refreshResponse.data?.data || {};
+
+            if (accessToken) {
+              localStorage.setItem("accessToken", accessToken);
+              // Also update the header for the original request
+              if (config.headers) {
+                config.headers.Authorization = `Bearer ${accessToken}`;
+              }
+              processQueue(null, accessToken);
+              return api(config);
+            } else {
+              throw new Error("No access token returned");
+            }
+          } catch (refreshErr) {
+            processQueue(refreshErr, null);
+
+            // Refresh failed - proceed to logout
+            isRedirecting = true;
+            toast.error("Your session has expired. Please login again.", {
+              id: "session-expired",
+            });
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("role");
+            setTimeout(() => {
+              window.location.href = "/login";
+            }, 1000);
+            return Promise.reject(refreshErr);
+          } finally {
+            isRefreshing = false;
+          }
         }
       }
 
