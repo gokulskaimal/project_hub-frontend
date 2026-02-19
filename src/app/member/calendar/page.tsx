@@ -1,0 +1,57 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import TaskCalendar from "@/components/dashboard/TaskCalendar";
+import { taskService, Task } from "@/services/taskService";
+import { userService, User } from "@/services/userService";
+import { toast } from "react-hot-toast";
+
+export default function GlobalCalendarPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [users, setUsers] = useState<User[]>([]);
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      const myTasks = await taskService.getMyTasks();
+      setTasks(myTasks);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load calendar data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-full w-full items-center justify-center min-h-[400px]">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-gray-900">My Calendar</h1>
+        <p className="text-sm text-gray-500">
+          View your deadlines across all projects.
+        </p>
+      </div>
+
+      <TaskCalendar
+        tasks={tasks}
+        projectId={undefined} // Undefined = Global Mode
+        projectMembers={[]} // We don't pass project members here for simplified view
+        onTaskUpdate={fetchAllData}
+      />
+    </div>
+  );
+}

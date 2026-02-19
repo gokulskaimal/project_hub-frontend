@@ -1,22 +1,32 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   DragDropContext,
   Droppable,
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd";
-import { Task } from "@/services/taskService";
+import { Task, taskService } from "@/services/taskService";
 import { User } from "@/services/userService";
-import { Calendar, MoreVertical } from "lucide-react";
+import {
+  Trash2,
+  Flag,
+  Calendar as CalendarIcon,
+  Play,
+  Square,
+} from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import toast from "react-hot-toast";
 
 interface KanbanBoardProps {
   tasks: Task[];
-  users: User[]; // To show assignee avatars
+  users: User[];
   onStatusChange: (taskId: string, newStatus: string) => void;
-  onEditTask: (task: Task) => void; // Optional: to open edit modal
+  onDeleteTask?: (taskId: string) => void;
+  onEditTask: (task: Task) => void;
   showProjectBadges?: boolean;
 }
 
@@ -55,58 +65,81 @@ const COLUMNS = [
   },
 ];
 
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { taskService } from "@/services/taskService";
-import toast from "react-hot-toast";
-import {
-  Play,
-  Square,
-  Clock,
-  Calendar as CalendarIcon,
-  Flag,
-  MoreHorizontal,
-} from "lucide-react";
-
 export default function KanbanBoard({
   tasks,
   users,
   onStatusChange,
+  onDeleteTask,
   onEditTask,
   showProjectBadges = false,
 }: KanbanBoardProps) {
   const { user } = useSelector((state: RootState) => state.auth);
-  // Normalize role to lowercase just in case
-  const userRole = user?.role; // Already verified as Uppercase 'TEAM MEMBER' in DB usually, but let's stick to strict or loose check
+  const userRole = user?.role;
 
-  const onDragEnd = (result: DropResult) => {
+  // Local state to force re-render for timer updates
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    // Timer interval to update UI every second for active timers
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
-
     if (!destination) return;
-
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
-    ) {
+    )
       return;
-    }
-
-    // ROLE CONSTRAINT CHECK
     if (destination.droppableId === "DONE" && userRole === "TEAM MEMBER") {
       toast.error("Only Managers can move tasks to Done.");
       return;
     }
 
-    // Call the parent function to update API/State
+    // Optimistic Update
     if (destination.droppableId !== source.droppableId) {
       onStatusChange(draggableId, destination.droppableId);
+
+      // Automatic Time Tracking Logic
+      const task = tasks.find((t) => t.id === draggableId);
+      if (task && task.assignedTo === user?.id) {
+        // If moving TO In Progress -> Start Timer
+        if (
+          destination.droppableId === "IN_PROGRESS" &&
+          source.droppableId !== "IN_PROGRESS"
+        ) {
+          try {
+            await taskService.toggleTimer(task.id, "start");
+            toast.success("Timer started automatically");
+          } catch (error) {
+            console.error("Auto-start timer failed", error);
+          }
+        }
+        // If moving FROM In Progress -> Stop Timer
+        else if (
+          source.droppableId === "IN_PROGRESS" &&
+          destination.droppableId !== "IN_PROGRESS"
+        ) {
+          const activeLog = task.timeLogs?.find(
+            (l) => l.userId === user?.id && !l.endTime,
+          );
+          if (activeLog) {
+            try {
+              await taskService.toggleTimer(task.id, "stop");
+              toast.success("Timer stopped automatically");
+            } catch (error) {
+              console.error("Auto-stop timer failed", error);
+            }
+          }
+        }
+      }
     }
   };
 
-  const getTasksByStatus = (status: string) => {
-    return tasks.filter((task) => task.status === status);
-  };
-
+  const getTasksByStatus = (status: string) =>
+    tasks.filter((task) => task.status === status);
   const getUser = (userId?: string) => users.find((u) => u.id === userId);
 
   const formatDuration = (ms: number) => {
@@ -115,6 +148,44 @@ export default function KanbanBoard({
     const minutes = Math.floor((ms / (1000 * 60)) % 60);
     const hours = Math.floor(ms / (1000 * 60 * 60));
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  // Helper to calculate total time including current active session
+  const getDisplayTime = (task: Task) => {
+    let total = task.totalTimeSpent || 0;
+    const activeLog = task.timeLogs?.find(
+      (l) => l.userId === user?.id && !l.endTime,
+    );
+
+    if (activeLog) {
+      const currentSessionDuration =
+        new Date().getTime() - new Date(activeLog.startTime).getTime();
+      total += currentSessionDuration;
+    }
+    return formatDuration(total);
+  };
+
+  const getTypeIcon = (type?: string) => {
+    switch (type) {
+      case "BUG":
+        return (
+          <span className="text-red-500" title="Bug">
+            🐞
+          </span>
+        );
+      case "STORY":
+        return (
+          <span className="text-blue-500" title="User Story">
+            📘
+          </span>
+        );
+      default:
+        return (
+          <span className="text-gray-500" title="Task">
+            📋
+          </span>
+        );
+    }
   };
 
   const handleToggleTimer = async (e: React.MouseEvent, task: Task) => {
@@ -137,12 +208,10 @@ export default function KanbanBoard({
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex h-full gap-6 overflow-x-auto pb-4 items-start min-h-[500px] px-2">
         {COLUMNS.map((col) => (
-          /* Column Container */
           <div
             key={col.id}
             className={`flex flex-col h-full min-w-[280px] flex-1 rounded-xl border-2 ${col.border} ${col.borderStyle} ${col.color} p-0`}
           >
-            {/* Column Header */}
             <div className="flex items-center justify-between p-4 pb-2">
               <h3
                 className={`font-bold text-sm bg-transparent ${col.titleColor}`}
@@ -154,15 +223,12 @@ export default function KanbanBoard({
               </span>
             </div>
 
-            {/* Droppable Area */}
             <Droppable droppableId={col.id}>
               {(provided, snapshot) => (
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`flex-1 px-3 pb-3 space-y-3 transition-colors rounded-b-xl min-h-[100px] overflow-y-auto ${
-                    snapshot.isDraggingOver ? "bg-white/40" : ""
-                  }`}
+                  className={`flex-1 px-3 pb-3 space-y-3 transition-colors rounded-b-xl min-h-[100px] overflow-y-auto ${snapshot.isDraggingOver ? "bg-white/40" : ""}`}
                 >
                   {getTasksByStatus(col.id).map((task, index) => {
                     const activeLog = task.timeLogs?.find(
@@ -182,65 +248,57 @@ export default function KanbanBoard({
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             onClick={() => onEditTask(task)}
-                            className={`
-                            bg-white p-4 rounded-xl border border-gray-100
-                            group cursor-grab active:cursor-grabbing
-                            transition-all duration-200 ease-in-out
-                            ${snapshot.isDragging ? "shadow-2xl scale-[1.02] z-50 ring-1 ring-gray-200" : "shadow-sm hover:shadow-md hover:-translate-y-0.5"}
-                          `}
+                            className={`bg-white p-4 rounded-xl border border-gray-100 group cursor-grab active:cursor-grabbing transition-all duration-200 ease-in-out ${snapshot.isDragging ? "shadow-2xl scale-[1.02] z-50 ring-1 ring-gray-200" : "shadow-sm hover:shadow-md hover:-translate-y-0.5"}`}
                             style={provided.draggableProps.style}
                           >
-                            {/* Title & Options */}
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="text-sm font-bold text-gray-800 leading-tight line-clamp-2 pr-2">
+                              <h4 className="text-sm font-bold text-gray-800 leading-tight line-clamp-2 pr-2 flex items-center gap-2">
+                                {getTypeIcon(task.type)}
                                 {task.title}
                               </h4>
-                              <button className="text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreHorizontal size={16} />
-                              </button>
+                              {onDeleteTask && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteTask(task.id);
+                                  }}
+                                  className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
                             </div>
 
-                            {/* Description (Optional - truncated) */}
                             {task.description && (
                               <p className="text-xs text-gray-500 mb-3 line-clamp-2">
                                 {task.description}
                               </p>
                             )}
 
-                            {/* Tags: Project & Priority */}
                             <div className="flex flex-wrap gap-2 mb-4">
-                              {/* Project Tag (Pill) */}
                               {showProjectBadges && task.project?.name && (
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
                                   {task.project.name}
                                 </span>
                               )}
-
-                              {/* Priority Tag (Pill) */}
                               <span
-                                className={`text-[10px] px-2 py-0.5 rounded font-medium ${
-                                  task.priority === "CRITICAL" ||
-                                  task.priority === "HIGH"
-                                    ? "bg-red-50 text-red-600"
-                                    : task.priority === "MEDIUM"
-                                      ? "bg-yellow-50 text-yellow-600"
-                                      : "bg-green-50 text-green-600"
-                                }`}
+                                className={`text-[10px] px-2 py-0.5 rounded font-medium ${task.priority === "CRITICAL" || task.priority === "HIGH" ? "bg-red-50 text-red-600" : task.priority === "MEDIUM" ? "bg-yellow-50 text-yellow-600" : "bg-green-50 text-green-600"}`}
                               >
                                 {task.priority}
                               </span>
+                              {(task.storyPoints || 0) > 0 && (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-bold border border-gray-200">
+                                  {task.storyPoints}
+                                </span>
+                              )}
                             </div>
 
-                            {/* Footer: Date, Tracking, Avatar */}
                             <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-auto">
                               <div className="flex items-center gap-3">
-                                {/* Flag Icon */}
                                 <Flag
                                   size={14}
                                   className={`${task.priority === "CRITICAL" ? "text-red-500 fill-red-500" : "text-gray-300"}`}
                                 />
-
-                                {/* Due Date */}
                                 {task.dueDate && (
                                   <div className="flex items-center gap-1 text-[10px] text-gray-400">
                                     <CalendarIcon size={12} />
@@ -257,16 +315,15 @@ export default function KanbanBoard({
                                 )}
                               </div>
 
-                              {/* Right: Timer & Avatar */}
                               <div className="flex items-center gap-2">
-                                {/* Timer */}
+                                {/* Timer Button */}
                                 {task.assignedTo === user?.id && (
                                   <button
                                     onClick={(e) => handleToggleTimer(e, task)}
-                                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
+                                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors border ${
                                       isTracking
-                                        ? "bg-red-50 text-red-600"
-                                        : "bg-gray-50 text-gray-400 hover:text-gray-600"
+                                        ? "bg-red-50 text-red-600 border-red-100 animate-pulse"
+                                        : "bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100"
                                     }`}
                                   >
                                     {isTracking ? (
@@ -274,11 +331,10 @@ export default function KanbanBoard({
                                     ) : (
                                       <Play size={10} fill="currentColor" />
                                     )}
-                                    {formatDuration(task.totalTimeSpent || 0)}
+                                    {getDisplayTime(task)}
                                   </button>
                                 )}
 
-                                {/* Avatar */}
                                 {task.assignedTo && (
                                   <UserAvatar
                                     user={getUser(task.assignedTo)}

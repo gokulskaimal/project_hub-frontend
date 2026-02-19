@@ -22,12 +22,19 @@ import { useSocket } from "@/context/SocketContext";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
-import { Plus } from "lucide-react";
+import { Plus, PanelRight } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 import ProjectChat from "@/components/chat/ProjectChat";
 import { MessageSquare } from "lucide-react";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
+
+import KanbanBoard from "@/components/dashboard/KanbanBoard";
+
+import { sprintService, Sprint } from "@/services/sprintService";
+import VelocityChart from "@/components/analytics/VelocityChart";
+import SprintCapacity from "@/components/analytics/SprintCapacity";
+import { BarChart3 } from "lucide-react";
 
 export default function MemberProjectDetailsPage() {
   const params = useParams();
@@ -36,18 +43,21 @@ export default function MemberProjectDetailsPage() {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [project, setProject] = useState<Project | null>(null);
+  const [sprints, setSprints] = useState<Sprint[]>([]); // Added sprints state
   const [orgUsers, setOrgUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"TASKS" | "CHAT" | "CALENDAR">(
-    "TASKS",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS"
+  >("TASKS");
 
   // Controls
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
   const [viewAll, setViewAll] = useState(false); // Default to "My Tasks"
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   // Get Current User
   const { user } = useSelector((state: RootState) => state.auth);
@@ -58,26 +68,31 @@ export default function MemberProjectDetailsPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [fetchedTasks, fetchedUsers, fetchedProject] = await Promise.all([
-        taskService.getProjetTasks(projectId).catch((err) => {
-          console.error("Failed to fetch tasks", err);
-          return [];
-        }),
-        userService.getOrganizationUsers().catch((err) => {
-          console.error("Failed to fetch users", err);
-          return [];
-        }),
-        projectService.getProject(projectId).catch((err) => {
-          // Check if error is 404
-          if (
-            err?.response?.status === 404 ||
-            err?.message?.includes("not found")
-          ) {
-            return null; // Handle specifically
-          }
-          throw err;
-        }),
-      ]);
+      const [fetchedTasks, fetchedUsers, fetchedProject, fetchedSprints] =
+        await Promise.all([
+          taskService.getProjetTasks(projectId).catch((err) => {
+            console.error("Failed to fetch tasks", err);
+            return [];
+          }),
+          userService.getOrganizationUsers().catch((err) => {
+            console.error("Failed to fetch users", err);
+            return [];
+          }),
+          projectService.getProject(projectId).catch((err) => {
+            // Check if error is 404
+            if (
+              err?.response?.status === 404 ||
+              err?.message?.includes("not found")
+            ) {
+              return null; // Handle specifically
+            }
+            throw err;
+          }),
+          sprintService.getProjectSprints(projectId).catch((err) => {
+            console.error("Failed to fetch sprints", err);
+            return [];
+          }),
+        ]);
 
       if (!fetchedProject) {
         toast.error("Project not found or has been deleted.");
@@ -88,6 +103,7 @@ export default function MemberProjectDetailsPage() {
       setTasks(fetchedTasks);
       setOrgUsers(fetchedUsers);
       setProject(fetchedProject);
+      setSprints(fetchedSprints);
     } catch (error: any) {
       toast.error("Failed to load project data");
       console.error(error);
@@ -136,6 +152,11 @@ export default function MemberProjectDetailsPage() {
   const teamMembers = orgUsers.filter((user) =>
     project?.teamMemberIds?.includes(user.id),
   );
+
+  const openEditModal = (task: Task) => {
+    setEditingTask(task);
+    setIsCreateTaskModalOpen(true);
+  };
 
   if (loading) {
     return (
@@ -219,11 +240,38 @@ export default function MemberProjectDetailsPage() {
             Calendar
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab("ANALYTICS")}
+          className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+            activeTab === "ANALYTICS"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Analytics
+          </div>
+        </button>
+
+        {/* Toggle Panel Button (Aligned Right in Tabs) */}
+        <div className="ml-auto pb-2">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`p-2 rounded-md transition-colors flex items-center gap-2 text-xs font-medium border ${isSidebarOpen ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-white text-gray-500 border-gray-200 hover:text-gray-900"}`}
+            title={isSidebarOpen ? "Maximize Board" : "Show Details"}
+          >
+            <PanelRight className="w-4 h-4" />
+            {isSidebarOpen ? "Hide Panel" : "Show Details"}
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 relative">
         {/* Main Content: Tasks */}
-        <div className="lg:col-span-3 space-y-6">
+        <div
+          className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-full lg:w-[73%]" : "w-full lg:w-full"} space-y-6`}
+        >
           {activeTab === "CHAT" ? (
             <ProjectChat projectId={projectId} />
           ) : activeTab === "CALENDAR" ? (
@@ -235,6 +283,27 @@ export default function MemberProjectDetailsPage() {
                 taskService.getProjetTasks(projectId).then(setTasks)
               }
             />
+          ) : activeTab === "ANALYTICS" ? (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">
+                  Project Analytics
+                </h2>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <SprintCapacity
+                    sprints={sprints}
+                    tasks={tasks}
+                    activeSprintId={
+                      sprints.find((s) => s.status === "ACTIVE")?.id
+                    }
+                  />
+                  {/* Velocity Chart uses own container */}
+                </div>
+                <div className="mt-6">
+                  <VelocityChart sprints={sprints} tasks={tasks} />
+                </div>
+              </div>
+            </div>
           ) : (
             <>
               {/* Controls Bar */}
@@ -256,7 +325,10 @@ export default function MemberProjectDetailsPage() {
                   {/* Create Task Button */}
                   {isManager && (
                     <button
-                      onClick={() => setIsCreateTaskModalOpen(true)}
+                      onClick={() => {
+                        setEditingTask(null);
+                        setIsCreateTaskModalOpen(true);
+                      }}
                       className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
                     >
                       <Plus className="w-4 h-4" />
@@ -315,7 +387,7 @@ export default function MemberProjectDetailsPage() {
                 </div>
               </div>
 
-              {/* Tasks Grid */}
+              {/* Tasks Grid - REPLACED WITH KANBAN BOARD */}
               {filteredTasks.length === 0 ? (
                 <div className="bg-white p-12 rounded-2xl text-center border-2 border-dashed border-gray-200">
                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 text-2xl">
@@ -343,122 +415,24 @@ export default function MemberProjectDetailsPage() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredTasks.map((task) => {
-                    // Access Control Logic
-                    const isManager = user?.role === "org-manager";
-                    const isDone = task.status === "DONE";
-                    const isReview = task.status === "REVIEW";
-                    const isLocked = isDone || (!isManager && isReview);
-
-                    return (
-                      <div
-                        key={task.id}
-                        className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden"
-                      >
-                        {/* Task Card Content - Identical to previous version */}
-                        <div className="p-5 flex flex-col h-full">
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider uppercase ${
-                                  task.priority === "HIGH" ||
-                                  task.priority === "CRITICAL"
-                                    ? "bg-red-50 text-red-600 border border-red-100"
-                                    : task.priority === "MEDIUM"
-                                      ? "bg-amber-50 text-amber-600 border border-amber-100"
-                                      : "bg-green-50 text-green-600 border border-green-100"
-                                }`}
-                              >
-                                {task.priority}
-                              </span>
-                            </div>
-                          </div>
-
-                          <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
-                            {task.title}
-                          </h3>
-                          <p className="text-sm text-gray-500 line-clamp-3 mb-4 flex-1">
-                            {task.description || "No description provided."}
-                          </p>
-
-                          <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50 mb-4">
-                            <div className="flex items-center gap-2">
-                              {task.assignedTo ? (
-                                <>
-                                  <UserAvatar
-                                    user={orgUsers.find(
-                                      (u) => u.id === task.assignedTo,
-                                    )}
-                                    size="sm"
-                                    className="w-6 h-6 text-[10px]"
-                                  />
-                                  <span className="text-xs text-gray-600 truncate max-w-[80px]">
-                                    {getUserName(task.assignedTo).split(" ")[0]}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-xs text-gray-400 italic">
-                                  Unassigned
-                                </span>
-                              )}
-                            </div>
-                            {task.dueDate && (
-                              <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {formatDate(task.dueDate)}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="relative">
-                            <div
-                              className={`absolute inset-y-0 left-0 w-1 rounded-l-md ${
-                                task.status === "DONE"
-                                  ? "bg-green-500"
-                                  : task.status === "IN_PROGRESS"
-                                    ? "bg-blue-500"
-                                    : task.status === "REVIEW"
-                                      ? "bg-purple-500"
-                                      : "bg-gray-400"
-                              }`}
-                            ></div>
-                            <select
-                              value={task.status}
-                              onChange={(e) =>
-                                handleStatusChange(task.id, e.target.value)
-                              }
-                              disabled={isLocked}
-                              className={`w-full appearance-none pl-4 pr-8 py-2.5 rounded-lg text-sm font-semibold outline-none border transition-all hover:bg-opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
-                                task.status === "DONE"
-                                  ? "bg-green-50 text-green-700 border-green-200"
-                                  : task.status === "IN_PROGRESS"
-                                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                                    : task.status === "REVIEW"
-                                      ? "bg-purple-50 text-purple-700 border-purple-200"
-                                      : "bg-gray-50 text-gray-700 border-gray-200"
-                              } ${isLocked ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
-                            >
-                              <option value="TODO">To Do</option>
-                              <option value="IN_PROGRESS">In Progress</option>
-                              <option value="REVIEW">Review</option>
-                              {(isManager || task.status === "DONE") && (
-                                <option value="DONE">Done</option>
-                              )}
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="h-full min-h-[600px] w-full">
+                  <KanbanBoard
+                    tasks={filteredTasks}
+                    users={orgUsers}
+                    onStatusChange={handleStatusChange}
+                    onEditTask={openEditModal}
+                    showProjectBadges={false}
+                  />
                 </div>
               )}
             </>
           )}
         </div>
 
-        {/* Side Panel: Team & Details - Unchanged */}
-        <div className="space-y-6">
+        {/* Side Panel: Team & Details - Collapsible */}
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? "w-full lg:w-[27%] opacity-100" : "w-0 opacity-0 lg:hidden"} space-y-6`}
+        >
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-4 h-4 text-gray-500" />
@@ -545,16 +519,16 @@ export default function MemberProjectDetailsPage() {
       {/* Create Task Modal */}
       <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
-        onClose={() => setIsCreateTaskModalOpen(false)}
+        onClose={() => {
+          setIsCreateTaskModalOpen(false);
+          setEditingTask(null);
+        }}
         onSuccess={() => {
-          // Task creation handled by Socket, but we can refresh to be safe or rely on socket
-          // socket listener will add it.
-          // If socket fails, we might want to re-fetch?
-          // Let's rely on socket or just re-fetch tasks quietly.
           taskService.getProjetTasks(projectId).then(setTasks);
         }}
         projectId={projectId}
         projectMembers={teamMembers}
+        task={editingTask}
       />
     </div>
   );

@@ -11,6 +11,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@hello-pangea/dnd": "^18.0.1",
     "@react-oauth/google": "^0.12.2",
     "@reduxjs/toolkit": "^2.9.0",
@@ -38,6 +39,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.9.19",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.3",
     "husky": "^9.1.7",

@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useLayoutEffect,
+} from "react";
 import { useSocket } from "@/context/SocketContext";
 import {
   Send,
@@ -11,8 +17,9 @@ import {
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import api from "@/utils/api";
+import api, { API_ROUTES } from "@/utils/api";
 import UserAvatar from "@/components/ui/UserAvatar";
+import Image from "next/image";
 
 interface ChatMessage {
   id: string;
@@ -38,28 +45,84 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    const fetchMessages = async () => {
+  const fetchMessages = useCallback(
+    async (cursor?: string | null) => {
       try {
-        const res = await api.get(`/chat/${projectId}`);
+        const params: any = {};
+        if (cursor) params.before = cursor;
+
+        if (cursor) setLoadingMore(true);
+
+        const res = await api.get(API_ROUTES.CHAT.PROJECT(projectId), {
+          params,
+        });
         if (res.data.success) {
-          setMessages(res.data.data);
-          scrollToBottom();
+          const newMessages = res.data.data;
+          const newCursor = res.data.nextCursor;
+
+          setNextCursor(newCursor);
+
+          if (cursor) {
+            // Loading more (older messages)
+            setMessages((prev) => [...newMessages, ...prev]);
+          } else {
+            // Initial load
+            setMessages(newMessages);
+            setInitialLoaded(true);
+            // Scroll to bottom on initial load
+            setTimeout(scrollToBottom, 100);
+          }
         }
       } catch (err) {
         console.error("Failed to load chat", err);
+      } finally {
+        setLoadingMore(false);
       }
-    };
+    },
+    [projectId],
+  );
+
+  useEffect(() => {
+    // Reset state on project change
+    setMessages([]);
+    setNextCursor(null);
+    setNextCursor(null);
+    setInitialLoaded(false);
     fetchMessages();
-  }, [projectId]);
+  }, [projectId, fetchMessages]);
+
+  const [prevScrollHeight, setPrevScrollHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (prevScrollHeight && scrollContainerRef.current) {
+      const newScrollHeight = scrollContainerRef.current.scrollHeight;
+      const diff = newScrollHeight - prevScrollHeight;
+      if (diff > 0) {
+        scrollContainerRef.current.scrollTop = diff;
+      }
+      setPrevScrollHeight(null);
+    }
+  }, [messages, prevScrollHeight]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight } = e.currentTarget;
+    if (scrollTop === 0 && nextCursor && !loadingMore) {
+      setPrevScrollHeight(scrollHeight);
+      fetchMessages(nextCursor);
+    }
+  };
 
   useEffect(() => {
     if (!socket) return;
@@ -68,7 +131,15 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
 
     const handleMessage = (msg: ChatMessage) => {
       setMessages((prev) => [...prev, msg]);
-      scrollToBottom();
+      // Only scroll to bottom if we are already near bottom or if I sent the message
+      if (scrollContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } =
+          scrollContainerRef.current;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+        if (isNearBottom || msg.senderId === user?.id) {
+          setTimeout(scrollToBottom, 50);
+        }
+      }
     };
 
     const handleUpdate = (updatedMsg: ChatMessage) => {
@@ -91,17 +162,21 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
       socket.off("chat:deleted", handleDelete);
       socket.emit("leave-project", projectId);
     };
-  }, [socket, projectId]);
+  }, [socket, projectId, user?.id]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
     try {
-      await api.post(`/chat/${projectId}`, {
-        content: newMessage,
-        type: "TEXT",
-      });
+      await api.post(
+        API_ROUTES.CHAT.PROJECT(projectId),
+        {
+          content: newMessage,
+          type: "TEXT",
+        },
+        { skipGlobalLoader: true },
+      );
       setNewMessage("");
     } catch (err) {
       console.error("Failed to send", err);
@@ -123,16 +198,21 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
     formData.append("file", file);
 
     try {
-      const res = await api.post("/upload", formData, {
+      const res = await api.post(API_ROUTES.UPLOAD.BASE, formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        skipGlobalLoader: true,
       });
 
       if (res.data.success) {
-        await api.post(`/chat/${projectId}`, {
-          content: file.name,
-          type: "FILE",
-          fileUrl: res.data.data.url,
-        });
+        await api.post(
+          API_ROUTES.CHAT.PROJECT(projectId),
+          {
+            content: file.name,
+            type: "FILE",
+            fileUrl: res.data.data.url,
+          },
+          { skipGlobalLoader: true },
+        );
       }
     } catch (err) {
       console.error("Upload failed", err);
@@ -150,7 +230,11 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
 
   const handleSaveEdit = async (messageId: string) => {
     try {
-      await api.put(`/chat/${messageId}`, { content: editContent });
+      await api.put(
+        API_ROUTES.CHAT.MESSAGE(messageId),
+        { content: editContent },
+        { skipGlobalLoader: true },
+      );
       setEditingId(null);
     } catch (err) {
       console.error("Failed to edit", err);
@@ -160,7 +244,9 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
   const handleDelete = async (messageId: string) => {
     if (!confirm("Delete this message?")) return;
     try {
-      await api.delete(`/chat/${messageId}`);
+      await api.delete(API_ROUTES.CHAT.MESSAGE(messageId), {
+        skipGlobalLoader: true,
+      });
     } catch (err) {
       console.error("Failed to delete", err);
     }
@@ -173,7 +259,16 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
         <span className="text-xs text-gray-400">Live</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+        onScroll={handleScroll}
+        ref={scrollContainerRef}
+      >
+        {loadingMore && (
+          <div className="flex justify-center p-2">
+            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
         {messages.map((msg, idx) => {
           const isMe = msg.senderId === user?.id;
           const time = new Date(msg.createdAt).toLocaleTimeString([], {
@@ -242,11 +337,12 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
                         className="block"
                       >
                         {msg.fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          <img
+                          <Image
                             src={msg.fileUrl}
                             alt="attachment"
-                            className="max-w-[200px] rounded-lg border border-gray-200"
-                            loading="lazy"
+                            width={200}
+                            height={200}
+                            className="max-w-[200px] h-auto rounded-lg border border-gray-200"
                           />
                         ) : (
                           <div className="flex items-center gap-2 p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">

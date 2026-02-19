@@ -16,23 +16,33 @@ import {
   Clock,
   AlertCircle,
   MessageSquare,
-  Plus,
   Rows,
+  Layers,
+  Play,
+  PenLine,
+  PanelRight,
+  Plus,
 } from "lucide-react";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
+import KanbanBoard from "@/components/dashboard/KanbanBoard";
+import BacklogList from "@/components/dashboard/BacklogList";
 import { taskService, Task } from "@/services/taskService";
 import { userService, User } from "@/services/userService";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
-// import { PRIORITY_LEVELS, PROJECT_STATUS } from "@/utils/constants"; // It seems this was unused or I should check if it was used. In step 21658 it was imported. Keeping it.
+import CreateSprintModal from "@/components/modals/CreateSprintModal";
 import { PRIORITY_LEVELS, PROJECT_STATUS } from "@/utils/constants";
 import ProjectChat from "@/components/chat/ProjectChat";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { useSocket } from "@/context/SocketContext";
 import { projectService, Project } from "@/services/projectService";
+import { sprintService, Sprint } from "@/services/sprintService";
 import { Button } from "@/components/ui/Button";
 import UserAvatar from "@/components/ui/UserAvatar";
-// Removed explicit api import as we use services
+import VelocityChart from "@/components/analytics/VelocityChart";
+import SprintCapacity from "@/components/analytics/SprintCapacity";
+import EditSprintModal from "@/components/modals/EditSprintModal";
+import { BarChart3 } from "lucide-react";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -45,11 +55,12 @@ export default function ProjectDetailsPage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
   const [orgUsers, setOrgUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"TASKS" | "CHAT" | "CALENDAR">(
-    "TASKS",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS"
+  >("TASKS");
 
   // Filter & Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,7 +69,15 @@ export default function ProjectDetailsPage() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
+  const [isEditSprintModalOpen, setIsEditSprintModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  // UI State: Sidebar Toggle (Professional Style)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Sprint State
+  const [selectedSprintId, setSelectedSprintId] = useState<string>("ACTIVE");
 
   // Calculate stats
   const totalTasks = tasks.length;
@@ -94,25 +113,59 @@ export default function ProjectDetailsPage() {
     return matchesSearch && matchesStatus && matchesAssignee;
   });
 
+  // Determine Active Sprint & Selected Sprint
+  const activeSprint = sprints.find((s) => s.status === "ACTIVE");
+  const selectedSprint =
+    selectedSprintId === "ACTIVE"
+      ? activeSprint
+      : sprints.find((s) => s.id === selectedSprintId);
+
+  // Split into Active Board vs Backlog
+  // Backlog: Tasks with NO sprintId
+  const backlogTasks = filteredTasks.filter((t) => !t.sprintId);
+
+  // Board Tasks: Tasks belonging to the SELECTED sprint
+  const boardTasks = filteredTasks.filter(
+    (t) =>
+      t.sprintId &&
+      selectedSprint &&
+      String(t.sprintId) === String(selectedSprint.id),
+  );
+
   // [Real-time] Socket Listeners
   const { socket, isConnected } = useSocket();
   useEffect(() => {
     if (!socket || !isConnected) return;
 
     const handleTaskCreated = (newTask: Task) => {
+      // Normalize IDs for comparison
       if (String(newTask.projectId) === String(projectId)) {
-        setTasks((prev) => [newTask, ...prev]);
+        setTasks((prev) => {
+          if (prev.find((t) => t.id === newTask.id)) return prev;
+          return [newTask, ...prev];
+        });
         toast.success(`New task: ${newTask.title}`);
       }
     };
 
     const handleTaskUpdated = (updatedTask: Task) => {
+      // Normalize IDs for comparison
       if (String(updatedTask.projectId) === String(projectId)) {
+        console.log("DEBUG: Socket task:updated received:", updatedTask);
+        if (!updatedTask.sprintId)
+          console.warn(
+            "DEBUG: WARNING - Socket task update MISSING sprintId!",
+            updatedTask,
+          );
+
         setTasks((prev) => {
           const exists = prev.find((t) => t.id === updatedTask.id);
           if (!exists) {
             return [updatedTask, ...prev];
           }
+          // CHECK IF WE NEED TO MERGE
+          // If updatedTask is missing props that 't' has, we should merge.
+          // For now, let's just log and swap.
           return prev.map((t) => (t.id === updatedTask.id ? updatedTask : t));
         });
         toast.success("Task updated");
@@ -132,14 +185,17 @@ export default function ProjectDetailsPage() {
     try {
       setLoading(true);
       // Fetch Project Details, Tasks, and Users
-      const [fetchedProject, fetchedTasks, fetchedUsers] = await Promise.all([
-        projectService.getProject(projectId),
-        taskService.getProjetTasks(projectId),
-        userService.getOrganizationUsers(),
-      ]);
+      const [fetchedProject, fetchedTasks, fetchedUsers, fetchedSprints] =
+        await Promise.all([
+          projectService.getProject(projectId),
+          taskService.getProjetTasks(projectId),
+          userService.getOrganizationUsers(),
+          sprintService.getProjectSprints(projectId),
+        ]);
       setProject(fetchedProject);
       setTasks(fetchedTasks);
       setOrgUsers(fetchedUsers);
+      setSprints(fetchedSprints);
     } catch (error: any) {
       toast.error("Failed to load project data");
       console.error(error);
@@ -167,6 +223,17 @@ export default function ProjectDetailsPage() {
     taskService.getProjetTasks(projectId).then(setTasks);
   };
 
+  const handleSprintSuccess = () => {
+    // Refresh sprints and tasks
+    Promise.all([
+      sprintService.getProjectSprints(projectId),
+      taskService.getProjetTasks(projectId),
+    ]).then(([fetchedSprints, fetchedTasks]) => {
+      setSprints(fetchedSprints);
+      setTasks(fetchedTasks);
+    });
+  };
+
   const handleDeleteTask = async (taskId: string) => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -189,6 +256,37 @@ export default function ProjectDetailsPage() {
     }
   };
 
+  const handleStartSprint = async () => {
+    if (!selectedSprint) return;
+
+    // Check if there is already an ACTIVE sprint
+    if (activeSprint) {
+      toast.error("There is already an active sprint. Complete it first.");
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: "Start Sprint?",
+      text: `Are you sure you want to start ${selectedSprint.name}?`,
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "Start Sprint",
+      confirmButtonColor: "#2563EB",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await sprintService.updateSprint(selectedSprint.id, {
+          status: "ACTIVE",
+        });
+        toast.success("Sprint Started!");
+        handleSprintSuccess();
+      } catch (error) {
+        toast.error("Failed to start sprint");
+      }
+    }
+  };
+
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
       // Optimistic UI update
@@ -203,6 +301,67 @@ export default function ProjectDetailsPage() {
       toast.error("Failed to update status");
       // Refresh to revert
       taskService.getProjetTasks(projectId).then(setTasks);
+    }
+  };
+
+  const handleMoveToSprint = async (taskId: string) => {
+    // We want to move the task to the CURRENTLY VIEWED sprint (Active or Planned)
+    // First, check if a valid sprint is selected.
+    if (!selectedSprint) {
+      toast.error("Please select a valid sprint to move the task to.");
+      return;
+    }
+
+    // Safety Check: Prevent moving to "Active View" if no sprint is active
+    if (selectedSprintId === "ACTIVE" && !activeSprint) {
+      toast.error(
+        "No active sprint running. Please select a specific sprint or start one.",
+      );
+      return;
+    }
+
+    try {
+      // Optimistic update
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, sprintId: selectedSprint.id, status: "TODO" }
+            : t,
+        ),
+      );
+
+      await taskService.updateTask(taskId, {
+        sprintId: selectedSprint.id,
+        status: "TODO",
+      } as any);
+      toast.success(`Moved to ${selectedSprint.name}`);
+    } catch (error) {
+      toast.error("Failed to move task");
+      taskService.getProjetTasks(projectId).then(setTasks);
+    }
+  };
+
+  const handleCompleteSprint = async () => {
+    if (!activeSprint) return;
+    const result = await Swal.fire({
+      title: "Complete Sprint?",
+      text: `Are you sure you want to complete ${activeSprint.name}? All unresolved tasks will be moved to Backlog.`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Complete Sprint",
+      confirmButtonColor: "#10B981",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await sprintService.updateSprint(activeSprint.id, {
+          status: "COMPLETED",
+        });
+        toast.success("Sprint Completed!");
+        handleSprintSuccess(); // Refresh data
+      } catch (error) {
+        toast.error("Failed to complete sprint");
+      }
     }
   };
 
@@ -271,11 +430,38 @@ export default function ProjectDetailsPage() {
             Calendar
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab("ANALYTICS")}
+          className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+            activeTab === "ANALYTICS"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Analytics
+          </div>
+        </button>
+
+        {/* Toggle Panel Button (Aligned Right in Tabs) */}
+        <div className="ml-auto pb-2">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`p-2 rounded-md transition-colors flex items-center gap-2 text-xs font-medium border ${isSidebarOpen ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-white text-gray-500 border-gray-200 hover:text-gray-900"}`}
+            title={isSidebarOpen ? "Maximize Board" : "Show Details"}
+          >
+            <PanelRight className="w-4 h-4" />
+            {isSidebarOpen ? "Hide Panel" : "Show Details"}
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Main Content: Tasks or Chat */}
-        <div className="lg:col-span-3 space-y-6">
+      <div className="flex flex-col lg:flex-row gap-6 relative">
+        {/* Main Content: Tasks or Chat (Flexible Width) */}
+        <div
+          className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-full lg:w-[73%]" : "w-full lg:w-full"} space-y-6`}
+        >
           {activeTab === "CHAT" ? (
             <ProjectChat projectId={projectId} />
           ) : activeTab === "CALENDAR" ? (
@@ -287,6 +473,22 @@ export default function ProjectDetailsPage() {
                 taskService.getProjetTasks(projectId).then(setTasks)
               }
             />
+          ) : activeTab === "ANALYTICS" ? (
+            <div className="space-y-6">
+              <VelocityChart sprints={sprints} tasks={tasks} />
+
+              {/* Placeholder for future analytics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm opacity-60">
+                  <h3 className="font-bold text-gray-700 mb-2">
+                    Completion Rate
+                  </h3>
+                  <div className="h-32 bg-gray-50 rounded flex items-center justify-center text-xs text-gray-400">
+                    Coming Soon
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             <>
               {/* Summary Cards */}
@@ -373,11 +575,21 @@ export default function ProjectDetailsPage() {
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                   <Button
                     onClick={openCreateModal}
-                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm order-first md:order-last"
+                    className="bg-blue-600 hover:bg-blue-700 text-gray-900 flex items-center gap-2 shadow-sm order-first md:order-last"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Create Task</span>
                   </Button>
+
+                  {isManager && (
+                    <Button
+                      onClick={() => setIsSprintModalOpen(true)}
+                      className="bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 flex items-center gap-2 shadow-sm order-first md:order-last"
+                    >
+                      <Plus className="w-4 h-4 text-gray-900 " />
+                      <span className="text-gray-900">Create Sprint</span>
+                    </Button>
+                  )}
 
                   {/* Assignee Filter */}
                   <select
@@ -419,8 +631,7 @@ export default function ProjectDetailsPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Tasks Grid */}
+              {/* Empty State */}
               {filteredTasks.length === 0 ? (
                 <div className="bg-white p-12 rounded-2xl text-center border-2 border-dashed border-gray-200">
                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 text-2xl">
@@ -448,147 +659,148 @@ export default function ProjectDetailsPage() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredTasks.map((task) => {
-                    const isDone = task.status === "DONE";
-                    const isReview = task.status === "REVIEW";
-
-                    // Lock Logic
-                    const isLocked = isDone || (!isManager && isReview);
-                    const canEdit = !isLocked;
-
-                    return (
-                      <div
-                        key={task.id}
-                        className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden relative"
+                <div className="space-y-8">
+                  {/* SPRINT CONTROLS */}
+                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <label className="text-sm font-medium text-gray-700">
+                        Sprint View:
+                      </label>
+                      <select
+                        value={selectedSprintId}
+                        onChange={(e) => setSelectedSprintId(e.target.value)}
+                        className="border-gray-900 rounded-md text-gray-900 text-sm focus:ring-blue-500 focus:border-blue-500 py-1.5 pl-3 pr-10"
                       >
-                        <div className="p-5 flex flex-col h-full">
-                          {/* Header: Priority */}
-                          <div className="flex justify-between items-start mb-3">
-                            <span
-                              className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider uppercase ${
-                                task.priority === "HIGH" ||
-                                task.priority === "CRITICAL"
-                                  ? "bg-red-50 text-red-600 border border-red-100"
-                                  : task.priority === "MEDIUM"
-                                    ? "bg-amber-50 text-amber-600 border border-amber-100"
-                                    : "bg-green-50 text-green-600 border border-green-100"
-                              }`}
-                            >
-                              {task.priority}
-                            </span>
-                            {/* Manager Actions */}
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-1 rounded-lg">
-                              {canEdit && (
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => openEditModal(task)}
-                                  className="h-7 w-7 p-0 rounded-md border-gray-100 hover:bg-blue-50 text-gray-500 hover:text-blue-600"
-                                >
-                                  <Pencil size={12} />
-                                </Button>
-                              )}
-                              {isManager && (
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  onClick={() => handleDeleteTask(task.id)}
-                                  className="h-7 w-7 p-0 rounded-md border-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600"
-                                >
-                                  <Trash2 size={12} />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
+                        <option value="ACTIVE">Current Active Sprint</option>
+                        {sprints.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} ({s.status})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                          {/* Content */}
-                          <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors pr-8">
-                            {task.title}
-                          </h3>
-                          <p className="text-sm text-gray-500 line-clamp-3 mb-4 flex-1">
-                            {task.description || "No description provided."}
-                          </p>
+                    {isManager && selectedSprint && (
+                      <div className="flex items-center gap-2">
+                        {/* EDIT BUTTON */}
+                        <Button
+                          onClick={() => setIsEditSprintModalOpen(true)}
+                          variant="outline"
+                          className="text-xs px-3 py-1.5 h-8 gap-2 border-gray-300 text-gray-700"
+                        >
+                          <PenLine className="w-3.5 h-3.5" />
+                          Start/Edit
+                        </Button>
 
-                          {/* Assignee & Date */}
-                          <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50 mb-4">
-                            <div className="flex items-center gap-2">
-                              {task.assignedTo ? (
-                                <>
-                                  <UserAvatar
-                                    user={orgUsers.find(
-                                      (u) => u.id === task.assignedTo,
-                                    )}
-                                    size="sm"
-                                    className="w-6 h-6 text-[10px]"
-                                  />
-                                  <span className="text-xs text-gray-600 truncate max-w-[80px]">
-                                    {getUserName(task.assignedTo).split(" ")[0]}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-xs text-gray-400 italic">
-                                  Unassigned
-                                </span>
-                              )}
-                            </div>
-                            {task.dueDate && (
-                              <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {formatDate(task.dueDate)}
-                              </span>
-                            )}
-                          </div>
+                        {/* START BUTTON (Only for Planned) */}
+                        {selectedSprint.status === "PLANNED" && (
+                          <Button
+                            onClick={handleStartSprint}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 h-8 gap-2"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            Start
+                          </Button>
+                        )}
 
-                          {/* Footer: Status Action */}
-                          <div className="relative">
-                            <div
-                              className={`absolute inset-y-0 left-0 w-1 rounded-l-md ${
-                                task.status === "DONE"
-                                  ? "bg-green-500"
-                                  : task.status === "IN_PROGRESS"
-                                    ? "bg-blue-500"
-                                    : task.status === "REVIEW"
-                                      ? "bg-purple-500"
-                                      : "bg-gray-400"
-                              }`}
-                            ></div>
-                            <select
-                              value={task.status}
-                              onChange={(e) =>
-                                handleStatusChange(task.id, e.target.value)
-                              }
-                              disabled={isLocked}
-                              className={`w-full appearance-none pl-4 pr-8 py-2.5 rounded-lg text-sm font-semibold outline-none border transition-all hover:bg-opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
-                                task.status === "DONE"
-                                  ? "bg-green-50 text-green-700 border-green-200"
-                                  : task.status === "IN_PROGRESS"
-                                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                                    : task.status === "REVIEW"
-                                      ? "bg-purple-50 text-purple-700 border-purple-200"
-                                      : "bg-gray-50 text-gray-700 border-gray-200"
-                              } ${isLocked ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
-                            >
-                              <option value="TODO">To Do</option>
-                              <option value="IN_PROGRESS">In Progress</option>
-                              <option value="REVIEW">Review</option>
-                              {(isManager || task.status === "DONE") && (
-                                <option value="DONE">Done</option>
-                              )}
-                            </select>
-                          </div>
-                        </div>
+                        {/* COMPLETE BUTTON (Only for Active) */}
+                        {selectedSprint.status === "ACTIVE" && (
+                          <Button
+                            onClick={handleCompleteSprint}
+                            className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 h-8 gap-2"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Complete
+                          </Button>
+                        )}
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+
+                  {/* Active Board Section */}
+                  {(boardTasks.length > 0 || selectedSprint) && (
+                    <div className="w-full min-h-[600px] flex flex-col">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Rows className="w-5 h-5 text-gray-500" />
+                        <h2 className="text-lg font-bold text-gray-800">
+                          {selectedSprint
+                            ? selectedSprint.name
+                            : "No Sprint Selected"}
+                        </h2>
+                        {selectedSprint && (
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
+                              selectedSprint.status === "ACTIVE"
+                                ? "bg-green-100 text-green-700 border-green-200"
+                                : selectedSprint.status === "COMPLETED"
+                                  ? "bg-gray-100 text-gray-700 border-gray-200"
+                                  : "bg-blue-100 text-blue-700 border-blue-200"
+                            }`}
+                          >
+                            {selectedSprint.status}
+                          </span>
+                        )}
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                          {boardTasks.length}
+                        </span>
+                      </div>
+                      {selectedSprint && (
+                        <SprintCapacity
+                          sprints={sprints}
+                          tasks={tasks}
+                          activeSprintId={selectedSprint.id}
+                        />
+                      )}
+                      <KanbanBoard
+                        tasks={boardTasks}
+                        users={orgUsers}
+                        onStatusChange={handleStatusChange}
+                        onDeleteTask={handleDeleteTask}
+                        onEditTask={openEditModal}
+                        showProjectBadges={false}
+                      />
+                    </div>
+                  )}
+
+                  {/* Backlog Section */}
+                  <div className="pt-8 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-5 h-5 text-gray-500" />
+                        <h2 className="text-lg font-bold text-gray-800">
+                          Backlog
+                        </h2>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                          {backlogTasks.length}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={openCreateModal}
+                      >
+                        + Add Item
+                      </Button>
+                    </div>
+                    <BacklogList
+                      tasks={backlogTasks}
+                      users={orgUsers}
+                      onMoveToBoard={handleMoveToSprint}
+                      onEditTask={openEditModal}
+                      onDeleteTask={handleDeleteTask}
+                      isSidebarOpen={isSidebarOpen}
+                    />
+                  </div>
                 </div>
               )}
             </>
           )}
         </div>
 
-        {/* Side Panel: Team & Details */}
-        <div className="space-y-6">
+        {/* Side Panel: Team & Details (Collapsible) */}
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? "w-full lg:w-[27%] opacity-100" : "w-0 opacity-0 lg:hidden"} space-y-6`}
+        >
           {/* Team Members */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center gap-2 mb-4">
@@ -684,6 +896,20 @@ export default function ProjectDetailsPage() {
         projectMembers={orgUsers.filter((u) =>
           project?.teamMemberIds?.includes(u.id),
         )}
+      />
+
+      <CreateSprintModal
+        isOpen={isSprintModalOpen}
+        onClose={() => setIsSprintModalOpen(false)}
+        onSuccess={handleSprintSuccess}
+        projectId={projectId}
+      />
+
+      <EditSprintModal
+        isOpen={isEditSprintModalOpen}
+        onClose={() => setIsEditSprintModalOpen(false)}
+        onSuccess={handleSprintSuccess}
+        sprint={selectedSprint || null}
       />
     </div>
   );

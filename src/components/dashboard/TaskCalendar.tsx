@@ -22,7 +22,7 @@ import { User } from "@/services/userService";
 
 interface TaskCalendarProps {
   tasks: Task[];
-  projectId: string;
+  projectId?: string; // Optional for Global Calendar
   projectMembers: User[];
   onTaskUpdate?: () => void;
 }
@@ -84,6 +84,16 @@ export default function TaskCalendar({
     handleModalClose();
   };
 
+  const handleCellClick = () => {
+    // If global calendar (no projectId), we can't create a task from here easily
+    if (!projectId) {
+      // Optional: Show toast or open modal with a project selector (future improvement)
+      return;
+    }
+    // If inside project, could auto-open create modal for that date
+    // For now keeping it simple.
+  };
+
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -127,6 +137,7 @@ export default function TaskCalendar({
           {calendarDays.map((day, dayIdx) => (
             <div
               key={day.toString()}
+              onClick={handleCellClick}
               className={`
               min-h-[120px] p-2 border-b border-r border-gray-100 transition-colors
               ${!isSameMonth(day, monthStart) ? "bg-gray-50/50" : ""}
@@ -159,14 +170,21 @@ export default function TaskCalendar({
                   .map((task) => (
                     <div
                       key={task.id}
-                      title={task.title}
+                      title={`${task.title} (${task.project?.name || "Unknown Project"})`}
                       onClick={(e) => handleTaskClick(e, task)}
                       className={`
-                      text-[10px] p-1.5 rounded border truncate cursor-pointer select-none transition-all hover:shadow-sm
+                      text-[10px] p-1.5 rounded border truncate cursor-pointer select-none transition-all hover:shadow-sm flex items-center justify-between
                       ${getPriorityColor(task.priority)}
                     `}
                     >
-                      <span className="font-semibold">{task.title}</span>
+                      <span className="font-semibold truncate w-full">
+                        {task.title}
+                      </span>
+                      {!projectId && task.project?.name && (
+                        <span className="text-[8px] opacity-70 ml-1 truncate max-w-[40px] hidden sm:inline-block">
+                          {task.project.name}
+                        </span>
+                      )}
                     </div>
                   ))}
               </div>
@@ -179,7 +197,7 @@ export default function TaskCalendar({
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onSuccess={handleModalSuccess}
-        projectId={projectId}
+        projectId={selectedTask?.projectId || projectId || ""}
         task={selectedTask}
         projectMembers={projectMembers}
       />

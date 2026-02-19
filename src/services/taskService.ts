@@ -14,8 +14,11 @@ export interface Task {
   orgId: string;
   title: string;
   description: string;
-  status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "REVIEW" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "REVIEW" | "DONE" | "BACKLOG";
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  type: "STORY" | "BUG" | "TASK";
+  storyPoints: number;
+  sprintId?: string;
   dueDate?: string;
   assignedTo?: string;
   assignedToUser?: { firstName: string; lastName: string; email: string };
@@ -30,6 +33,9 @@ export interface CreateTaskData {
   title: string;
   description: string;
   priority?: string;
+  type: "STORY" | "BUG" | "TASK";
+  storyPoints: number;
+  sprintId?: string;
   dueDate?: string;
   assignedTo?: string;
 }

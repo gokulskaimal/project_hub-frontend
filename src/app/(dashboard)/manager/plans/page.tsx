@@ -92,9 +92,11 @@ export default function ManagerPlansPage() {
         { planId },
       );
 
+      // Backend now returns an Order object (for One-Time payment)
+      // id is now order_id
       const { id: order_id, amount, currency } = response.data.data;
 
-      // Mock Handler for Free Plans or Dev Environment (if ID starts with sub_free_ or sub_mock_ or order_free_ or order_mock_)
+      // Mock Handler for Free Plans or Dev Environment
       if (
         order_id.startsWith("sub_free_") ||
         order_id.startsWith("sub_mock_") ||
@@ -102,13 +104,11 @@ export default function ManagerPlansPage() {
         order_id.startsWith("order_mock_")
       ) {
         try {
-          // For free plans, we can directly verify or skip payment step
-          // simulating a successful verification
           await api.post("/payments/verify", {
             razorpay_payment_id: `pay_mock_${Date.now()}`,
             razorpay_order_id: order_id,
             razorpay_signature: `sig_mock_${Date.now()}`,
-            planId: planId, // Pass planId
+            planId: planId,
           });
           toast.success("Plan upgraded successfully!");
           fetchData();
@@ -120,9 +120,9 @@ export default function ManagerPlansPage() {
 
       const options: RazorpayOptions = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amount,
+        amount: amount, // Required for Orders
         currency: currency,
-        order_id: order_id,
+        order_id: order_id, // Required for Orders
         name: "Project Hub",
         description: "Subscription",
         handler: async function (response: RazorpayResponse) {
@@ -131,7 +131,8 @@ export default function ManagerPlansPage() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
-              planId: planId, // Pass planId
+              planId: planId,
+              // No subscription_id needed for One-Time
             });
             toast.success("Subscription successful!");
             fetchData();

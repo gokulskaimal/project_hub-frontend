@@ -23,6 +23,7 @@ import {
   LogOut,
   Menu,
   X,
+  CalendarDays,
 } from "lucide-react";
 
 export default function MemberLayout({
@@ -86,6 +87,7 @@ export default function MemberLayout({
     { name: "Dashboard", href: "/member/dashboard", icon: LayoutDashboard },
     { name: "Projects", href: "/member/projects", icon: FolderKanban },
     { name: "My Tasks", href: "/member/tasks", icon: CheckSquare },
+    { name: "Calendar", href: "/member/calendar", icon: CalendarDays }, // NEW LINK
   ];
 
   if (!isReady || !isLoggedIn) return null;

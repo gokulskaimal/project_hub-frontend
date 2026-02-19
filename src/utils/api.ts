@@ -41,6 +41,14 @@ export const API_ROUTES = {
   ORGANIZATION: {
     USERS: "/organization/users",
   },
+  CHAT: {
+    BASE: "/chat",
+    PROJECT: (projectId: string) => `/chat/${projectId}`,
+    MESSAGE: (messageId: string) => `/chat/${messageId}`,
+  },
+  UPLOAD: {
+    BASE: "/upload",
+  },
 } as const;
 
 export const api = axios.create({
