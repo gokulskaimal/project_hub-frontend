@@ -17,6 +17,8 @@ import {
   LogOut,
   Menu,
   X,
+  KanbanSquare,
+  CalendarDays,
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SocketNotification from "@/components/notifications/SocketNotification";
@@ -38,13 +40,13 @@ export default function ManagerLayout({
     if (accessToken && !user) {
       dispatch(fetchProfile());
     }
-    if (user && user.role !== "ORG_MANAGER" && user.role !== "admin") {
+    if (user && user.role !== "org-manager" && user.role !== "admin") {
       // Basic protection
-      if (user.role === "TEAM MEMBER" || user.role === "member") {
+      if (user.role === "team-member" || user.role === "member") {
         router.push("/member/dashboard");
       }
     }
-  }, [accessToken, user, dispatch]);
+  }, [accessToken, user, dispatch, router]);
 
   const profileHook = useMemberProfile(accessToken);
   const [userModalMode, setUserModalMode] = useState<"view" | "edit">("view");
@@ -68,18 +70,12 @@ export default function ManagerLayout({
 
   const sidebarLinks = [
     { name: "Dashboard", href: "/manager/dashboard", icon: LayoutDashboard },
+    { name: "Projects", href: "/manager/projects", icon: LayoutDashboard },
+    { name: "Boards", href: "/manager/boards", icon: KanbanSquare },
+    { name: "Calendar", href: "/manager/calendar", icon: CalendarDays },
     { name: "Members", href: "/manager/members", icon: Users },
     { name: "Invites", href: "/manager/invites", icon: Mail },
     { name: "Plans", href: "/manager/plans", icon: CreditCard },
-
-    { name: "Projects", href: "/manager/projects", icon: LayoutDashboard },
-    // { name: 'Kanban Board', href: '/manager/kanban' },
-    // { name: 'Calendar', href: '/manager/calendar' },
-    // { name: 'Chat', href: '/manager/chat' },
-    // { name: 'Tickets', href: '/manager/tickets' },
-    // { name: 'Team', href: '/manager/team' },
-    // { name: 'Billing', href: '/manager/billing' },
-    // { name: 'Settings', href: '/manager/settings', borderTop: true },
   ];
 
   return (

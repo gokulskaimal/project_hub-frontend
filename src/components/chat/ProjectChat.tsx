@@ -130,7 +130,15 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
     socket.emit("join-project", projectId);
 
     const handleMessage = (msg: ChatMessage) => {
-      setMessages((prev) => [...prev, msg]);
+      // Prevent duplicate messages - only add if not already in the list
+      setMessages((prev) => {
+        const messageExists = prev.some((m) => m.id === msg.id);
+        if (messageExists) {
+          return prev; // Message already exists, don't add duplicate
+        }
+        return [...prev, msg];
+      });
+
       // Only scroll to bottom if we are already near bottom or if I sent the message
       if (scrollContainerRef.current) {
         const { scrollTop, scrollHeight, clientHeight } =
@@ -168,18 +176,30 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
+    const messageContent = newMessage;
+    // Clear input immediately for better UX
+    setNewMessage("");
+
     try {
-      await api.post(
+      const res = await api.post(
         API_ROUTES.CHAT.PROJECT(projectId),
         {
-          content: newMessage,
+          content: messageContent,
           type: "TEXT",
         },
         { skipGlobalLoader: true },
       );
-      setNewMessage("");
+
+      // Add message to state immediately from API response (optimistic update)
+      if (res.data.success && res.data.data) {
+        const newMsg = res.data.data;
+        setMessages((prev) => [...prev, newMsg]);
+        // Scroll to bottom to show the new message
+        setTimeout(scrollToBottom, 50);
+      }
     } catch (err) {
       console.error("Failed to send", err);
+      // Optionally show error toast
     }
   };
 
@@ -198,21 +218,29 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
     formData.append("file", file);
 
     try {
-      const res = await api.post(API_ROUTES.UPLOAD.BASE, formData, {
+      const uploadRes = await api.post(API_ROUTES.UPLOAD.BASE, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         skipGlobalLoader: true,
       });
 
-      if (res.data.success) {
-        await api.post(
+      if (uploadRes.data.success) {
+        const messageRes = await api.post(
           API_ROUTES.CHAT.PROJECT(projectId),
           {
             content: file.name,
             type: "FILE",
-            fileUrl: res.data.data.url,
+            fileUrl: uploadRes.data.data.url,
           },
           { skipGlobalLoader: true },
         );
+
+        // Add file message to state immediately from API response (optimistic update)
+        if (messageRes.data.success && messageRes.data.data) {
+          const newMsg = messageRes.data.data;
+          setMessages((prev) => [...prev, newMsg]);
+          // Scroll to bottom to show the new message
+          setTimeout(scrollToBottom, 50);
+        }
       }
     } catch (err) {
       console.error("Upload failed", err);
@@ -312,18 +340,23 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
                       <input
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
+                        placeholder="Edit message..."
                         className="text-black text-sm px-2 py-1 rounded border border-gray-300 outline-none"
                         autoFocus
                       />
                       <button
                         onClick={() => handleSaveEdit(msg.id)}
                         className="p-1 hover:bg-green-100 rounded-full text-green-600"
+                        title="Save edit"
+                        aria-label="Save edit"
                       >
                         <Check size={14} />
                       </button>
                       <button
                         onClick={() => setEditingId(null)}
                         className="p-1 hover:bg-red-100 rounded-full text-red-600"
+                        title="Cancel edit"
+                        aria-label="Cancel edit"
                       >
                         <X size={14} />
                       </button>
@@ -373,12 +406,16 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
                         <button
                           onClick={() => handleEditClick(msg)}
                           className="p-1 hover:bg-gray-100 rounded text-gray-500"
+                          title="Edit message"
+                          aria-label="Edit message"
                         >
                           <Edit2 size={12} />
                         </button>
                         <button
                           onClick={() => handleDelete(msg.id)}
                           className="p-1 hover:bg-red-50 rounded text-red-500"
+                          title="Delete message"
+                          aria-label="Delete message"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -402,6 +439,7 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
           ref={fileInputRef}
           className="hidden"
           onChange={handleFileSelect}
+          aria-label="Select file to upload"
         />
         <button
           type="button"
@@ -412,6 +450,8 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
               ? "text-gray-300"
               : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
           }`}
+          title="Attach file"
+          aria-label="Attach file"
         >
           <Paperclip className="w-5 h-5" />
         </button>
@@ -420,11 +460,14 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
+          aria-label="Message input"
           className="flex-1 bg-gray-50 border-0 rounded-full px-4 focus:ring-2 focus:ring-blue-100 outline-none text-gray-900 placeholder:text-gray-400"
         />
         <button
           type="submit"
           className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-sm"
+          title="Send message"
+          aria-label="Send message"
         >
           <Send className="w-5 h-5" />
         </button>

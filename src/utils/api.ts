@@ -30,7 +30,7 @@ export const API_ROUTES = {
   },
   MANAGER: {
     MEMBERS: "/manager/members",
-    PLANS: "/plans", // Public route for listing plans
+    PLANS: "/plans",
     INVITATIONS: "/manager/invitations",
     ORGANIZATION: "/manager/organization",
   },
@@ -57,7 +57,6 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Dependency Injection for Store (to avoid circular dependency)
 let appStore: any = null;
 
 export const injectStore = (store: any) => {
@@ -100,7 +99,7 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Extend AxiosRequestConfig to include our custom property
+// Extend AxiosRequestConfig
 declare module "axios" {
   export interface AxiosRequestConfig {
     skipGlobalLoader?: boolean;
@@ -109,7 +108,6 @@ declare module "axios" {
 
 api.interceptors.request.use(
   (config) => {
-    // Trigger Global Loader unless explicitly skipped
     if (!config.skipGlobalLoader) {
       showLoader();
     }
@@ -135,7 +133,6 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    // attempt to read config from error object
     const config = error?.config || error?.response?.config;
     if (!config?.skipGlobalLoader) {
       hideLoader();
@@ -153,13 +150,11 @@ api.interceptors.response.use(
           typeof window !== "undefined" &&
           !window.location.pathname.includes("/login")
         ) {
-          // Prevent infinite loop if the refresh endpoint itself returns 401
           if (config.url?.includes(API_ROUTES.AUTH.REFRESH)) {
             return Promise.reject(error);
           }
 
           if (isRefreshing) {
-            // Queue the request
             return new Promise((resolve, reject) => {
               failedQueue.push({ resolve, reject });
             })
@@ -180,15 +175,12 @@ api.interceptors.response.use(
           isRefreshing = true;
 
           try {
-            // Attempt to refresh token
-            // We use a fresh axios instance to avoid interceptor loops if needed,
-            // but here we just check the URL above.
             const refreshResponse = await api.post(API_ROUTES.AUTH.REFRESH);
             const { accessToken } = refreshResponse.data?.data || {};
 
             if (accessToken) {
               localStorage.setItem("accessToken", accessToken);
-              // Also update the header for the original request
+
               if (config.headers) {
                 config.headers.Authorization = `Bearer ${accessToken}`;
               }
@@ -220,19 +212,19 @@ api.interceptors.response.use(
       const extracted =
         typeof data === "string" && data.trim()
           ? data
-          : data?.error?.message || // Standardized Backend Error
+          : data?.error?.message ||
             data?.message ||
-            data?.error || // Legacy text
+            data?.error ||
             data?.detail ||
             (Array.isArray(data?.errors) && data.errors[0]?.message) ||
             error?.message ||
             "Network error";
-      // Mutate the original AxiosError message so downstream handlers can read a friendly message
+
       if (extracted && typeof extracted === "string") {
         error.message = extracted;
       }
     } catch {}
-    // Important: keep the original AxiosError so axios.isAxiosError remains true
+
     return Promise.reject(error);
   },
 );

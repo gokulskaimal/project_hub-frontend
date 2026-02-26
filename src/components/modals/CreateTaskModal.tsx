@@ -265,7 +265,7 @@ export default function CreateTaskModal({
               <select
                 value={formData.priority}
                 onChange={(e) =>
-                  setFormData({ ...formData, priority: e.target.value as any })
+                  setFormData({ ...formData, priority: e.target.value })
                 }
                 disabled={isLocked}
                 className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm ${isLocked ? "bg-gray-100 cursor-not-allowed" : ""}`}

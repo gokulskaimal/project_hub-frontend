@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { X } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { sprintService } from "@/services/sprintService";
+import { z } from "zod";
 
 interface CreateSprintModalProps {
   isOpen: boolean;
@@ -11,6 +12,30 @@ interface CreateSprintModalProps {
   onSuccess: () => void;
   projectId: string;
 }
+
+const sprintSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(3, "Sprint name must be at least 3 characters long")
+      .max(100, "Sprint name must not exceed 100 characters"),
+    startDate: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: "Invalid start date",
+      }),
+    endDate: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: "Invalid end date",
+      }),
+    goal: z.string().trim().optional(),
+    description: z.string().trim().optional(),
+  })
+  .refine((data) => {
+    return new Date(data.endDate) >= new Date(data.startDate);
+  });
 
 export default function CreateSprintModal({
   isOpen,
@@ -29,10 +54,20 @@ export default function CreateSprintModal({
     description: "",
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.startDate || !formData.endDate) {
-      toast.error("Please fill in all required fields");
+    setFormErrors({});
+    const result = sprintSchema.safeParse(formData);
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) errors[err.path[0] as string] = err.message;
+      });
+      setFormErrors(errors);
+
+      toast.error(Object.values(errors)[0]);
       return;
     }
 

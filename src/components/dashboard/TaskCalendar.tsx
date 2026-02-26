@@ -17,11 +17,13 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { Task } from "@/services/taskService";
+import { Project } from "@/services/projectService";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import { User } from "@/services/userService";
 
 interface TaskCalendarProps {
   tasks: Task[];
+  projects?: Project[];
   projectId?: string; // Optional for Global Calendar
   projectMembers: User[];
   onTaskUpdate?: () => void;
@@ -29,6 +31,7 @@ interface TaskCalendarProps {
 
 export default function TaskCalendar({
   tasks,
+  projects = [],
   projectId,
   projectMembers,
   onTaskUpdate,
@@ -162,6 +165,25 @@ export default function TaskCalendar({
               </div>
 
               <div className="space-y-1">
+                {/* Render Projects End Dates First */}
+                {projects
+                  .filter((project) => {
+                    if (!project.endDate) return false;
+                    return isSameDay(new Date(project.endDate), day);
+                  })
+                  .map((project) => (
+                    <div
+                      key={`proj-${project.id}`}
+                      title={`Project Deadline: ${project.name}`}
+                      className="text-[10px] p-1.5 rounded border truncate select-none shadow-sm flex items-center justify-between bg-purple-100 text-purple-700 border-purple-200"
+                    >
+                      <span className="font-bold truncate w-full flex items-center gap-1">
+                        🚀 {project.name}
+                      </span>
+                    </div>
+                  ))}
+
+                {/* Render Tasks */}
                 {tasks
                   .filter((task) => {
                     if (!task.dueDate) return false;

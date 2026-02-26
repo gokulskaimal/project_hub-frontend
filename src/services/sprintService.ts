@@ -22,6 +22,15 @@ export interface CreateSprintData {
   goal?: string;
 }
 
+export interface UpdateSprintData {
+  name?: string;
+  description?: string;
+  status?: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  goal?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+}
+
 export const sprintService = {
   getProjectSprints: async (projectId: string): Promise<Sprint[]> => {
     // Ensuring route matches backend implementation plan
@@ -32,8 +41,12 @@ export const sprintService = {
     const response = await api.post(`/projects/sprints`, data);
     return response.data;
   },
-  updateSprint: async (sprintId: string, data: Partial<Sprint>) => {
+  updateSprint: async (sprintId: string, data: UpdateSprintData) => {
     const response = await api.put(`/projects/sprints/${sprintId}`, data);
     return response.data.data;
+  },
+  deleteSprint: async (sprintId: string) => {
+    const response = await api.delete(`/projects/sprints/${sprintId}`);
+    return response.data;
   },
 };

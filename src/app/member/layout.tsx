@@ -24,6 +24,7 @@ import {
   Menu,
   X,
   CalendarDays,
+  KanbanSquare,
 } from "lucide-react";
 
 export default function MemberLayout({
@@ -63,12 +64,14 @@ export default function MemberLayout({
     if (isReady) {
       if (!isLoggedIn) {
         router.push("/login");
-      } else if (role !== "member" && role !== "project_manager") {
+      } else if (
+        role !== "team-member" &&
+        role !== "member" &&
+        role !== "project-manager"
+      ) {
         // Redirect based on role if not a member
-        if (role === "org_manager" || role === "ORG_MANAGER")
-          router.push("/manager/dashboard");
-        else if (role === "super_admin" || role === "SUPER_ADMIN")
-          router.push("/admin/dashboard");
+        if (role === "org-manager") router.push("/manager/dashboard");
+        else if (role === "super-admin") router.push("/admin/dashboard");
       }
     }
   }, [isReady, isLoggedIn, role, router]);
@@ -87,7 +90,8 @@ export default function MemberLayout({
     { name: "Dashboard", href: "/member/dashboard", icon: LayoutDashboard },
     { name: "Projects", href: "/member/projects", icon: FolderKanban },
     { name: "My Tasks", href: "/member/tasks", icon: CheckSquare },
-    { name: "Calendar", href: "/member/calendar", icon: CalendarDays }, // NEW LINK
+    { name: "Calendar", href: "/member/calendar", icon: CalendarDays },
+    { name: "Boards", href: "/member/boards", icon: KanbanSquare },
   ];
 
   if (!isReady || !isLoggedIn) return null;

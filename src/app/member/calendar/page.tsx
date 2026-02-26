@@ -3,20 +3,23 @@
 import React, { useEffect, useState } from "react";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
 import { taskService, Task } from "@/services/taskService";
-import { userService, User } from "@/services/userService";
+import { projectService, Project } from "@/services/projectService";
 import { toast } from "react-hot-toast";
 
 export default function GlobalCalendarPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [users, setUsers] = useState<User[]>([]);
 
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const myTasks = await taskService.getMyTasks();
+      const [myTasks, myProjects] = await Promise.all([
+        taskService.getMyTasks(),
+        projectService.getMyProjects(),
+      ]);
       setTasks(myTasks);
+      setProjects(myProjects);
     } catch (error) {
       console.error(error);
       toast.error("Failed to load calendar data");
@@ -42,12 +45,13 @@ export default function GlobalCalendarPage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-gray-900">My Calendar</h1>
         <p className="text-sm text-gray-500">
-          View your deadlines across all projects.
+          View your deadlines and active projects.
         </p>
       </div>
 
       <TaskCalendar
         tasks={tasks}
+        projects={projects}
         projectId={undefined} // Undefined = Global Mode
         projectMembers={[]} // We don't pass project members here for simplified view
         onTaskUpdate={fetchAllData}

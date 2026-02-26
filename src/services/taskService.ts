@@ -7,11 +7,19 @@ export interface TimeLog {
   duration?: number;
 }
 
+export interface TaskComment {
+  id?: string;
+  userId: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   projectId: string;
   project?: { name: string };
   orgId: string;
+  taskKey?: string;
   title: string;
   description: string;
   status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "REVIEW" | "DONE" | "BACKLOG";
@@ -26,6 +34,8 @@ export interface Task {
   updatedAt?: string;
   timeLogs?: TimeLog[];
   totalTimeSpent?: number;
+  attachments?: string[];
+  comments?: TaskComment[];
 }
 
 export interface CreateTaskData {
@@ -69,5 +79,17 @@ export const taskService = {
       action,
     });
     return response.data;
+  },
+  addComment: async (taskId: string, text: string) => {
+    const response = await api.post(`/projects/tasks/${taskId}/comments`, {
+      text,
+    });
+    return response.data.data;
+  },
+  addAttachment: async (taskId: string, url: string) => {
+    const response = await api.post(`/projects/tasks/${taskId}/attachments`, {
+      url,
+    });
+    return response.data.data;
   },
 };

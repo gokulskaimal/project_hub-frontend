@@ -20,6 +20,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import toast from "react-hot-toast";
+import TaskDetailsModal from "@/components/modals/TaskDetailsModal";
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -79,6 +80,9 @@ export default function KanbanBoard({
   // Local state to force re-render for timer updates
   const [, setTick] = useState(0);
 
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
   useEffect(() => {
     // Timer interval to update UI every second for active timers
     const interval = setInterval(() => setTick((t) => t + 1), 1000);
@@ -93,7 +97,7 @@ export default function KanbanBoard({
       destination.index === source.index
     )
       return;
-    if (destination.droppableId === "DONE" && userRole === "TEAM MEMBER") {
+    if (destination.droppableId === "DONE" && userRole !== "org-manager") {
       toast.error("Only Managers can move tasks to Done.");
       return;
     }
@@ -247,26 +251,59 @@ export default function KanbanBoard({
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            onClick={() => onEditTask(task)}
+                            onClick={() => {
+                              setSelectedTask(task);
+                              setIsDetailsModalOpen(true);
+                            }}
                             className={`bg-white p-4 rounded-xl border border-gray-100 group cursor-grab active:cursor-grabbing transition-all duration-200 ease-in-out ${snapshot.isDragging ? "shadow-2xl scale-[1.02] z-50 ring-1 ring-gray-200" : "shadow-sm hover:shadow-md hover:-translate-y-0.5"}`}
                             style={provided.draggableProps.style}
                           >
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="text-sm font-bold text-gray-800 leading-tight line-clamp-2 pr-2 flex items-center gap-2">
                                 {getTypeIcon(task.type)}
+                                <span className="text-gray-400 text-xs font-mono">
+                                  {task.taskKey}
+                                </span>
                                 {task.title}
                               </h4>
-                              {onDeleteTask && (
+                              <div className="flex gap-1 items-center">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onDeleteTask(task.id);
+                                    onEditTask(task);
                                   }}
-                                  className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                  className="text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                  title="Edit Task Definition"
                                 >
-                                  <Trash2 size={14} />
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="lucide lucide-pencil"
+                                  >
+                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                    <path d="m15 5 4 4" />
+                                  </svg>
                                 </button>
-                              )}
+                                {onDeleteTask && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteTask(task.id);
+                                    }}
+                                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                    title="Delete Task"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                )}
+                              </div>
                             </div>
 
                             {task.description && (
@@ -356,6 +393,22 @@ export default function KanbanBoard({
           </div>
         ))}
       </div>
+
+      <TaskDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedTask(null);
+        }}
+        task={selectedTask}
+        users={users}
+        currentUserId={user?.id || ""}
+        onTaskUpdated={() => {
+          // Instead of a full reload we can just signal a re-render.
+          // You also typically want to resync the single task but the container will pull via websockets/polling soon
+          // For immediate feedback, maybe a toast that WS handles the rest.
+        }}
+      />
     </DragDropContext>
   );
 }

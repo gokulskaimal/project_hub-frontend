@@ -199,10 +199,8 @@ export const verifyOtp = createAsyncThunk<
   try {
     const response = await api.post(API_ROUTES.AUTH.VERIFY_OTP, { email, otp });
 
-    // Check if OTP was actually verified in the response
     const data = response.data?.data;
     if (!data?.verified) {
-      // OTP verification failed, return the error message
       const message = data?.message || "OTP verification failed";
       return thunkAPI.rejectWithValue(message);
     }
@@ -303,6 +301,10 @@ const authSlice = createSlice({
         state.error = null;
         state.accessToken = action.payload.accessToken;
         state.role = normalizeRole(action.payload.role);
+        if (action.payload.user) {
+          action.payload.user.role =
+            normalizeRole(action.payload.user.role) || action.payload.user.role;
+        }
         state.user = action.payload.user;
         try {
           if (typeof window !== "undefined") {
@@ -433,6 +435,10 @@ const authSlice = createSlice({
         state.error = null;
         state.accessToken = action.payload.accessToken;
         state.role = normalizeRole(action.payload.role);
+        if (action.payload.user) {
+          action.payload.user.role =
+            normalizeRole(action.payload.user.role) || action.payload.user.role;
+        }
         state.user = action.payload.user;
         try {
           if (typeof window !== "undefined") {
@@ -457,6 +463,10 @@ const authSlice = createSlice({
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
+        if (action.payload) {
+          action.payload.role =
+            normalizeRole(action.payload.role) || action.payload.role;
+        }
         state.user = action.payload;
         state.error = null;
       })

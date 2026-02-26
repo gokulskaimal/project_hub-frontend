@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -42,7 +42,10 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
 import EditSprintModal from "@/components/modals/EditSprintModal";
+import StartSprintModal from "@/components/modals/StartSprintModal";
 import { BarChart3 } from "lucide-react";
+import { useTaskFilters } from "@/hooks/useTaskFilters";
+import ProjectFilters from "@/components/project/ProjectFilters";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -62,15 +65,28 @@ export default function ProjectDetailsPage() {
     "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS"
   >("TASKS");
 
-  // Filter & Search State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [assigneeFilter, setAssigneeFilter] = useState("ALL");
+  // Filter & Search State via Custom Hook
+  const {
+    filteredTasks,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    assigneeFilter,
+    setAssigneeFilter,
+    priorityFilter,
+    setPriorityFilter,
+    typeFilter,
+    setTypeFilter,
+    dateFilter,
+    setDateFilter,
+  } = useTaskFilters(tasks);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
   const [isEditSprintModalOpen, setIsEditSprintModalOpen] = useState(false);
+  const [isStartSprintOpen, setIsStartSprintOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   // UI State: Sidebar Toggle (Professional Style)
@@ -88,31 +104,6 @@ export default function ProjectDetailsPage() {
     project?.teamMemberIds?.includes(user.id),
   );
 
-  // Determine filtered tasks
-  const filteredTasks = tasks.filter((task) => {
-    if (!task) return false;
-    const title = task.title || "";
-    const desc = task.description || "";
-
-    const matchesSearch =
-      title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      desc.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "ALL" || task.status === statusFilter;
-
-    // Assignee Filter Logic
-    let matchesAssignee = true;
-    if (assigneeFilter !== "ALL") {
-      if (assigneeFilter === "UNASSIGNED") {
-        matchesAssignee = !task.assignedTo;
-      } else {
-        matchesAssignee = task.assignedTo === assigneeFilter;
-      }
-    }
-
-    return matchesSearch && matchesStatus && matchesAssignee;
-  });
-
   // Determine Active Sprint & Selected Sprint
   const activeSprint = sprints.find((s) => s.status === "ACTIVE");
   const selectedSprint =
@@ -122,14 +113,20 @@ export default function ProjectDetailsPage() {
 
   // Split into Active Board vs Backlog
   // Backlog: Tasks with NO sprintId
-  const backlogTasks = filteredTasks.filter((t) => !t.sprintId);
+  const backlogTasks = useMemo(() => {
+    return filteredTasks.filter((t) => !t.sprintId);
+  }, [filteredTasks]);
 
   // Board Tasks: Tasks belonging to the SELECTED sprint
-  const boardTasks = filteredTasks.filter(
-    (t) =>
-      t.sprintId &&
-      selectedSprint &&
-      String(t.sprintId) === String(selectedSprint.id),
+  const boardTasks = useMemo(
+    () =>
+      filteredTasks.filter(
+        (t) =>
+          t.sprintId &&
+          selectedSprint &&
+          String(t.sprintId) === String(selectedSprint.id),
+      ),
+    [filteredTasks, selectedSprint],
   );
 
   // [Real-time] Socket Listeners
@@ -159,14 +156,14 @@ export default function ProjectDetailsPage() {
           );
 
         setTasks((prev) => {
-          const exists = prev.find((t) => t.id === updatedTask.id);
-          if (!exists) {
+          const exists = prev.findIndex((t) => t.id === updatedTask.id);
+          if (exists === -1) {
             return [updatedTask, ...prev];
           }
-          // CHECK IF WE NEED TO MERGE
-          // If updatedTask is missing props that 't' has, we should merge.
-          // For now, let's just log and swap.
-          return prev.map((t) => (t.id === updatedTask.id ? updatedTask : t));
+
+          const mergeTasks = [...prev];
+          mergeTasks[exists] = { ...mergeTasks[exists], ...updatedTask };
+          return mergeTasks;
         });
         toast.success("Task updated");
       }
@@ -256,34 +253,55 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  const handleStartSprint = async () => {
-    if (!selectedSprint) return;
-
-    // Check if there is already an ACTIVE sprint
-    if (activeSprint) {
-      toast.error("There is already an active sprint. Complete it first.");
-      return;
-    }
-
+  const handleDeleteSprint = async (sprintId: string) => {
     const result = await Swal.fire({
-      title: "Start Sprint?",
-      text: `Are you sure you want to start ${selectedSprint.name}?`,
-      icon: "info",
+      title: "Are you sure?",
+      text: "You won't be able to revert this! All tasks will move back to the backlog.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Start Sprint",
-      confirmButtonColor: "#2563EB",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete sprint!",
     });
 
     if (result.isConfirmed) {
       try {
-        await sprintService.updateSprint(selectedSprint.id, {
-          status: "ACTIVE",
-        });
-        toast.success("Sprint Started!");
+        await sprintService.deleteSprint(sprintId);
+        toast.success("Sprint deleted");
+        setSelectedSprintId("ACTIVE");
         handleSprintSuccess();
-      } catch (error) {
-        toast.error("Failed to start sprint");
+      } catch (error: any) {
+        toast.error("Failed to delete sprint");
       }
+    }
+  };
+
+  const handleStartSprintClick = () => {
+    if (!selectedSprint) return;
+    if (activeSprint) {
+      toast.error("There is already an active sprint. Complete it first.");
+      return;
+    }
+    setIsStartSprintOpen(true);
+  };
+
+  const handleConfirmStartSprint = async (data: {
+    goal: string;
+    startDate: string;
+    endDate: string;
+  }) => {
+    try {
+      await sprintService.updateSprint(selectedSprint!.id, {
+        status: "ACTIVE",
+        goal: data.goal,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+      });
+      toast.success("Sprint Started!");
+      setIsStartSprintOpen(false);
+      handleSprintSuccess();
+    } catch (error) {
+      toast.error("Failed to start sprint");
     }
   };
 
@@ -558,24 +576,28 @@ export default function ProjectDetailsPage() {
               </div>
 
               {/* Controls Bar */}
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
-                {/* Search */}
-                <div className="relative w-full md:max-w-md">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search tasks..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black transition-all"
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                <div className="flex-1 w-full">
+                  <ProjectFilters
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    assigneeFilter={assigneeFilter}
+                    setAssigneeFilter={setAssigneeFilter}
+                    priorityFilter={priorityFilter}
+                    setPriorityFilter={setPriorityFilter}
+                    typeFilter={typeFilter}
+                    setTypeFilter={setTypeFilter}
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
+                    teamMembers={teamMembers}
                   />
                 </div>
-
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="flex gap-3">
                   <Button
                     onClick={openCreateModal}
-                    className="bg-blue-600 hover:bg-blue-700 text-gray-900 flex items-center gap-2 shadow-sm order-first md:order-last"
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Create Task</span>
@@ -584,51 +606,12 @@ export default function ProjectDetailsPage() {
                   {isManager && (
                     <Button
                       onClick={() => setIsSprintModalOpen(true)}
-                      className="bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 flex items-center gap-2 shadow-sm order-first md:order-last"
+                      className="bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 flex items-center gap-2 shadow-sm"
                     >
-                      <Plus className="w-4 h-4 text-gray-900 " />
+                      <Plus className="w-4 h-4 text-gray-900" />
                       <span className="text-gray-900">Create Sprint</span>
                     </Button>
                   )}
-
-                  {/* Assignee Filter */}
-                  <select
-                    value={assigneeFilter}
-                    onChange={(e) => setAssigneeFilter(e.target.value)}
-                    className="appearance-none px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors max-w-[150px]"
-                  >
-                    <option value="ALL">All Assignees</option>
-                    <option value="UNASSIGNED">Unassigned</option>
-                    {teamMembers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.firstName} {user.lastName}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Status Filter */}
-                  <div className="relative">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
-                    >
-                      <option value="ALL">All Status</option>
-                      <option value="TODO">To Do</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="REVIEW">Review</option>
-                      <option value="DONE">Done</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                      <svg
-                        className="fill-current h-4 w-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
-                  </div>
                 </div>
               </div>
               {/* Empty State */}
@@ -645,12 +628,18 @@ export default function ProjectDetailsPage() {
                   </p>
                   {(searchQuery ||
                     statusFilter !== "ALL" ||
-                    assigneeFilter !== "ALL") && (
+                    assigneeFilter !== "ALL" ||
+                    priorityFilter !== "ALL" ||
+                    typeFilter !== "ALL" ||
+                    dateFilter !== "ALL") && (
                     <button
                       onClick={() => {
                         setSearchQuery("");
                         setStatusFilter("ALL");
                         setAssigneeFilter("ALL");
+                        setPriorityFilter("ALL");
+                        setTypeFilter("ALL");
+                        setDateFilter("ALL");
                       }}
                       className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium underline underline-offset-2"
                     >
@@ -692,10 +681,20 @@ export default function ProjectDetailsPage() {
                           Start/Edit
                         </Button>
 
+                        {/* DELETE BUTTON */}
+                        <Button
+                          onClick={() => handleDeleteSprint(selectedSprint.id)}
+                          variant="outline"
+                          className="text-xs px-3 py-1.5 h-8 gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </Button>
+
                         {/* START BUTTON (Only for Planned) */}
                         {selectedSprint.status === "PLANNED" && (
                           <Button
-                            onClick={handleStartSprint}
+                            onClick={handleStartSprintClick}
                             className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 h-8 gap-2"
                           >
                             <Play className="w-3.5 h-3.5" />
@@ -910,6 +909,14 @@ export default function ProjectDetailsPage() {
         onClose={() => setIsEditSprintModalOpen(false)}
         onSuccess={handleSprintSuccess}
         sprint={selectedSprint || null}
+      />
+
+      <StartSprintModal
+        isOpen={isStartSprintOpen}
+        onClose={() => setIsStartSprintOpen(false)}
+        onConfirm={handleConfirmStartSprint}
+        sprintName={selectedSprint?.name || ""}
+        taskCount={boardTasks.length}
       />
     </div>
   );

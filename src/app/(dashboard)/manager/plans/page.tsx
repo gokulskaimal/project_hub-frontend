@@ -263,19 +263,40 @@ export default function ManagerPlansPage() {
                   </div>
 
                   <div className="p-6 pt-0 mt-auto">
-                    <button
-                      onClick={() => !isCurrentPlan && handleSubscribe(plan.id)}
-                      disabled={isCurrentPlan}
-                      className={`w-full py-3 rounded-xl text-sm font-semibold transition-all ${
-                        isCurrentPlan
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-900 text-white hover:bg-gray-800 shadow-md hover:shadow-xl"
-                      }`}
-                    >
-                      {isCurrentPlan
-                        ? "Active Plan"
-                        : `Upgrade to ${plan.name}`}
-                    </button>
+                    {(() => {
+                      if (isCurrentPlan) {
+                        return (
+                          <button
+                            disabled
+                            className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-gray-100 text-gray-400 cursor-not-allowed"
+                          >
+                            Active Plan
+                          </button>
+                        );
+                      }
+
+                      const currentPlanPrice = currentOrg?.planId
+                        ? plans.find((p) => p.id === currentOrg.planId)
+                            ?.price || 0
+                        : 0;
+
+                      const isDowngrade = plan.price < currentPlanPrice;
+
+                      return (
+                        <button
+                          onClick={() => handleSubscribe(plan.id)}
+                          className={`w-full py-3 rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-xl ${
+                            isDowngrade
+                              ? "bg-white text-gray-900 border border-gray-300 hover:bg-gray-50"
+                              : "bg-gray-900 text-white hover:bg-gray-800"
+                          }`}
+                        >
+                          {isDowngrade
+                            ? `Downgrade to ${plan.name}`
+                            : `Upgrade to ${plan.name}`}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               );

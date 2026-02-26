@@ -35,6 +35,8 @@ import { sprintService, Sprint } from "@/services/sprintService";
 import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
 import { BarChart3 } from "lucide-react";
+import { useTaskFilters } from "@/hooks/useTaskFilters";
+import ProjectFilters from "@/components/project/ProjectFilters";
 
 export default function MemberProjectDetailsPage() {
   const params = useParams();
@@ -51,10 +53,22 @@ export default function MemberProjectDetailsPage() {
   >("TASKS");
 
   // Controls
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [priorityFilter, setPriorityFilter] = useState("ALL");
-  const [viewAll, setViewAll] = useState(false); // Default to "My Tasks"
+  const {
+    filteredTasks,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    assigneeFilter,
+    setAssigneeFilter,
+    priorityFilter,
+    setPriorityFilter,
+    typeFilter,
+    setTypeFilter,
+    dateFilter,
+    setDateFilter,
+  } = useTaskFilters(tasks);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -171,31 +185,10 @@ export default function MemberProjectDetailsPage() {
     );
   }
 
-  // Calculate stats
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "DONE").length;
   const progress =
     totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
-
-  // Filter Tasks
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch =
-      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (task.description &&
-        task.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStatus =
-      statusFilter === "ALL" || task.status === statusFilter;
-    const matchesPriority =
-      priorityFilter === "ALL" || task.priority === priorityFilter;
-
-    // Visibility Logic
-    const isAssignedToMe = task.assignedTo === user?.id;
-    const matchesVisibility = viewAll || isAssignedToMe;
-
-    return (
-      matchesSearch && matchesStatus && matchesPriority && matchesVisibility
-    );
-  });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -307,21 +300,25 @@ export default function MemberProjectDetailsPage() {
           ) : (
             <>
               {/* Controls Bar */}
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
-                {/* Search */}
-                <div className="relative w-full md:max-w-md">
-                  <input
-                    type="text"
-                    placeholder="Search tasks..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black transition-all"
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                <div className="flex-1 w-full">
+                  <ProjectFilters
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    assigneeFilter={assigneeFilter}
+                    setAssigneeFilter={setAssigneeFilter}
+                    priorityFilter={priorityFilter}
+                    setPriorityFilter={setPriorityFilter}
+                    typeFilter={typeFilter}
+                    setTypeFilter={setTypeFilter}
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
+                    teamMembers={teamMembers}
                   />
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 </div>
-
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="flex gap-3 items-center">
                   {/* Create Task Button */}
                   {isManager && (
                     <button
@@ -335,55 +332,6 @@ export default function MemberProjectDetailsPage() {
                       <span>Create Task</span>
                     </button>
                   )}
-
-                  {/* View Toggle Button */}
-                  <button
-                    onClick={() => setViewAll(!viewAll)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
-                      viewAll
-                        ? "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                        : "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100"
-                    }`}
-                  >
-                    {viewAll ? (
-                      <>
-                        <EyeOff className="w-4 h-4" />
-                        <span>Show My Tasks Only</span>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="w-4 h-4" />
-                        <span>View All Tasks</span>
-                      </>
-                    )}
-                  </button>
-
-                  <div className="relative">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="appearance-none pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
-                    >
-                      <option value="ALL">All Status</option>
-                      <option value="TODO">To Do</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="REVIEW">Review</option>
-                      <option value="DONE">Done</option>
-                    </select>
-                    <Filter className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
-                  >
-                    <option value="ALL">All Priority</option>
-                    <option value="CRITICAL">Critical</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
-                  </select>
                 </div>
               </div>
 
