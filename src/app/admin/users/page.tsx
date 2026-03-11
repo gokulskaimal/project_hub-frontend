@@ -37,9 +37,12 @@ export default function AdminUsersPage() {
       actions.fetchUsers({ page, limit, search, role, status });
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [page, limit, search, role, status]);
+  }, [page, limit, search, role, status, actions]);
 
-  const handleFilterChange = (setter: any, value: any) => {
+  const handleFilterChange = (
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    value: string,
+  ) => {
     setter(value);
     setPage(1);
   };

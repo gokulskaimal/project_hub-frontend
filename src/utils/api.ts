@@ -49,6 +49,9 @@ export const API_ROUTES = {
   UPLOAD: {
     BASE: "/upload",
   },
+  PAYMENTS: {
+    VERIFY: "/payments/verify",
+  },
 } as const;
 
 export const api = axios.create({
@@ -57,9 +60,9 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-let appStore: any = null;
+let appStore: { dispatch: (action: unknown) => void } | null = null;
 
-export const injectStore = (store: any) => {
+export const injectStore = (store: { dispatch: (action: unknown) => void }) => {
   appStore = store;
 };
 
@@ -86,9 +89,15 @@ const hideLoader = () => {
 // Flag to prevent multiple redirects/toasts
 let isRedirecting = false;
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let failedQueue: Array<{
+  resolve: (t: string | null) => void;
+  reject: (err: unknown) => void;
+}> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (
+  error: Error | unknown | null,
+  token: string | null = null,
+) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);

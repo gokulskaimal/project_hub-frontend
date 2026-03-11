@@ -70,12 +70,12 @@ export default function ManagerLayout({
 
   const sidebarLinks = [
     { name: "Dashboard", href: "/manager/dashboard", icon: LayoutDashboard },
-    { name: "Projects", href: "/manager/projects", icon: LayoutDashboard },
-    { name: "Boards", href: "/manager/boards", icon: KanbanSquare },
-    { name: "Calendar", href: "/manager/calendar", icon: CalendarDays },
     { name: "Members", href: "/manager/members", icon: Users },
     { name: "Invites", href: "/manager/invites", icon: Mail },
     { name: "Plans", href: "/manager/plans", icon: CreditCard },
+    { name: "Projects", href: "/manager/projects", icon: LayoutDashboard },
+    { name: "Boards", href: "/manager/boards", icon: KanbanSquare },
+    { name: "Calendar", href: "/manager/calendar", icon: CalendarDays },
   ];
 
   return (
@@ -101,6 +101,8 @@ export default function ManagerLayout({
           <button
             onClick={() => setIsMobileMenuOpen(false)}
             className="md:hidden text-gray-500"
+            aria-label="Close menu"
+            title="Close menu"
           >
             <X className="w-5 h-5" />
           </button>
@@ -145,6 +147,8 @@ export default function ManagerLayout({
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="md:hidden text-gray-500 shrink-0"
+            aria-label="Open menu"
+            title="Open menu"
           >
             <Menu className="w-6 h-6" />
           </button>
@@ -187,7 +191,9 @@ export default function ManagerLayout({
                   className="text-xs text-gray-500 truncate max-w-[200px]"
                   suppressHydrationWarning
                 >
-                  {!isMounted ? "Manager" : user?.role || "Manager"}
+                  {!isMounted
+                    ? "Manager"
+                    : user?.role.toUpperCase() || "Manager"}
                 </p>
               </div>
             </button>

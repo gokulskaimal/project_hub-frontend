@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { cn } from "@/utils/cn"; // Assuming utils/cn exists, if not I will use simple string concatenation or clsx
+import { cn } from "@/utils/cn";
 
 interface UserAvatarProps {
   user?: {
@@ -8,7 +8,7 @@ interface UserAvatarProps {
     lastName?: string;
     name?: string;
     email?: string;
-    profileImage?: string | null; // handle both naming conventions
+    profileImage?: string | null;
   } | null;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;

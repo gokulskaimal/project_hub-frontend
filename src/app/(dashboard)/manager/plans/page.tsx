@@ -48,16 +48,14 @@ interface SubscriptionResponse {
   };
 }
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
-
 export default function ManagerPlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentOrg, setCurrentOrg] = useState<any>(null);
+  const [currentOrg, setCurrentOrg] = useState<{
+    subscriptionStatus?: string;
+    trialEndsAt?: string;
+    planId?: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -104,7 +102,7 @@ export default function ManagerPlansPage() {
         order_id.startsWith("order_mock_")
       ) {
         try {
-          await api.post("/payments/verify", {
+          await api.post(API_ROUTES.PAYMENTS.VERIFY, {
             razorpay_payment_id: `pay_mock_${Date.now()}`,
             razorpay_order_id: order_id,
             razorpay_signature: `sig_mock_${Date.now()}`,
@@ -118,7 +116,7 @@ export default function ManagerPlansPage() {
         return;
       }
 
-      const options: RazorpayOptions = {
+      const options: RazorpayOptions & { subscription_id?: string } = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: amount, // Required for Orders
         currency: currency,
@@ -127,7 +125,7 @@ export default function ManagerPlansPage() {
         description: "Subscription",
         handler: async function (response: RazorpayResponse) {
           try {
-            await api.post("/payments/verify", {
+            await api.post(API_ROUTES.PAYMENTS.VERIFY, {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,

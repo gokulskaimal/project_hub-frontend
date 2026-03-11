@@ -8,6 +8,8 @@ import api, { API_ROUTES } from "@/utils/api";
 import toast from "react-hot-toast";
 import { PRIORITY_LEVELS } from "@/utils/constants";
 import { z } from "zod";
+import { projectService } from "@/services/projectService";
+import { sprintService, Sprint } from "@/services/sprintService";
 
 // Zod Schema
 const taskSchema = z.object({
@@ -48,6 +50,7 @@ interface CreateTaskModalProps {
   projectId?: string;
   task?: Task | null;
   projectMembers: Member[];
+  parentTaskId?: string;
 }
 
 export default function CreateTaskModal({
@@ -57,6 +60,7 @@ export default function CreateTaskModal({
   projectId,
   task,
   projectMembers,
+  parentTaskId,
 }: CreateTaskModalProps) {
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -75,6 +79,9 @@ export default function CreateTaskModal({
     assignedTo: "",
   });
 
+  const [projectStart, setProjectStart] = useState("");
+  const [projectEnd, setProjectEnd] = useState("");
+
   const isEditing = !!task;
   const isDone = task?.status === "DONE";
   const isReview = task?.status === "REVIEW";
@@ -85,6 +92,21 @@ export default function CreateTaskModal({
   useEffect(() => {
     if (isOpen) {
       setFormErrors({});
+
+      if (projectId) {
+        projectService
+          .getProject(projectId)
+          .then((res) => {
+            if (res.startDate)
+              setProjectStart(
+                new Date(res.startDate).toISOString().split("T")[0],
+              );
+            if (res.endDate)
+              setProjectEnd(new Date(res.endDate).toISOString().split("T")[0]);
+          })
+          .catch(console.error);
+      }
+
       // [UPDATED] Populate form
       if (task) {
         setFormData({
@@ -110,7 +132,7 @@ export default function CreateTaskModal({
         });
       }
     }
-  }, [isOpen, task]);
+  }, [isOpen, task, projectId]);
 
   if (!isOpen) return null;
 
@@ -145,6 +167,7 @@ export default function CreateTaskModal({
           priority: formData.priority,
           assignedTo: formData.assignedTo || undefined,
           storyPoints: Number(formData.storyPoints),
+          parentTaskId: parentTaskId || undefined,
         });
         toast.success("Task updated successfully");
       } else if (projectId) {
@@ -154,14 +177,16 @@ export default function CreateTaskModal({
           projectId,
           assignedTo: formData.assignedTo || undefined,
           storyPoints: Number(formData.storyPoints),
+          parentTaskId: parentTaskId || undefined,
         });
         toast.success("Task created successfully");
       }
 
       onSuccess();
       onClose();
-    } catch (error: any) {
-      const message = error.message || "Failed to save task";
+    } catch (error) {
+      const err = error as Error;
+      const message = err.message || "Failed to save task";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -307,6 +332,8 @@ export default function CreateTaskModal({
             <Input
               label="Due Date"
               type="date"
+              min={projectStart}
+              max={projectEnd}
               value={formData.dueDate}
               onChange={(e) =>
                 setFormData({ ...formData, dueDate: e.target.value })

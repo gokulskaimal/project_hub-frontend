@@ -193,7 +193,7 @@ export default function ProjectDetailsPage() {
       setTasks(fetchedTasks);
       setOrgUsers(fetchedUsers);
       setSprints(fetchedSprints);
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to load project data");
       console.error(error);
     } finally {
@@ -247,7 +247,7 @@ export default function ProjectDetailsPage() {
         await taskService.deleteTask(taskId);
         toast.success("Task deleted");
         setTasks(tasks.filter((t) => t.id !== taskId));
-      } catch (error: any) {
+      } catch (error) {
         toast.error("Failed to delete task");
       }
     }
@@ -270,7 +270,7 @@ export default function ProjectDetailsPage() {
         toast.success("Sprint deleted");
         setSelectedSprintId("ACTIVE");
         handleSprintSuccess();
-      } catch (error: any) {
+      } catch (error) {
         toast.error("Failed to delete sprint");
       }
     }
@@ -310,10 +310,12 @@ export default function ProjectDetailsPage() {
       // Optimistic UI update
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId ? { ...t, status: newStatus as any } : t,
+          t.id === taskId ? { ...t, status: newStatus as Task["status"] } : t,
         ),
       );
-      await taskService.updateTask(taskId, { status: newStatus as any });
+      await taskService.updateTask(taskId, {
+        status: newStatus as Task["status"],
+      });
       toast.success("Status updated");
     } catch (error) {
       toast.error("Failed to update status");
@@ -351,7 +353,7 @@ export default function ProjectDetailsPage() {
       await taskService.updateTask(taskId, {
         sprintId: selectedSprint.id,
         status: "TODO",
-      } as any);
+      });
       toast.success(`Moved to ${selectedSprint.name}`);
     } catch (error) {
       toast.error("Failed to move task");
@@ -470,7 +472,9 @@ export default function ProjectDetailsPage() {
             title={isSidebarOpen ? "Maximize Board" : "Show Details"}
           >
             <PanelRight className="w-4 h-4" />
-            {isSidebarOpen ? "Hide Panel" : "Show Details"}
+            <span className="hidden sm:inline">
+              {isSidebarOpen ? "Hide Panel" : "Show Details"}
+            </span>
           </button>
         </div>
       </div>

@@ -118,7 +118,7 @@ export default function MemberProjectDetailsPage() {
       setOrgUsers(fetchedUsers);
       setProject(fetchedProject);
       setSprints(fetchedSprints);
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to load project data");
       console.error(error);
       router.push("/member/dashboard");
@@ -135,10 +135,12 @@ export default function MemberProjectDetailsPage() {
     try {
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId ? { ...t, status: newStatus as any } : t,
+          t.id === taskId ? { ...t, status: newStatus as Task["status"] } : t,
         ),
       );
-      await taskService.updateTask(taskId, { status: newStatus as any });
+      await taskService.updateTask(taskId, {
+        status: newStatus as Task["status"],
+      });
       toast.success("Status updated");
     } catch (error) {
       toast.error("Failed to update status");
@@ -174,12 +176,37 @@ export default function MemberProjectDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full w-full items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-500 font-medium">
-            Loading project contents...
-          </p>
+      <div className="flex flex-col h-full w-full p-6 gap-6 bg-slate-50/50">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-start animate-pulse">
+          <div className="space-y-3">
+            <div className="h-8 w-64 bg-slate-200 rounded-lg"></div>
+            <div className="h-4 w-96 bg-slate-200 rounded-lg"></div>
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 w-24 bg-slate-200 rounded-xl"></div>
+            <div className="h-10 w-24 bg-slate-200 rounded-xl"></div>
+          </div>
+        </div>
+
+        {/* Toolbar Skeleton */}
+        <div className="h-14 w-full bg-slate-200 rounded-xl animate-pulse"></div>
+
+        {/* Board Columns Skeleton */}
+        <div className="flex gap-6 mt-4 overflow-hidden">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="flex-1 min-w-[280px] h-[500px] bg-white rounded-xl border border-slate-100 p-4 animate-pulse shrink-0"
+            >
+              <div className="h-6 w-24 bg-slate-200 rounded-md mb-6"></div>
+              <div className="space-y-4">
+                <div className="h-32 w-full bg-slate-100 rounded-lg"></div>
+                <div className="h-32 w-full bg-slate-100 rounded-lg"></div>
+                <div className="h-32 w-full bg-slate-100 rounded-lg"></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -189,6 +216,15 @@ export default function MemberProjectDetailsPage() {
   const completedTasks = tasks.filter((t) => t.status === "DONE").length;
   const progress =
     totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+  // Secure Sprint Logic for Team Members
+  const activeSprint = sprints.find((s) => s.status === "ACTIVE");
+  const boardTasks = filteredTasks.filter(
+    (t) =>
+      t.sprintId &&
+      activeSprint &&
+      String(t.sprintId) === String(activeSprint.id),
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -364,13 +400,28 @@ export default function MemberProjectDetailsPage() {
                 </div>
               ) : (
                 <div className="h-full min-h-[600px] w-full">
-                  <KanbanBoard
-                    tasks={filteredTasks}
-                    users={orgUsers}
-                    onStatusChange={handleStatusChange}
-                    onEditTask={openEditModal}
-                    showProjectBadges={false}
-                  />
+                  {!activeSprint ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300 mx-4 h-full mt-4">
+                      <LayoutGrid className="w-12 h-12 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        No Active Sprint
+                      </h3>
+                      <p className="text-gray-500 text-center max-w-sm mb-6">
+                        There is no active sprint for this project right now.
+                        Tasks can only be pulled from the backlog during an
+                        active sprint. Please wait for your manager to start
+                        one.
+                      </p>
+                    </div>
+                  ) : (
+                    <KanbanBoard
+                      tasks={boardTasks}
+                      users={orgUsers}
+                      onStatusChange={handleStatusChange}
+                      onEditTask={openEditModal}
+                      showProjectBadges={false}
+                    />
+                  )}
                 </div>
               )}
             </>

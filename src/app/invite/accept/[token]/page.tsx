@@ -1,75 +1,94 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-"use client"
+"use client";
 
-import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
-import { useDispatch, useSelector } from 'react-redux'
-import { useMemo, useState } from 'react'
-import { z } from 'zod'
-import { AppDispatch } from '@/store/store'
-import { acceptInvite, googleSignIn } from '@/features/auth/authSlice'
-import { toast } from 'react-hot-toast'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
-import { GoogleLogin, CredentialResponse } from "@react-oauth/google"
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { useMemo, useState } from "react";
+import { z } from "zod";
+import { AppDispatch } from "@/store/store";
+import { acceptInvite, googleSignIn } from "@/features/auth/authSlice";
+import { toast } from "react-hot-toast";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 export default function AcceptInvitePage() {
-  const { token } = useParams<{ token: string }>()
-  const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
+  const { token } = useParams<{ token: string }>();
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const schema = useMemo(() => z.object({
-    token: z.string().min(10, 'Invalid invite token'),
-    firstName: z.string().min(2, 'First name too short'),
-    lastName: z.string().min(2, 'Last name too short'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string(),
-  }).refine((d) => d.password === d.confirmPassword, { message: 'Passwords do not match', path: ['confirmPassword'] }), [])
+  const schema = useMemo(
+    () =>
+      z
+        .object({
+          token: z.string().min(10, "Invalid invite token"),
+          firstName: z.string().min(2, "First name too short"),
+          lastName: z.string().min(2, "Last name too short"),
+          password: z.string().min(8, "Password must be at least 8 characters"),
+          confirmPassword: z.string(),
+        })
+        .refine((d) => d.password === d.confirmPassword, {
+          message: "Passwords do not match",
+          path: ["confirmPassword"],
+        }),
+    [],
+  );
 
   const onSubmit = async () => {
-    const parsed = schema.safeParse({ token, firstName, lastName, password, confirmPassword })
+    const parsed = schema.safeParse({
+      token,
+      firstName,
+      lastName,
+      password,
+      confirmPassword,
+    });
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message ?? 'Invalid input')
-      return
+      toast.error(parsed.error.errors[0]?.message ?? "Invalid input");
+      return;
     }
-    setLoading(true)
+    setLoading(true);
     try {
-      await dispatch(acceptInvite({ token, firstName, lastName, password })).unwrap()
-      toast.success('Invitation accepted. You can now sign in.')
-      router.push('/login')
+      await dispatch(
+        acceptInvite({ token, firstName, lastName, password }),
+      ).unwrap();
+      toast.success("Invitation accepted. You can now sign in.");
+      router.push("/login");
     } catch (err: unknown) {
-      const msg = typeof err === 'string' ? err : 'Failed to accept invitation'
-      toast.error(msg)
+      const msg = typeof err === "string" ? err : "Failed to accept invitation";
+      toast.error(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGoogleSignIn = (credentialResponse: CredentialResponse) => {
-    const { credential } = credentialResponse
+    const { credential } = credentialResponse;
     if (!credential) {
-      toast.error("Google sign-in failed")
-      return
+      toast.error("Google sign-in failed");
+      return;
     }
     // When accepting invite via Google, pass the invite token
     // Backend will validate token and create user as TEAM_MEMBER
     dispatch(googleSignIn({ idToken: credential, inviteToken: token }))
       .unwrap()
       .then(() => {
-        toast.success("Invitation accepted. You can now sign in.")
-        router.push("/login")
+        toast.success("Invitation accepted. You can now sign in.");
+        router.push("/login");
       })
       .catch((err: unknown) => {
-        const message = typeof err === "string" ? err : "Failed to accept invitation via Google"
-        toast.error(message)
-        console.error("Google invite error:", err)
-      })
+        const message =
+          typeof err === "string"
+            ? err
+            : "Failed to accept invitation via Google";
+        toast.error(message);
+        console.error("Google invite error:", err);
+      });
   };
 
   return (
@@ -86,7 +105,9 @@ export default function AcceptInvitePage() {
             <div className="flex items-start gap-12 justify-center">
               <div className="flex-1 max-w-md">
                 <h1 className="text-3xl font-bold mb-2">Accept Invitation</h1>
-                <p className="text-gray-600 text-sm mb-6">Set your details to complete your account.</p>
+                <p className="text-gray-600 text-sm mb-6">
+                  Set your details to complete your account.
+                </p>
 
                 <div className="space-y-3">
                   <input
@@ -121,21 +142,29 @@ export default function AcceptInvitePage() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={loading}
                   />
-                  
+
                   <button
                     className="w-full h-10 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
                     onClick={onSubmit}
-                    disabled={loading || !firstName || !lastName || !password || !confirmPassword}
+                    disabled={
+                      loading ||
+                      !firstName ||
+                      !lastName ||
+                      !password ||
+                      !confirmPassword
+                    }
                   >
-                    {loading ? 'Submitting...' : 'Complete Setup'}
+                    {loading ? "Submitting..." : "Complete Setup"}
                   </button>
-                  
+
                   <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-gray-300" />
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className="bg-white px-2 text-gray-500">Or sign up with</span>
+                      <span className="bg-white px-2 text-gray-500">
+                        Or sign up with
+                      </span>
                     </div>
                   </div>
 
@@ -143,15 +172,25 @@ export default function AcceptInvitePage() {
                     <GoogleLogin
                       onSuccess={handleGoogleSignIn}
                       onError={() => {
-                        console.error("[GoogleLogin Error] Sign-in failed on invite page");
-                        toast.error("Google sign-in failed. Please use password setup or refresh.");
+                        console.error(
+                          "[GoogleLogin Error] Sign-in failed on invite page",
+                        );
+                        toast.error(
+                          "Google sign-in failed. Please use password setup or refresh.",
+                        );
                       }}
                       text="signup_with"
                     />
                   </div>
-                  
+
                   <p className="text-xs text-gray-600">
-                    Already have an account? <Link href="/login" className="text-[#2463EB] hover:underline">Sign in</Link>
+                    Already have an account?{" "}
+                    <Link
+                      href="/login"
+                      className="text-[#2463EB] hover:underline"
+                    >
+                      Sign in
+                    </Link>
                   </p>
                 </div>
               </div>
@@ -161,5 +200,5 @@ export default function AcceptInvitePage() {
       </main>
       <Footer />
     </div>
-  )
+  );
 }

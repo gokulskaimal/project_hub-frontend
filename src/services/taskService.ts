@@ -14,6 +14,11 @@ export interface TaskComment {
   createdAt: string;
 }
 
+export interface TaskDependency {
+  taskId: string;
+  type: "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO";
+}
+
 export interface Task {
   id: string;
   projectId: string;
@@ -22,7 +27,7 @@ export interface Task {
   taskKey?: string;
   title: string;
   description: string;
-  status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "REVIEW" | "DONE" | "BACKLOG";
+  status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE" | "BACKLOG";
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   type: "STORY" | "BUG" | "TASK";
   storyPoints: number;
@@ -36,6 +41,8 @@ export interface Task {
   totalTimeSpent?: number;
   attachments?: string[];
   comments?: TaskComment[];
+  parentTaskId?: string;
+  dependencies?: TaskDependency[];
 }
 
 export interface CreateTaskData {
@@ -92,4 +99,24 @@ export const taskService = {
     });
     return response.data.data;
   },
+  getTaskHistory: async (taskId: string) => {
+    const response = await api.get(`/projects/tasks/${taskId}/history`);
+    return response.data.data;
+  },
 };
+
+export interface TaskHistory {
+  id: string;
+  taskId: string;
+  userId: string;
+  action:
+    | "CREATED"
+    | "STATUS_CHANGED"
+    | "ASSIGNEE_CHANGED"
+    | "SPRINT_CHANGED"
+    | "UPDATED";
+  details?: string;
+  previousValue?: string;
+  newValue?: string;
+  createdAt: string;
+}

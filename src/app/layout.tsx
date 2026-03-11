@@ -4,8 +4,7 @@ import "./globals.css";
 import Providers from "@/store/Providers";
 import { Toaster } from "react-hot-toast";
 import GlobalLoader from "@/components/ui/GlobalLoader";
-import NextTopLoader from 'nextjs-toploader';
-
+import NextTopLoader from "nextjs-toploader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,12 +32,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-        <NextTopLoader color="#2563EB" showSpinner={false} />
-        <GlobalLoader />
-        {children}
-        <Toaster position="top-right" />
+          <NextTopLoader color="#2563EB" showSpinner={false} />
+          <GlobalLoader />
+          {children}
+          <Toaster position="top-right" />
         </Providers>
-        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          async
+        ></script>
       </body>
     </html>
   );

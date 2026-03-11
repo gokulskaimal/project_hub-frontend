@@ -60,7 +60,7 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
   const fetchMessages = useCallback(
     async (cursor?: string | null) => {
       try {
-        const params: any = {};
+        const params: Record<string, string | number> = {};
         if (cursor) params.before = cursor;
 
         if (cursor) setLoadingMore(true);

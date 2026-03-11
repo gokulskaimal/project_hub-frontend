@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
-import { useAdminData } from "@/hooks/useAdminData"; 
+import { useAdminData } from "@/hooks/useAdminData";
 import api, { API_ROUTES } from "@/utils/api";
 import { Users, Building2, CreditCard } from "lucide-react";
 
@@ -17,7 +17,7 @@ export default function AdminDashboardPage() {
     // Fetch just 1 item to get the total count efficiently
     actions.fetchOrgs({ limit: 1 });
     actions.fetchUsers({ limit: 1 });
-    
+
     const fetchPlansCount = async () => {
       try {
         const response = await api.get(API_ROUTES.ADMIN.PLANS);
@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
     };
 
     fetchPlansCount();
-  }, [actions.fetchOrgs, actions.fetchUsers]);
+  }, [actions]);
 
   const stats = [
     {
@@ -59,12 +59,21 @@ export default function AdminDashboardPage() {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center">
-              <div className={`p-4 rounded-lg ${stat.color} bg-opacity-10 mr-4`}>
-                <Icon className={`w-8 h-8 ${stat.color.replace("bg-", "text-")}`} />
+            <div
+              key={index}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center"
+            >
+              <div
+                className={`p-4 rounded-lg ${stat.color} bg-opacity-10 mr-4`}
+              >
+                <Icon
+                  className={`w-8 h-8 ${stat.color.replace("bg-", "text-")}`}
+                />
               </div>
               <div>
-                <p className="text-sm text-gray-500 font-medium">{stat.label}</p>
+                <p className="text-sm text-gray-500 font-medium">
+                  {stat.label}
+                </p>
                 <h3 className="text-2xl font-bold text-gray-900">
                   {adminData.loading ? "..." : stat.value}
                 </h3>

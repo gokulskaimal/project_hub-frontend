@@ -16,7 +16,6 @@ export const PROJECT_STATUS = {
 export const TASK_STATUS = {
   TODO: "TODO",
   IN_PROGRESS: "IN_PROGRESS",
-  IN_REVIEW: "IN_REVIEW",
   REVIEW: "REVIEW",
   DONE: "DONE",
   BACKLOG: "BACKLOG",

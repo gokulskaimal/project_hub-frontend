@@ -16,11 +16,14 @@ export const getFriendlyError = (err: unknown, fallback: string): string => {
     if (typeof data === "string" && data.trim()) {
       serverMsg = data;
     } else if (data && typeof data === "object") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body: any = data;
+      const body = data as {
+        error?: string | { message?: string };
+        message?: string;
+        detail?: string;
+        errors?: Array<{ message?: string }>;
+      };
       serverMsg =
-        body.error?.message || // Standardized backend error
-        body.error || // Legacy
+        (typeof body.error === "object" ? body.error?.message : body.error) || // Standardized backend error OR Legacy
         body.message ||
         body.detail ||
         (Array.isArray(body.errors) ? body.errors[0]?.message : undefined);
@@ -43,7 +46,7 @@ export const getFriendlyError = (err: unknown, fallback: string): string => {
       case 400:
         return "There was a problem with your request. Please check the details and try again.";
       case 401:
-        // Distinguish between Login (Credentials) and Session (Token) if possible, 
+        // Distinguish between Login (Credentials) and Session (Token) if possible,
         // but if no message was returned, safer to say "Authentication failed".
         return "Authentication failed. Please check your credentials.";
       case 403:

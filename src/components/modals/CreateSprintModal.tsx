@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { X } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { sprintService } from "@/services/sprintService";
+import { projectService } from "@/services/projectService";
 import { z } from "zod";
 
 interface CreateSprintModalProps {
@@ -20,16 +21,12 @@ const sprintSchema = z
       .trim()
       .min(3, "Sprint name must be at least 3 characters long")
       .max(100, "Sprint name must not exceed 100 characters"),
-    startDate: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), {
-        message: "Invalid start date",
-      }),
-    endDate: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), {
-        message: "Invalid end date",
-      }),
+    startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: "Invalid start date",
+    }),
+    endDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: "Invalid end date",
+    }),
     goal: z.string().trim().optional(),
     description: z.string().trim().optional(),
   })
@@ -44,6 +41,9 @@ export default function CreateSprintModal({
   projectId,
 }: CreateSprintModalProps) {
   const [loading, setLoading] = useState(false);
+  const [projectStart, setProjectStart] = useState("");
+  const [projectEnd, setProjectEnd] = useState("");
+
   const [formData, setFormData] = useState({
     name: "Sprint " + new Date().toLocaleDateString(),
     startDate: new Date().toISOString().split("T")[0],
@@ -56,6 +56,22 @@ export default function CreateSprintModal({
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    if (isOpen && projectId) {
+      projectService
+        .getProject(projectId)
+        .then((res) => {
+          if (res.startDate)
+            setProjectStart(
+              new Date(res.startDate).toISOString().split("T")[0],
+            );
+          if (res.endDate)
+            setProjectEnd(new Date(res.endDate).toISOString().split("T")[0]);
+        })
+        .catch(console.error);
+    }
+  }, [isOpen, projectId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormErrors({});
@@ -66,7 +82,6 @@ export default function CreateSprintModal({
         if (err.path[0]) errors[err.path[0] as string] = err.message;
       });
       setFormErrors(errors);
-
       toast.error(Object.values(errors)[0]);
       return;
     }
@@ -84,8 +99,9 @@ export default function CreateSprintModal({
       toast.success("Sprint created successfully");
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to create sprint");
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to create sprint");
     } finally {
       setLoading(false);
     }
@@ -158,6 +174,8 @@ export default function CreateSprintModal({
                       <input
                         type="date"
                         required
+                        min={projectStart}
+                        max={projectEnd}
                         value={formData.startDate}
                         onChange={(e) =>
                           setFormData({
@@ -175,6 +193,8 @@ export default function CreateSprintModal({
                       <input
                         type="date"
                         required
+                        min={projectStart}
+                        max={projectEnd}
                         value={formData.endDate}
                         onChange={(e) =>
                           setFormData({ ...formData, endDate: e.target.value })

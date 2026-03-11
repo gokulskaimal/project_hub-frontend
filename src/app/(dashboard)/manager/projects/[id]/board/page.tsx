@@ -43,7 +43,7 @@ export default function ProjectBoardPage() {
       setTasks(fetchedTasks);
       setOrgUsers(fetchedUsers);
       setSprints(fetchedSprints);
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to load board data");
       console.error(error);
     } finally {
@@ -91,10 +91,12 @@ export default function ProjectBoardPage() {
       // Optimistic update
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId ? { ...t, status: newStatus as any } : t,
+          t.id === taskId ? { ...t, status: newStatus as Task["status"] } : t,
         ),
       );
-      await taskService.updateTask(taskId, { status: newStatus as any });
+      await taskService.updateTask(taskId, {
+        status: newStatus as Task["status"],
+      });
       toast.success("Status updated");
     } catch (error) {
       toast.error("Failed to update status");

@@ -87,7 +87,7 @@ export default function ProjectFilters({
               <option value="ALL">All Status</option>
               <option value="TODO">To Do</option>
               <option value="IN_PROGRESS">In Progress</option>
-              <option value="IN_REVIEW">In Review</option>
+              <option value="REVIEW">Review</option>
               <option value="DONE">Done</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">

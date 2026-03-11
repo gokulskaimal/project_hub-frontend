@@ -4,7 +4,18 @@ import React, { useEffect, useState, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import api, { API_ROUTES } from "../../../utils/api";
 import { Plan } from "../../../types/plan";
-import { Plus, Edit2, Trash2, X, Search, ArrowUpDown, CreditCard, CheckCircle, Ban, RefreshCw } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  Search,
+  ArrowUpDown,
+  CreditCard,
+  CheckCircle,
+  Ban,
+  RefreshCw,
+} from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function AdminPlansPage() {
@@ -54,18 +65,18 @@ export default function AdminPlansPage() {
     // Search
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter(plan => 
-        plan.name.toLowerCase().includes(lowerTerm)
+      result = result.filter((plan) =>
+        plan.name.toLowerCase().includes(lowerTerm),
       );
     }
 
     // Filter
     if (filterStatus !== "ALL") {
       const isActive = filterStatus === "ACTIVE";
-      result = result.filter(plan => plan.isActive === isActive);
+      result = result.filter((plan) => plan.isActive === isActive);
     }
     if (filterType !== "ALL") {
-      result = result.filter(plan => plan.type === filterType);
+      result = result.filter((plan) => plan.type === filterType);
     }
 
     // Sort
@@ -92,7 +103,7 @@ export default function AdminPlansPage() {
   // Stats
   const stats = useMemo(() => {
     const total = plans.length;
-    const active = plans.filter(p => p.isActive).length;
+    const active = plans.filter((p) => p.isActive).length;
     return { total, active };
   }, [plans]);
 
@@ -158,7 +169,9 @@ export default function AdminPlansPage() {
       fetchPlans();
       handleCloseModal();
     } catch (error) {
-      toast.error(editingPlan ? "Failed to update plan" : "Failed to create plan");
+      toast.error(
+        editingPlan ? "Failed to update plan" : "Failed to create plan",
+      );
     }
   };
 
@@ -170,7 +183,7 @@ export default function AdminPlansPage() {
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!"
+      confirmButtonText: "Yes, delete it!",
     });
 
     if (!result.isConfirmed) return;
@@ -189,11 +202,13 @@ export default function AdminPlansPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Manage Plans</h1>
-          <p className="text-gray-600 text-sm mt-1">Create and manage subscription plans</p>
+          <p className="text-gray-600 text-sm mt-1">
+            Create and manage subscription plans
+          </p>
         </div>
         <div className="flex gap-2">
-          <button 
-            onClick={fetchPlans} 
+          <button
+            onClick={fetchPlans}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
           >
             <RefreshCw size={16} />
@@ -235,10 +250,13 @@ export default function AdminPlansPage() {
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
         {/* Search */}
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-          <input 
-            type="text" 
-            placeholder="Search by plan name..." 
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Search by plan name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 bg-white placeholder-gray-500"
@@ -247,8 +265,8 @@ export default function AdminPlansPage() {
 
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-          <select 
-            value={filterStatus} 
+          <select
+            value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
@@ -257,8 +275,8 @@ export default function AdminPlansPage() {
             <option value="INACTIVE">Inactive</option>
           </select>
 
-          <select 
-            value={filterType} 
+          <select
+            value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
@@ -270,14 +288,14 @@ export default function AdminPlansPage() {
 
           {/* Sort Toggles */}
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-            <button 
+            <button
               onClick={() => toggleSort("name")}
               className={`px-3 py-2 text-sm flex items-center gap-1 ${sortBy === "name" ? "bg-blue-50 text-blue-700 font-medium" : "bg-white text-gray-700 hover:bg-gray-50"}`}
             >
               Name <ArrowUpDown size={14} />
             </button>
             <div className="w-px bg-gray-300"></div>
-            <button 
+            <button
               onClick={() => toggleSort("price")}
               className={`px-3 py-2 text-sm flex items-center gap-1 ${sortBy === "price" ? "bg-blue-50 text-blue-700 font-medium" : "bg-white text-gray-700 hover:bg-gray-50"}`}
             >
@@ -299,13 +317,24 @@ export default function AdminPlansPage() {
             </div>
           ) : (
             filteredPlans.map((plan) => (
-              <div key={plan.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:shadow-md transition-shadow">
+              <div
+                key={plan.id}
+                className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:shadow-md transition-shadow"
+              >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                    <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 w-fit mt-1 ${plan.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {plan.isActive ? <CheckCircle size={10} /> : <Ban size={10} />}
-                      {plan.isActive ? 'Active' : 'Inactive'}
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {plan.name}
+                    </h3>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 w-fit mt-1 ${plan.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                    >
+                      {plan.isActive ? (
+                        <CheckCircle size={10} />
+                      ) : (
+                        <Ban size={10} />
+                      )}
+                      {plan.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -323,14 +352,19 @@ export default function AdminPlansPage() {
                     </button>
                   </div>
                 </div>
-                <p className="text-gray-600 text-sm mb-4 min-h-[40px]">{plan.description}</p>
+                <p className="text-gray-600 text-sm mb-4 min-h-[40px]">
+                  {plan.description}
+                </p>
                 <div className="text-2xl font-bold mb-4 text-gray-900">
                   {plan.currency} {plan.price}
                   <span className="text-sm font-normal text-gray-500">/mo</span>
                 </div>
                 <div className="space-y-2 pt-4 border-t border-gray-100">
                   {plan.features.slice(0, 3).map((feature, i) => (
-                    <div key={i} className="text-sm text-gray-600 flex items-center gap-2">
+                    <div
+                      key={i}
+                      className="text-sm text-gray-600 flex items-center gap-2"
+                    >
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                       {feature}
                     </div>
@@ -355,27 +389,44 @@ export default function AdminPlansPage() {
               <h2 className="text-xl font-bold text-gray-900">
                 {editingPlan ? "Edit Plan" : "Create New Plan"}
               </h2>
-              <button onClick={handleCloseModal} className="text-gray-500 hover:text-gray-700 transition-colors">
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
                 <X size={24} />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name
+                  </label>
                   <input
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
                   <select
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        type: e.target.value as
+                          | "STARTER"
+                          | "PRO"
+                          | "ENTERPRISE",
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white"
                   >
                     <option value="FREE">Free</option>
@@ -386,11 +437,15 @@ export default function AdminPlansPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
                 <textarea
                   required
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white"
                   rows={3}
                 />
@@ -398,37 +453,51 @@ export default function AdminPlansPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Price
+                  </label>
                   <input
                     type="number"
                     required
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        price: Number(e.target.value),
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Currency
+                  </label>
                   <input
                     type="text"
                     required
                     value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, currency: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white"
                   />
                 </div>
-
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Features
+                </label>
                 <div className="space-y-2">
                   {formData.features?.map((feature, index) => (
                     <div key={index} className="flex gap-2">
                       <input
                         type="text"
                         value={feature}
-                        onChange={(e) => handleFeatureChange(index, e.target.value)}
+                        onChange={(e) =>
+                          handleFeatureChange(index, e.target.value)
+                        }
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white"
                         placeholder="Feature description"
                       />
@@ -456,10 +525,17 @@ export default function AdminPlansPage() {
                   type="checkbox"
                   id="isActive"
                   checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isActive: e.target.checked })
+                  }
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Active Plan</label>
+                <label
+                  htmlFor="isActive"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Active Plan
+                </label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">

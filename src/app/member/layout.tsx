@@ -202,7 +202,7 @@ export default function MemberLayout({
                 >
                   {user?.role === "member"
                     ? "Team Member"
-                    : user?.role || "Member"}
+                    : user?.role.toUpperCase() || "Member"}
                 </p>
               </div>
             </button>

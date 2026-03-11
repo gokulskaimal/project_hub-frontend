@@ -71,7 +71,7 @@ export function useMemberProfile(token: string | null) {
     }
   }, [token]);
 
-  const updateProfile = async () => {
+  const updateProfile = useCallback(async () => {
     const parsed = profileUpdateSchema.safeParse({ firstName, lastName });
     if (!parsed.success) {
       toast.error(parsed.error.errors[0]?.message || "Invalid input");
@@ -95,9 +95,9 @@ export function useMemberProfile(token: string | null) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [firstName, lastName, profileImage, dispatch]);
 
-  const changePassword = async () => {
+  const changePassword = useCallback(async () => {
     const payload = {
       currentPassword: passwords.current,
       newPassword: passwords.new,
@@ -123,43 +123,46 @@ export function useMemberProfile(token: string | null) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [passwords]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "profiles");
-
-      const res = await api.post("/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      if (res.data.success) {
-        setProfileImage(res.data.data.url);
-        toast.success("Image uploaded successfully");
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB");
+        return;
       }
-    } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to upload image"));
-    } finally {
-      setLoading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
 
-  const removeImage = () => {
+      try {
+        setLoading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder", "profiles");
+
+        const res = await api.post(API_ROUTES.UPLOAD.BASE, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        if (res.data.success) {
+          setProfileImage(res.data.data.url);
+          toast.success("Image uploaded successfully");
+        }
+      } catch (err) {
+        toast.error(getFriendlyError(err, "Failed to upload image"));
+      } finally {
+        setLoading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [],
+  );
+
+  const removeImage = useCallback(() => {
     setProfileImage(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+  }, []);
 
   return useMemo(
     () => ({
@@ -196,8 +199,10 @@ export function useMemberProfile(token: string | null) {
       computedName,
       computedInitial,
       loadProfile,
-      // updateProfile, changePassword, handleImageUpload, removeImage are not memoized but stable enough or depend on state implicitly.
-      // Ideally we should memoize them too, but for now memoizing the return object prevents the infinite loop if loadProfile is stable.
+      updateProfile,
+      changePassword,
+      handleImageUpload,
+      removeImage,
     ],
   );
 }

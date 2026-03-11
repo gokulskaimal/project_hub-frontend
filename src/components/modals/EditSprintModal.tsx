@@ -3,6 +3,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { X } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { sprintService, Sprint } from "@/services/sprintService";
+import { projectService } from "@/services/projectService";
 
 interface EditSprintModalProps {
   isOpen: boolean;
@@ -18,6 +19,9 @@ export default function EditSprintModal({
   sprint,
 }: EditSprintModalProps) {
   const [loading, setLoading] = useState(false);
+  const [projectStart, setProjectStart] = useState("");
+  const [projectEnd, setProjectEnd] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     startDate: "",
@@ -37,6 +41,22 @@ export default function EditSprintModal({
       });
     }
   }, [sprint]);
+
+  useEffect(() => {
+    if (isOpen && sprint?.projectId) {
+      projectService
+        .getProject(sprint.projectId)
+        .then((res) => {
+          if (res.startDate)
+            setProjectStart(
+              new Date(res.startDate).toISOString().split("T")[0],
+            );
+          if (res.endDate)
+            setProjectEnd(new Date(res.endDate).toISOString().split("T")[0]);
+        })
+        .catch(console.error);
+    }
+  }, [isOpen, sprint]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +82,7 @@ export default function EditSprintModal({
       setLoading(false);
     }
   };
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -106,6 +127,8 @@ export default function EditSprintModal({
                     <input
                       type="date"
                       required
+                      min={projectStart}
+                      max={projectEnd}
                       value={formData.startDate}
                       onChange={(e) =>
                         setFormData({ ...formData, startDate: e.target.value })
@@ -120,6 +143,8 @@ export default function EditSprintModal({
                     <input
                       type="date"
                       required
+                      min={projectStart}
+                      max={projectEnd}
                       value={formData.endDate}
                       onChange={(e) =>
                         setFormData({ ...formData, endDate: e.target.value })

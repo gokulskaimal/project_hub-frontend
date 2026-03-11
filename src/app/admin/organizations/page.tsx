@@ -4,7 +4,17 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { useAdminData } from "@/hooks/useAdminData";
-import { Building, Trash2, Ban, CheckCircle, RefreshCw, Search, ArrowUpDown, Building2, Users } from "lucide-react";
+import {
+  Building,
+  Trash2,
+  Ban,
+  CheckCircle,
+  RefreshCw,
+  Search,
+  ArrowUpDown,
+  Building2,
+  Users,
+} from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function AdminOrgsPage() {
@@ -19,65 +29,68 @@ export default function AdminOrgsPage() {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-        actions.fetchOrgs({ page, limit, search, status });
+      actions.fetchOrgs({ page, limit, search, status });
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [page, limit, search, status, actions.fetchOrgs]);
+  }, [page, limit, search, status, actions]);
 
-  const handleFilterChange = (setter: any, value: any) => {
-      setter(value);
-      setPage(1);
+  const handleFilterChange = (
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    value: string,
+  ) => {
+    setter(value);
+    setPage(1);
   };
 
-  const confirmBlockOrg = async(orgId : string) => {
+  const confirmBlockOrg = async (orgId: string) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
+      title: "Are you sure?",
       text: "You won't be able to revert this!",
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes!'
-    })
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes!",
+    });
 
     if (result.isConfirmed) {
-      await actions.updateOrgStatus(orgId, 'SUSPENDED');
+      await actions.updateOrgStatus(orgId, "SUSPENDED");
       await actions.fetchOrgs({ page, limit, search, status });
     }
-  } 
-  const confirmUnblockOrg = async(orgId : string) => {
+  };
+  const confirmUnblockOrg = async (orgId: string) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
+      title: "Are you sure?",
       text: "You won't be able to revert this!",
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes!'
-    })
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes!",
+    });
 
     if (result.isConfirmed) {
-      await actions.updateOrgStatus(orgId, 'ACTIVE');
+      await actions.updateOrgStatus(orgId, "ACTIVE");
       await actions.fetchOrgs({ page, limit, search, status });
     }
-  }
+  };
 
-  const confirmDeleteOrg = async(orgId : string) => {
+  const confirmDeleteOrg = async (orgId: string) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
+      title: "Are you sure?",
       text: "You won't be able to revert this!",
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes !'
-    })
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes !",
+    });
 
     if (result.isConfirmed) {
       await actions.deleteOrg(orgId);
       await actions.fetchOrgs({ page, limit, search, status });
     }
-  }
+  };
 
   // Stats
   const stats = useMemo(() => {
@@ -89,10 +102,12 @@ export default function AdminOrgsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Organizations</h1>
-          <p className="text-gray-600 text-sm mt-1">Manage registered organizations and their status</p>
+          <p className="text-gray-600 text-sm mt-1">
+            Manage registered organizations and their status
+          </p>
         </div>
         <button
-          onClick={() => actions.fetchOrgs({page, limit, search, status})}
+          onClick={() => actions.fetchOrgs({ page, limit, search, status })}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
         >
           <RefreshCw size={16} />
@@ -107,7 +122,9 @@ export default function AdminOrgsPage() {
             <Building2 size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-600">Total Organizations</p>
+            <p className="text-sm font-medium text-gray-600">
+              Total Organizations
+            </p>
             <h3 className="text-2xl font-bold text-gray-900">{stats.total}</h3>
           </div>
         </div>
@@ -118,7 +135,10 @@ export default function AdminOrgsPage() {
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
         {/* Search */}
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+            size={20}
+          />
           <input
             type="text"
             placeholder="Search by organization name..."
@@ -154,26 +174,39 @@ export default function AdminOrgsPage() {
             </div>
           ) : (
             data.orgs.items.map((org) => {
-              const isActive = org.status === 'ACTIVE';
+              const isActive = org.status === "ACTIVE";
 
               return (
-                <div key={org.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div
+                  key={org.id}
+                  className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                >
                   <div className="flex justify-between items-start mb-4">
                     <div className="p-2 bg-blue-50 rounded-lg">
                       <Building className="text-blue-600" size={20} />
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
+                        isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
                       {isActive ? <CheckCircle size={12} /> : <Ban size={12} />}
-                      {(org.status || 'ACTIVE').toUpperCase()}
+                      {(org.status || "ACTIVE").toUpperCase()}
                     </span>
                   </div>
 
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate" title={org.name}>
+                    <h3
+                      className="text-lg font-semibold text-gray-900 truncate"
+                      title={org.name}
+                    >
                       {org.name}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">ID: {org.id.slice(0, 8)}...</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      ID: {org.id.slice(0, 8)}...
+                    </p>
                     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
                       <Users size={16} />
                       <span>{org.currentUserCount || 0} Total Members</span>
@@ -218,27 +251,27 @@ export default function AdminOrgsPage() {
 
       {/* Pagination Controls */}
       <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl border border-gray-200">
-          <span className="text-sm text-gray-600">
-             Page {data.orgs.page} of {data.orgs.totalPages} ({data.orgs.total} organizations)
-          </span>
-          <div className="flex gap-2">
-             <button 
-                disabled={data.orgs.page <= 1}
-                onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-             >
-                Previous
-             </button>
-             <button 
-                disabled={data.orgs.page >= data.orgs.totalPages}
-                onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-             >
-                Next
-             </button>
-          </div>
-       </div>
+        <span className="text-sm text-gray-600">
+          Page {data.orgs.page} of {data.orgs.totalPages} ({data.orgs.total}{" "}
+          organizations)
+        </span>
+        <div className="flex gap-2">
+          <button
+            disabled={data.orgs.page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+          >
+            Previous
+          </button>
+          <button
+            disabled={data.orgs.page >= data.orgs.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
-
