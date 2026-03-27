@@ -6,8 +6,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AppDispatch } from "@/store/store";
-import { acceptInvite, googleSignIn } from "@/features/auth/authSlice";
-import { toast } from "react-hot-toast";
+import {
+  useAcceptInviteMutation,
+  useGoogleSignInMutation,
+} from "@/store/api/authApiSlice";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
@@ -17,11 +21,17 @@ export default function AcceptInvitePage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
+  const [acceptInviteMutation, { isLoading: acceptLoading }] =
+    useAcceptInviteMutation();
+  const [googleSignInMutation, { isLoading: googleLoading }] =
+    useGoogleSignInMutation();
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const loading = acceptLoading || googleLoading;
 
   const schema = useMemo(
     () =>
@@ -49,46 +59,45 @@ export default function AcceptInvitePage() {
       confirmPassword,
     });
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message ?? "Invalid input");
+      notifier.error(
+        null,
+        parsed.error.errors[0]?.message ?? MESSAGES.VALIDATION.INVALID_INPUT,
+      );
       return;
     }
-    setLoading(true);
+
     try {
-      await dispatch(
-        acceptInvite({ token, firstName, lastName, password }),
-      ).unwrap();
-      toast.success("Invitation accepted. You can now sign in.");
+      await acceptInviteMutation({
+        token,
+        firstName,
+        lastName,
+        password,
+      }).unwrap();
+      notifier.success(MESSAGES.TEAM.INVITE_ACCEPTED);
       router.push("/login");
     } catch (err: unknown) {
-      const msg = typeof err === "string" ? err : "Failed to accept invitation";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
+      notifier.error(err, MESSAGES.TEAM.INVITE_ACCEPT_FAILED);
     }
   };
 
-  const handleGoogleSignIn = (credentialResponse: CredentialResponse) => {
+  const handleGoogleSignIn = async (credentialResponse: CredentialResponse) => {
     const { credential } = credentialResponse;
     if (!credential) {
-      toast.error("Google sign-in failed");
+      notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED);
       return;
     }
     // When accepting invite via Google, pass the invite token
     // Backend will validate token and create user as TEAM_MEMBER
-    dispatch(googleSignIn({ idToken: credential, inviteToken: token }))
-      .unwrap()
-      .then(() => {
-        toast.success("Invitation accepted. You can now sign in.");
-        router.push("/login");
-      })
-      .catch((err: unknown) => {
-        const message =
-          typeof err === "string"
-            ? err
-            : "Failed to accept invitation via Google";
-        toast.error(message);
-        console.error("Google invite error:", err);
-      });
+    try {
+      await googleSignInMutation({
+        idToken: credential,
+        inviteToken: token,
+      }).unwrap();
+      notifier.success(MESSAGES.TEAM.INVITE_ACCEPTED);
+      router.push("/login");
+    } catch (err: unknown) {
+      notifier.error(err, MESSAGES.TEAM.GOOGLE_INVITE_FAILED);
+    }
   };
 
   return (
@@ -113,7 +122,7 @@ export default function AcceptInvitePage() {
                   <input
                     type="text"
                     placeholder="First Name"
-                    className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
+                    className="w-full h-10 px-4 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     disabled={loading}
@@ -121,7 +130,7 @@ export default function AcceptInvitePage() {
                   <input
                     type="text"
                     placeholder="Last Name"
-                    className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
+                    className="w-full h-10 px-4 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     disabled={loading}
@@ -129,7 +138,7 @@ export default function AcceptInvitePage() {
                   <input
                     type="password"
                     placeholder="Password"
-                    className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
+                    className="w-full h-10 px-4 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
@@ -137,14 +146,14 @@ export default function AcceptInvitePage() {
                   <input
                     type="password"
                     placeholder="Confirm Password"
-                    className="w-full h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
+                    className="w-full h-10 px-4 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={loading}
                   />
 
                   <button
-                    className="w-full h-10 rounded-lg bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
+                    className="w-full h-10 rounded-xl bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
                     onClick={onSubmit}
                     disabled={
                       loading ||
@@ -172,11 +181,9 @@ export default function AcceptInvitePage() {
                     <GoogleLogin
                       onSuccess={handleGoogleSignIn}
                       onError={() => {
-                        console.error(
-                          "[GoogleLogin Error] Sign-in failed on invite page",
-                        );
-                        toast.error(
-                          "Google sign-in failed. Please use password setup or refresh.",
+                        notifier.error(
+                          null,
+                          MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED,
                         );
                       }}
                       text="signup_with"

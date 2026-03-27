@@ -1,7 +1,7 @@
 import React from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/Input";
-import { User } from "@/services/userService";
+import { User } from "@/types/auth";
 
 interface ProjectFiltersProps {
   searchQuery: string;
@@ -35,7 +35,7 @@ export default function ProjectFilters({
   teamMembers,
 }: ProjectFiltersProps) {
   return (
-    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 max-h-[140px] flex flex-col justify-center">
+    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6 flex flex-col gap-5">
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Search */}
         <div className="relative flex-1">
@@ -56,7 +56,7 @@ export default function ProjectFilters({
             <select
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">All Assignees</option>
               <option value="UNASSIGNED">Unassigned</option>
@@ -82,7 +82,7 @@ export default function ProjectFilters({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">All Status</option>
               <option value="TODO">To Do</option>
@@ -106,7 +106,7 @@ export default function ProjectFilters({
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">All Priorities</option>
               <option value="LOW">Low</option>
@@ -130,7 +130,7 @@ export default function ProjectFilters({
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">All Types</option>
               <option value="BUG">Bug</option>
@@ -153,7 +153,7 @@ export default function ProjectFilters({
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">Any Date</option>
               <option value="OVERDUE">Overdue</option>

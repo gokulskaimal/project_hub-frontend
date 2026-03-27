@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import api, { API_ROUTES } from "@/utils/api";
+import { useGetManagerProjectsQuery } from "@/store/api/managerApiSlice";
+import { Project } from "@/types/project";
+import { getStatusColor, getPriorityColor } from "@/utils/projectUtils";
 import {
   KanbanSquare,
   ArrowRight,
@@ -12,73 +14,20 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import toast from "react-hot-toast";
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  priority: string;
-  teamMemberIds?: string[];
-}
 
 export default function GlobalBoardsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: projects = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetManagerProjectsQuery();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get(API_ROUTES.PROJECTS.ROOT);
-      setProjects(res.data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch projects", error);
-      toast.error("Failed to load boards");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const getStatusColor = (status: string) => {
-    switch ((status || "").toUpperCase()) {
-      case "ACTIVE":
-        return "bg-green-50 text-green-700 border-green-200";
-      case "COMPLETED":
-        return "bg-blue-50 text-blue-700 border-blue-200";
-      case "ARCHIVED":
-        return "bg-gray-50 text-gray-600 border-gray-200";
-      case "ON_HOLD":
-        return "bg-orange-50 text-orange-700 border-orange-200";
-      case "PLANNING":
-        return "bg-purple-50 text-purple-700 border-purple-200";
-      default:
-        return "bg-gray-50 text-gray-600 border-gray-200";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch ((priority || "").toUpperCase()) {
-      case "CRITICAL":
-        return "bg-red-50 text-red-700 border-red-200";
-      case "HIGH":
-        return "bg-orange-50 text-orange-700 border-orange-200";
-      case "MEDIUM":
-        return "bg-blue-50 text-blue-700 border-blue-200";
-      case "LOW":
-        return "bg-gray-50 text-gray-700 border-gray-200";
-      default:
-        return "bg-gray-50 text-gray-600 border-gray-200";
-    }
-  };
+  const loading = isLoading || isFetching;
 
   const filteredProjects = projects.filter(
-    (p) =>
+    (p: Project) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.description &&
         p.description.toLowerCase().includes(searchQuery.toLowerCase())),
@@ -104,7 +53,7 @@ export default function GlobalBoardsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Find a board..."
-              className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full px-4 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             />
           </div>
         </div>
@@ -133,7 +82,7 @@ export default function GlobalBoardsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
+            {filteredProjects.map((project: Project) => (
               <Link
                 href={`/manager/projects/${project.id}/board`}
                 key={project.id}

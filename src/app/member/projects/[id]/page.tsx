@@ -1,56 +1,68 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card } from "@/components/ui/Card";
-import { toast } from "react-hot-toast";
-import { taskService, Task } from "@/services/taskService";
-import { userService, User } from "@/services/userService";
-import { projectService, Project } from "@/services/projectService";
-import {
-  ArrowLeft,
-  Search,
-  Filter,
-  Calendar,
-  Users,
-  Briefcase,
-  Eye,
-  EyeOff,
-  LayoutGrid,
-} from "lucide-react";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
+import { Task, Sprint } from "@/types/project";
+import { LayoutGrid } from "lucide-react";
 import { useSocket } from "@/context/SocketContext";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
-import { Plus, PanelRight } from "lucide-react";
-import UserAvatar from "@/components/ui/UserAvatar";
-
 import ProjectChat from "@/components/chat/ProjectChat";
-import { MessageSquare } from "lucide-react";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
-
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
-
-import { sprintService, Sprint } from "@/services/sprintService";
 import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
-import { BarChart3 } from "lucide-react";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import ProjectFilters from "@/components/project/ProjectFilters";
+import {
+  useGetProjectByIdQuery,
+  useGetProjectTasksQuery,
+  useGetProjectMembersQuery,
+  useGetProjectSprintsQuery,
+  useUpdateTaskMutation,
+} from "@/store/api/projectApiSlice";
+
+import ProjectDetailsHeader from "@/components/project/ProjectDetailsHeader";
+import ProjectDetailsSidebar from "@/components/project/ProjectDetailsSidebar";
+import ProjectStatsCards from "@/components/project/ProjectStatsCards";
+import { User } from "@/types/auth";
 
 export default function MemberProjectDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params.id as string;
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [project, setProject] = useState<Project | null>(null);
-  const [sprints, setSprints] = useState<Sprint[]>([]); // Added sprints state
-  const [orgUsers, setOrgUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
     "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS"
   >("TASKS");
+
+  // Get Current User
+  const { user } = useSelector((state: RootState) => state.auth);
+  const isManager = user?.role === "ORG_MANAGER";
+
+  // RTK Query hooks
+  const {
+    data: project,
+    isLoading: projectLoading,
+    isError: projectError,
+  } = useGetProjectByIdQuery(projectId);
+
+  const {
+    data: tasks = [],
+    isLoading: tasksLoading,
+    refetch: refetchTasks,
+  } = useGetProjectTasksQuery(projectId);
+
+  const { data: projectMembers = [], isLoading: membersLoading } =
+    useGetProjectMembersQuery(projectId);
+
+  const { data: sprints = [], isLoading: sprintsLoading } =
+    useGetProjectSprintsQuery(projectId);
+
+  const [updateTask] = useUpdateTaskMutation();
 
   // Controls
   const {
@@ -73,233 +85,85 @@ export default function MemberProjectDetailsPage() {
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  // Get Current User
-  const { user } = useSelector((state: RootState) => state.auth);
-  const isManager = user?.role === "org-manager";
+  const { socket } = useSocket();
 
-  const { socket, isConnected } = useSocket();
+  // Check if project exists and redirect if not
+  if (projectError) {
+    notifier.error(projectError, "Project not found or has been deleted.");
+    router.push("/member/dashboard");
+  }
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [fetchedTasks, fetchedUsers, fetchedProject, fetchedSprints] =
-        await Promise.all([
-          taskService.getProjetTasks(projectId).catch((err) => {
-            console.error("Failed to fetch tasks", err);
-            return [];
-          }),
-          userService.getOrganizationUsers().catch((err) => {
-            console.error("Failed to fetch users", err);
-            return [];
-          }),
-          projectService.getProject(projectId).catch((err) => {
-            // Check if error is 404
-            if (
-              err?.response?.status === 404 ||
-              err?.message?.includes("not found")
-            ) {
-              return null; // Handle specifically
-            }
-            throw err;
-          }),
-          sprintService.getProjectSprints(projectId).catch((err) => {
-            console.error("Failed to fetch sprints", err);
-            return [];
-          }),
-        ]);
-
-      if (!fetchedProject) {
-        toast.error("Project not found or has been deleted.");
-        router.push("/member/dashboard");
-        return;
-      }
-
-      setTasks(fetchedTasks);
-      setOrgUsers(fetchedUsers);
-      setProject(fetchedProject);
-      setSprints(fetchedSprints);
-    } catch (error) {
-      toast.error("Failed to load project data");
-      console.error(error);
-      router.push("/member/dashboard");
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, router]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  if (!project && !projectLoading) {
+    notifier.error(null, "Project not found.");
+    router.push("/member/dashboard");
+  }
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId ? { ...t, status: newStatus as Task["status"] } : t,
-        ),
-      );
-      await taskService.updateTask(taskId, {
-        status: newStatus as Task["status"],
-      });
-      toast.success("Status updated");
+      await updateTask({
+        id: taskId,
+        projectId,
+        data: { status: newStatus as Task["status"] },
+      }).unwrap();
+      notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
     } catch (error) {
-      toast.error("Failed to update status");
-      taskService.getProjetTasks(projectId).then(setTasks);
+      notifier.error(error, MESSAGES.TASKS.SAVE_FAILED);
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const getUserName = (userId?: string) => {
-    if (!userId) return "Unassigned";
-    const user = orgUsers.find((u) => u.id === userId);
-    return user ? `${user.firstName} ${user.lastName}` : "Unknown User";
-  };
-
-  // Get Team Members first to use in Filter logic if needed,
-  // but typically we use orgUsers filtered by project member IDs
-  const teamMembers = orgUsers.filter((user) =>
-    project?.teamMemberIds?.includes(user.id),
-  );
+  // Project Members
+  const teamMembers = projectMembers;
 
   const openEditModal = (task: Task) => {
     setEditingTask(task);
     setIsCreateTaskModalOpen(true);
   };
 
-  if (loading) {
+  // Total stats
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t: Task) => t.status === "DONE").length;
+
+  // Secure Sprint Logic for Team Members
+  const activeSprint = sprints.find((s: Sprint) => s.status === "ACTIVE");
+  const boardTasks = useMemo(
+    () =>
+      filteredTasks.filter(
+        (t: Task) =>
+          t.sprintId &&
+          activeSprint &&
+          String(t.sprintId) === String(activeSprint.id),
+      ),
+    [filteredTasks, activeSprint],
+  );
+
+  // Combined loading state
+  const isLoading =
+    projectLoading || tasksLoading || membersLoading || sprintsLoading;
+
+  if (isLoading && !project && !tasks.length) {
     return (
-      <div className="flex flex-col h-full w-full p-6 gap-6 bg-slate-50/50">
-        {/* Header Skeleton */}
-        <div className="flex justify-between items-start animate-pulse">
-          <div className="space-y-3">
-            <div className="h-8 w-64 bg-slate-200 rounded-lg"></div>
-            <div className="h-4 w-96 bg-slate-200 rounded-lg"></div>
-          </div>
-          <div className="flex gap-2">
-            <div className="h-10 w-24 bg-slate-200 rounded-xl"></div>
-            <div className="h-10 w-24 bg-slate-200 rounded-xl"></div>
-          </div>
-        </div>
-
-        {/* Toolbar Skeleton */}
-        <div className="h-14 w-full bg-slate-200 rounded-xl animate-pulse"></div>
-
-        {/* Board Columns Skeleton */}
-        <div className="flex gap-6 mt-4 overflow-hidden">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="flex-1 min-w-[280px] h-[500px] bg-white rounded-xl border border-slate-100 p-4 animate-pulse shrink-0"
-            >
-              <div className="h-6 w-24 bg-slate-200 rounded-md mb-6"></div>
-              <div className="space-y-4">
-                <div className="h-32 w-full bg-slate-100 rounded-lg"></div>
-                <div className="h-32 w-full bg-slate-100 rounded-lg"></div>
-                <div className="h-32 w-full bg-slate-100 rounded-lg"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.status === "DONE").length;
-  const progress =
-    totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
-
-  // Secure Sprint Logic for Team Members
-  const activeSprint = sprints.find((s) => s.status === "ACTIVE");
-  const boardTasks = filteredTasks.filter(
-    (t) =>
-      t.sprintId &&
-      activeSprint &&
-      String(t.sprintId) === String(activeSprint.id),
-  );
+  if (!project) return null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Tabs */}
-      <div className="flex items-center gap-4 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab("TASKS")}
-          className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-            activeTab === "TASKS"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="w-4 h-4" />
-            Tasks
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab("CHAT")}
-          className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-            activeTab === "CHAT"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
-            Chat
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab("CALENDAR")}
-          className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-            activeTab === "CALENDAR"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Calendar
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab("ANALYTICS")}
-          className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-            activeTab === "ANALYTICS"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Analytics
-          </div>
-        </button>
+      <ProjectDetailsHeader
+        project={project}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
 
-        {/* Toggle Panel Button (Aligned Right in Tabs) */}
-        <div className="ml-auto pb-2">
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`p-2 rounded-md transition-colors flex items-center gap-2 text-xs font-medium border ${isSidebarOpen ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-white text-gray-500 border-gray-200 hover:text-gray-900"}`}
-            title={isSidebarOpen ? "Maximize Board" : "Show Details"}
-          >
-            <PanelRight className="w-4 h-4" />
-            {isSidebarOpen ? "Hide Panel" : "Show Details"}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-6 relative">
-        {/* Main Content: Tasks */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main Content */}
         <div
-          className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-full lg:w-[73%]" : "w-full lg:w-full"} space-y-6`}
+          className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-full lg:w-3/4" : "w-full"} space-y-6`}
         >
           {activeTab === "CHAT" ? (
             <ProjectChat projectId={projectId} />
@@ -307,14 +171,12 @@ export default function MemberProjectDetailsPage() {
             <TaskCalendar
               tasks={tasks}
               projectId={projectId}
-              projectMembers={orgUsers}
-              onTaskUpdate={() =>
-                taskService.getProjetTasks(projectId).then(setTasks)
-              }
+              projectMembers={projectMembers}
+              onTaskUpdate={() => refetchTasks()}
             />
           ) : activeTab === "ANALYTICS" ? (
             <div className="space-y-6">
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">
                   Project Analytics
                 </h2>
@@ -322,11 +184,8 @@ export default function MemberProjectDetailsPage() {
                   <SprintCapacity
                     sprints={sprints}
                     tasks={tasks}
-                    activeSprintId={
-                      sprints.find((s) => s.status === "ACTIVE")?.id
-                    }
+                    activeSprintId={activeSprint?.id}
                   />
-                  {/* Velocity Chart uses own container */}
                 </div>
                 <div className="mt-6">
                   <VelocityChart sprints={sprints} tasks={tasks} />
@@ -334,9 +193,14 @@ export default function MemberProjectDetailsPage() {
               </div>
             </div>
           ) : (
-            <>
+            <div className="space-y-6">
+              <ProjectStatsCards
+                totalTasks={totalTasks}
+                completedTasks={completedTasks}
+              />
+
               {/* Controls Bar */}
-              <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex-1 w-full">
                   <ProjectFilters
                     searchQuery={searchQuery}
@@ -354,177 +218,58 @@ export default function MemberProjectDetailsPage() {
                     teamMembers={teamMembers}
                   />
                 </div>
-                <div className="flex gap-3 items-center">
-                  {/* Create Task Button */}
-                  {isManager && (
-                    <button
-                      onClick={() => {
-                        setEditingTask(null);
-                        setIsCreateTaskModalOpen(true);
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Create Task</span>
-                    </button>
-                  )}
-                </div>
+                {isManager && (
+                  <button
+                    onClick={() => {
+                      setEditingTask(null);
+                      setIsCreateTaskModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
+                  >
+                    + Create Task
+                  </button>
+                )}
               </div>
 
-              {/* Tasks Grid - REPLACED WITH KANBAN BOARD */}
-              {filteredTasks.length === 0 ? (
-                <div className="bg-white p-12 rounded-2xl text-center border-2 border-dashed border-gray-200">
-                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 text-2xl">
-                    📋
+              {/* Board */}
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                {!activeSprint ? (
+                  <div className="flex flex-col items-center justify-center p-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    <LayoutGrid className="w-12 h-12 text-gray-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      No Active Sprint
+                    </h3>
+                    <p className="text-gray-500 text-center max-w-sm">
+                      There is no active sprint for this project right now.
+                      Please wait for your manager to start one.
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    No tasks found
-                  </h3>
-                  <p className="text-gray-500 mt-1 text-sm">
-                    No tasks match your current filters.
-                  </p>
-                  {(searchQuery ||
-                    statusFilter !== "ALL" ||
-                    priorityFilter !== "ALL") && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery("");
-                        setStatusFilter("ALL");
-                        setPriorityFilter("ALL");
-                      }}
-                      className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium underline underline-offset-2"
-                    >
-                      Clear Filters
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="h-full min-h-[600px] w-full">
-                  {!activeSprint ? (
-                    <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300 mx-4 h-full mt-4">
-                      <LayoutGrid className="w-12 h-12 text-gray-400 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        No Active Sprint
-                      </h3>
-                      <p className="text-gray-500 text-center max-w-sm mb-6">
-                        There is no active sprint for this project right now.
-                        Tasks can only be pulled from the backlog during an
-                        active sprint. Please wait for your manager to start
-                        one.
-                      </p>
-                    </div>
-                  ) : (
-                    <KanbanBoard
-                      tasks={boardTasks}
-                      users={orgUsers}
-                      onStatusChange={handleStatusChange}
-                      onEditTask={openEditModal}
-                      showProjectBadges={false}
-                    />
-                  )}
-                </div>
-              )}
-            </>
+                ) : (
+                  <KanbanBoard
+                    tasks={boardTasks}
+                    users={projectMembers}
+                    onStatusChange={handleStatusChange}
+                    onEditTask={openEditModal}
+                    showProjectBadges={false}
+                    projectId={projectId}
+                  />
+                )}
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Side Panel: Team & Details - Collapsible */}
-        <div
-          className={`transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? "w-full lg:w-[27%] opacity-100" : "w-0 opacity-0 lg:hidden"} space-y-6`}
-        >
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-4 h-4 text-gray-500" />
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-                Team Members
-              </h3>
-            </div>
-
-            <div className="space-y-3">
-              {teamMembers.length > 0 ? (
-                teamMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <UserAvatar
-                      user={member}
-                      size="sm"
-                      className="w-8 h-8 text-xs"
-                    />
-                    <div className="overflow-hidden">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {member.firstName} {member.lastName}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {member.email}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-gray-500 text-sm italic">
-                  No team members assigned yet.
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Briefcase className="w-4 h-4 text-gray-500" />
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-                Project Info
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Start Date</p>
-                <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                  {project?.startDate
-                    ? formatDate(project.startDate)
-                    : "Not set"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Due Date</p>
-                <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                  {project?.endDate ? formatDate(project.endDate) : "Not set"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Priority</p>
-                <span
-                  className={`inline-flex px-2 py-1 rounded text-xs font-bold ${
-                    project?.priority === "CRITICAL"
-                      ? "bg-red-100 text-red-700"
-                      : project?.priority === "HIGH"
-                        ? "bg-orange-100 text-orange-700"
-                        : project?.priority === "MEDIUM"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {project?.priority}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Sidebar */}
+        {isSidebarOpen && <ProjectDetailsSidebar teamMembers={teamMembers} />}
       </div>
-      {/* Create Task Modal */}
+
       <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
         onClose={() => {
           setIsCreateTaskModalOpen(false);
           setEditingTask(null);
         }}
-        onSuccess={() => {
-          taskService.getProjetTasks(projectId).then(setTasks);
-        }}
+        onSuccess={() => refetchTasks()}
         projectId={projectId}
         projectMembers={teamMembers}
         task={editingTask}

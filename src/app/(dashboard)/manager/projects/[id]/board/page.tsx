@@ -1,14 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { taskService, Task } from "@/services/taskService";
-import { userService, User } from "@/services/userService";
-import { projectService, Project } from "@/services/projectService";
-import { sprintService, Sprint } from "@/services/sprintService";
+import {
+  useGetProjectByIdQuery,
+  useGetProjectTasksQuery,
+  useGetOrganizationUsersQuery,
+  useGetProjectSprintsQuery,
+  useUpdateTaskMutation,
+} from "@/store/api/projectApiSlice";
+import { Sprint, Task } from "@/types/project";
+import { User } from "@/types/auth";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
+import { Sprint as ProjectSprint } from "@/types/project";
 import { useSocket } from "@/context/SocketContext";
-import toast from "react-hot-toast";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import { ArrowLeft, LayoutGrid } from "lucide-react";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 
@@ -17,11 +24,42 @@ export default function ProjectBoardPage() {
   const router = useRouter();
   const projectId = params.id as string;
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [project, setProject] = useState<Project | null>(null);
-  const [orgUsers, setOrgUsers] = useState<User[]>([]);
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: project,
+    isLoading: projectLoading,
+    isFetching: projectFetching,
+  } = useGetProjectByIdQuery(projectId);
+
+  const {
+    data: tasks = [],
+    isLoading: tasksLoading,
+    isFetching: tasksFetching,
+    refetch: refetchTasks,
+  } = useGetProjectTasksQuery(projectId);
+
+  const {
+    data: orgUsers = [],
+    isLoading: usersLoading,
+    isFetching: usersFetching,
+  } = useGetOrganizationUsersQuery();
+
+  const {
+    data: sprints = [],
+    isLoading: sprintsLoading,
+    isFetching: sprintsFetching,
+  } = useGetProjectSprintsQuery(projectId);
+
+  const [updateTask] = useUpdateTaskMutation();
+
+  const loading =
+    projectLoading ||
+    tasksLoading ||
+    usersLoading ||
+    sprintsLoading ||
+    projectFetching ||
+    tasksFetching ||
+    usersFetching ||
+    sprintsFetching;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,78 +67,33 @@ export default function ProjectBoardPage() {
 
   const { socket, isConnected } = useSocket();
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [fetchedProject, fetchedTasks, fetchedUsers, fetchedSprints] =
-        await Promise.all([
-          projectService.getProject(projectId),
-          taskService.getProjetTasks(projectId),
-          userService.getOrganizationUsers(),
-          sprintService.getProjectSprints(projectId),
-        ]);
-      setProject(fetchedProject);
-      setTasks(fetchedTasks);
-      setOrgUsers(fetchedUsers);
-      setSprints(fetchedSprints);
-    } catch (error) {
-      toast.error("Failed to load board data");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   // Socket Listeners for Real-time Updates
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    const handleTaskCreated = (newTask: Task) => {
-      if (String(newTask.projectId) === String(projectId)) {
-        setTasks((prev) => [newTask, ...prev]);
-      }
+    const handleDataChanged = () => {
+      refetchTasks();
     };
 
-    const handleTaskUpdated = (updatedTask: Task) => {
-      if (String(updatedTask.projectId) === String(projectId)) {
-        setTasks((prev) => {
-          const exists = prev.find((t) => t.id === updatedTask.id);
-          if (!exists) {
-            return [updatedTask, ...prev];
-          }
-          return prev.map((t) => (t.id === updatedTask.id ? updatedTask : t));
-        });
-      }
-    };
-
-    socket.on("task:created", handleTaskCreated);
-    socket.on("task:updated", handleTaskUpdated);
+    socket.on("task:created", handleDataChanged);
+    socket.on("task:updated", handleDataChanged);
 
     return () => {
-      socket.off("task:created", handleTaskCreated);
-      socket.off("task:updated", handleTaskUpdated);
+      socket.off("task:created", handleDataChanged);
+      socket.off("task:updated", handleDataChanged);
     };
-  }, [socket, isConnected, projectId]);
+  }, [socket, isConnected, refetchTasks]);
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
-      // Optimistic update
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId ? { ...t, status: newStatus as Task["status"] } : t,
-        ),
-      );
-      await taskService.updateTask(taskId, {
-        status: newStatus as Task["status"],
-      });
-      toast.success("Status updated");
-    } catch (error) {
-      toast.error("Failed to update status");
-      taskService.getProjetTasks(projectId).then(setTasks);
+      await updateTask({
+        id: taskId,
+        data: { status: newStatus as Task["status"] },
+        projectId,
+      }).unwrap();
+      notifier.success(MESSAGES.GENERAL.SUCCESS);
+    } catch (err) {
+      notifier.error(err, "Failed to update status");
     }
   };
 
@@ -110,7 +103,7 @@ export default function ProjectBoardPage() {
   };
 
   const handleModalSuccess = () => {
-    taskService.getProjetTasks(projectId).then(setTasks);
+    refetchTasks();
   };
 
   if (loading) {
@@ -121,9 +114,9 @@ export default function ProjectBoardPage() {
     );
   }
 
-  const activeSprint = sprints.find((s) => s.status === "ACTIVE");
+  const activeSprint = sprints.find((s: Sprint) => s.status === "ACTIVE");
   const boardTasks = tasks.filter(
-    (t) =>
+    (t: Task) =>
       t.sprintId &&
       activeSprint &&
       String(t.sprintId) === String(activeSprint.id),
@@ -147,6 +140,7 @@ export default function ProjectBoardPage() {
               onStatusChange={handleStatusChange}
               onEditTask={openEditModal}
               showProjectBadges={false}
+              projectId={projectId}
             />
           </div>
         ) : (
@@ -170,7 +164,7 @@ export default function ProjectBoardPage() {
         onSuccess={handleModalSuccess}
         projectId={projectId}
         task={editingTask}
-        projectMembers={orgUsers.filter((u) =>
+        projectMembers={orgUsers.filter((u: User) =>
           project?.teamMemberIds?.includes(u.id),
         )}
       />

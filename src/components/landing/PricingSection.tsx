@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api, { API_ROUTES } from "@/utils/api";
 import { Plan } from "../../types/plan";
-import { toast } from "react-hot-toast";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 
 interface RazorpayResponse {
   razorpay_payment_id: string;
@@ -50,11 +51,13 @@ export default function PricingSection() {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const response = await axios.get<ApiResponse<Plan[]>>("/api/plans");
+        const response = await api.get<ApiResponse<Plan[]>>(
+          API_ROUTES.PLANS.GET_ALL,
+        );
         setPlans(response.data.data);
       } catch (error) {
         console.error("Error loading plans:", error);
-        toast.error("Failed to load plans");
+        notifier.error(error, "Failed to load plans");
       } finally {
         setLoading(false);
       }
@@ -67,12 +70,12 @@ export default function PricingSection() {
     try {
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        toast.error("Please login to subscribe");
+        notifier.error(null, MESSAGES.AUTH.LOGIN_REQUIRED_SUBSCRIPTION);
         return;
       }
 
-      const response = await axios.post<SubscriptionResponse>(
-        "/api/payments/subscription",
+      const response = await api.post<SubscriptionResponse>(
+        API_ROUTES.PAYMENTS.SUBSCRIPTION,
         { planId },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -86,8 +89,8 @@ export default function PricingSection() {
         description: "Subscription",
         handler: async function (response: RazorpayResponse) {
           try {
-            await axios.post(
-              "/api/payments/verify",
+            await api.post(
+              API_ROUTES.PAYMENTS.VERIFY,
               {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
@@ -96,9 +99,9 @@ export default function PricingSection() {
               },
               { headers: { Authorization: `Bearer ${token}` } },
             );
-            toast.success("Subscription successful!");
+            notifier.success(MESSAGES.AUTH.PLAN_UPGRADE_SUCCESS);
           } catch {
-            toast.error("Payment verification failed");
+            notifier.error(null, MESSAGES.AUTH.PAYMENT_VERIFY_FAILED);
           }
         },
         theme: {
@@ -109,7 +112,7 @@ export default function PricingSection() {
       const rzp1 = new window.Razorpay(options);
       rzp1.open();
     } catch {
-      toast.error("Failed to initiate subscription");
+      notifier.error(null, MESSAGES.AUTH.PAYMENT_INIT_FAILED);
     }
   };
 
@@ -136,7 +139,7 @@ export default function PricingSection() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`rounded-2xl border ${plan.type === "PRO" ? "border-2 border-[#2463EB] shadow-lg relative" : "border-gray-200 shadow-sm"} bg-white p-6`}
+              className={`rounded-xl border ${plan.type === "PRO" ? "border-2 border-[#2463EB] shadow-lg relative" : "border-gray-200 shadow-sm"} bg-white p-6`}
             >
               {plan.type === "PRO" && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -166,7 +169,7 @@ export default function PricingSection() {
               </ul>
               <button
                 onClick={() => handleSubscribe(plan.id)}
-                className={`w-full rounded-lg py-3 text-sm font-medium ${plan.type === "PRO" ? "bg-gradient-to-r from-[#326DEC] to-[#8D65F1] text-white shadow-lg hover:shadow-xl" : "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"}`}
+                className={`w-full rounded-xl py-3 text-sm font-medium ${plan.type === "PRO" ? "bg-gradient-to-r from-[#326DEC] to-[#8D65F1] text-white shadow-lg hover:shadow-xl" : "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"}`}
               >
                 {plan.price === 0 ? "Get Started" : "Subscribe"}
               </button>

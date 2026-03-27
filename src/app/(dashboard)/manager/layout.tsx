@@ -5,9 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
-import { logout, fetchProfile } from "@/features/auth/authSlice";
+import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
+import { useGetProfileQuery } from "@/store/api/userApiSlice";
 import Link from "next/link";
 import UserModal from "@/components/modals/UserModal";
+import InviteModal from "@/components/modals/InviteModal";
+import CreateProjectModal from "@/components/modals/CreateProjectModal";
 import { useMemberProfile } from "@/hooks/useMemberProfile";
 import {
   LayoutDashboard,
@@ -19,11 +22,15 @@ import {
   X,
   KanbanSquare,
   CalendarDays,
+  ReceiptText,
+  Briefcase,
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SocketNotification from "@/components/notifications/SocketNotification";
 import ChatNotificationListener from "@/components/chat/ChatNotificationListener";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { useSidebar } from "@/hooks/useSidebar";
+import { Sidebar } from "@/components/dashboard/Sidebar";
 
 export default function ManagerLayout({
   children,
@@ -33,30 +40,66 @@ export default function ManagerLayout({
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { accessToken } = useSelector((state: RootState) => state.auth);
+  const { user, isLoggedIn, role, accessToken } = useSelector(
+    (state: RootState) => state.auth,
+  );
 
-  useEffect(() => {
-    if (accessToken && !user) {
-      dispatch(fetchProfile());
-    }
-    if (user && user.role !== "org-manager" && user.role !== "admin") {
-      // Basic protection
-      if (user.role === "team-member" || user.role === "member") {
-        router.push("/member/dashboard");
-      }
-    }
-  }, [accessToken, user, dispatch, router]);
-
-  const profileHook = useMemberProfile(accessToken);
+  const {
+    isCollapsed,
+    toggleSidebar,
+    isMobileMenuOpen,
+    setIsMobileMenuOpen,
+    isMounted,
+  } = useSidebar();
+  const [isReady, setIsReady] = useState(false);
   const [userModalMode, setUserModalMode] = useState<"view" | "edit">("view");
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+
+  // Modal states for Dashboard Quick Actions
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
+    useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    dispatch(hydrateFromStorage());
+    setIsReady(true);
+  }, [dispatch]);
+
+  // Expose modal opening functions to the window object so Dashboard buttons can trigger them
+  useEffect(() => {
+    (window as any).openInviteModal = () => setIsInviteModalOpen(true);
+    (window as any).openCreateProjectModal = () =>
+      setIsCreateProjectModalOpen(true);
+
+    return () => {
+      delete (window as any).openInviteModal;
+      delete (window as any).openCreateProjectModal;
+    };
   }, []);
+
+  const { isLoading: profileLoading } = useGetProfileQuery(undefined, {
+    skip: !isLoggedIn || !!user,
+  });
+
+  useEffect(() => {
+    if (isReady) {
+      if (!isLoggedIn) {
+        router.push("/login");
+      } else if (role !== "ORG_MANAGER" && role !== "ADMIN") {
+        if (
+          role === "TEAM_MEMBER" ||
+          role === "MEMBER" ||
+          role === "PROJECT_MANAGER"
+        ) {
+          router.push("/member/dashboard");
+        } else if (role === "SUPER_ADMIN") {
+          router.push("/admin/dashboard");
+        }
+      }
+    }
+  }, [isReady, isLoggedIn, role, router]);
+
+  const profileHook = useMemberProfile(accessToken);
 
   const handleLogout = async () => {
     await dispatch(logout());
@@ -73,140 +116,98 @@ export default function ManagerLayout({
     { name: "Members", href: "/manager/members", icon: Users },
     { name: "Invites", href: "/manager/invites", icon: Mail },
     { name: "Plans", href: "/manager/plans", icon: CreditCard },
-    { name: "Projects", href: "/manager/projects", icon: LayoutDashboard },
+    { name: "Projects", href: "/manager/projects", icon: Briefcase },
     { name: "Boards", href: "/manager/boards", icon: KanbanSquare },
     { name: "Calendar", href: "/manager/calendar", icon: CalendarDays },
+    { name: "Billing", href: "/manager/billing", icon: ReceiptText },
   ];
 
+  if (
+    !isMounted ||
+    !isReady ||
+    !isLoggedIn ||
+    (role !== "ORG_MANAGER" && role !== "ADMIN")
+  )
+    return null;
+
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Mobile Sidebar Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-      {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
-      >
-        <div className="h-16 px-6 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">PH</span>
-            </div>
-            <span className="text-gray-900 font-bold text-lg">ProjectHub</span>
-          </div>
-          <button
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden text-gray-500"
-            aria-label="Close menu"
-            title="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <nav className="p-4 space-y-1">
-          {sidebarLinks.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? "text-blue-600 bg-blue-50 font-medium"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <Icon
-                  className={`w-5 h-5 ${isActive ? "text-blue-600" : "text-gray-400"}`}
-                />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
-      </aside>
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+      <ChatNotificationListener />
+
+      <Sidebar
+        isCollapsed={isCollapsed}
+        toggleSidebar={toggleSidebar}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+        links={sidebarLinks}
+        pathname={pathname}
+        handleLogout={handleLogout}
+        role="ORG_MANAGER"
+      />
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="h-16 bg-white border-b border-gray-200 px-4 md:px-8 flex items-center justify-between gap-4">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden text-gray-500 shrink-0"
+            className="md:hidden text-gray-500 hover:text-blue-600 transition-colors shrink-0"
             aria-label="Open menu"
             title="Open menu"
           >
             <Menu className="w-6 h-6" />
           </button>
 
-          {/* Search Bar - Moved from DashboardLayout */}
-
-          <div className="flex items-center gap-4 shrink-0 ml-auto">
-            {/* Socket Notification Listener */}
+          <div className="flex items-center gap-4 shrink-0 ml-auto font-sans">
             <SocketNotification />
-            {/* Notification Bell */}
             <NotificationBell />
 
-            <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
+            <div className="h-8 w-px bg-gray-200 hidden md:block mx-1"></div>
 
             <button
               onClick={openProfile}
-              className="flex items-center gap-3 hover:bg-gray-50 rounded-full pl-1 pr-3 py-1 transition-colors border border-transparent hover:border-gray-200"
-              suppressHydrationWarning
+              className="group flex items-center gap-3 hover:bg-white hover:shadow-sm rounded-full pl-1 pr-3 py-1 transition-all border border-transparent hover:border-gray-200"
             >
               <UserAvatar user={user} size="sm" />
               <div className="hidden md:block text-left">
-                <p
-                  className="text-sm font-medium text-gray-900 truncate max-w-[200px]"
-                  title={
-                    !isMounted
-                      ? "User"
-                      : user?.firstName && user?.lastName
-                        ? `${user.firstName} ${user.lastName}`
-                        : user?.name || user?.firstName || "User"
-                  }
-                  suppressHydrationWarning
-                >
-                  {!isMounted
-                    ? "User"
-                    : user?.firstName && user?.lastName
-                      ? `${user.firstName} ${user.lastName}`
-                      : user?.name || user?.firstName || "User"}
+                <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate max-w-[150px]">
+                  {user?.firstName && user?.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : user?.name || user?.firstName || "Manager"}
                 </p>
-                <p
-                  className="text-xs text-gray-500 truncate max-w-[200px]"
-                  suppressHydrationWarning
-                >
-                  {!isMounted
-                    ? "Manager"
-                    : user?.role.toUpperCase() || "Manager"}
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold truncate max-w-[150px]">
+                  {role?.replace("_", " ") || "Manager"}
                 </p>
               </div>
             </button>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-8">{children}</main>
+
+        <main className="flex-1 overflow-auto p-4 md:p-8 bg-gray-50/50">
+          {children}
+        </main>
       </div>
+
       <UserModal
         isOpen={isUserModalOpen}
         mode={userModalMode}
         onClose={() => setIsUserModalOpen(false)}
         setMode={setUserModalMode}
         profile={profileHook}
+      />
+
+      {/* Global Dashboard Modals */}
+      <InviteModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+      />
+
+      <CreateProjectModal
+        isOpen={isCreateProjectModalOpen}
+        onClose={() => setIsCreateProjectModalOpen(false)}
+        onSuccess={() => {
+          // Optional: refresh logic
+        }}
       />
     </div>
   );

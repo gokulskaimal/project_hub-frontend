@@ -1,28 +1,30 @@
 "use client";
 
-
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from '@/store/store';
+import { AppDispatch } from "@/store/store";
 import {
-  verifyOtp,
-  completeSignup,
   setEmail,
   setOtp,
   setName,
   setPassword,
-  resendOtp,
   setFirstName,
   setLastName,
-  googleSignIn,
 } from "@/features/auth/authSlice";
-import { registerManager } from '@/features/auth/authSlice';
+import {
+  useRegisterManagerMutation,
+  useVerifyOtpMutation,
+  useSendOtpMutation as useResendOtpMutation,
+  useCompleteSignupMutation,
+  useGoogleSignInMutation,
+} from "@/store/api/authApiSlice";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { selectSignupData } from "@/features/auth/selectors";
-import toast from "react-hot-toast";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import { useRouter } from "next/navigation";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import { Button } from "@/components/ui/Button";
@@ -33,15 +35,42 @@ export default function SignUpPage() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  const { email, otp, name, password, firstName, lastName, signupStep, error, loading, otpResendAvailableAt } = useSelector(selectSignupData);
+  const [registerManagerMutation, { isLoading: registerLoading }] =
+    useRegisterManagerMutation();
+  const [resendOtpMutation, { isLoading: resendLoading }] =
+    useResendOtpMutation();
+  const [verifyOtpMutation, { isLoading: verifyLoading }] =
+    useVerifyOtpMutation();
+  const [completeSignupMutation, { isLoading: completeLoading }] =
+    useCompleteSignupMutation();
+  const [googleSignInMutation, { isLoading: googleLoading }] =
+    useGoogleSignInMutation();
 
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const {
+    email,
+    otp,
+    name,
+    password,
+    firstName,
+    lastName,
+    signupStep,
+    error,
+    otpResendAvailableAt,
+  } = useSelector(selectSignupData);
+  const loading =
+    registerLoading ||
+    resendLoading ||
+    verifyLoading ||
+    completeLoading ||
+    googleLoading;
+
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [remainingMs, setRemainingMs] = useState<number>(0);
 
   useEffect(() => {
-    if (error && typeof error === 'string' && error.trim()) {
-      toast.error(error);
+    if (error && typeof error === "string" && error.trim()) {
+      notifier.error(error, MESSAGES.AUTH.SIGNUP_FAILED);
     }
   }, [error]);
 
@@ -72,8 +101,15 @@ export default function SignUpPage() {
 
   const onRegisterManager = async () => {
     const schema = z.object({
-      email: z.string().trim().min(1, 'Email is required').email('Enter a valid email'),
-      organizationName: z.string().trim().min(2, 'Organization name is required')
+      email: z
+        .string()
+        .trim()
+        .min(1, "Email is required")
+        .email("Enter a valid email"),
+      organizationName: z
+        .string()
+        .trim()
+        .min(2, "Organization name is required"),
     });
     const parsed = schema.safeParse({ email, organizationName: name });
     if (!parsed.success) {
@@ -83,39 +119,52 @@ export default function SignUpPage() {
         if (err.path[0]) errors[err.path[0]] = err.message;
       });
       setFieldErrors(errors);
-      toast.error(parsed.error.errors[0]?.message ?? 'Invalid email');
+      notifier.error(null, MESSAGES.VALIDATION.INVALID_INPUT);
       return;
     } else {
       setFieldErrors({});
     }
     try {
-      await dispatch(registerManager({ email: parsed.data.email, organizationName: parsed.data.organizationName })).unwrap();
-      toast.success('Organization created and OTP sent');
+      await registerManagerMutation({
+        email: parsed.data.email,
+        organizationName: parsed.data.organizationName,
+      }).unwrap();
+      notifier.success(MESSAGES.AUTH.OTP_SENT);
     } catch (err: unknown) {
-      const message = typeof err === 'string' ? err : 'Failed to register';
-      toast.error(message);
+      notifier.error(err, MESSAGES.AUTH.SIGNUP_FAILED);
     }
   };
 
   const onResendOtp = async () => {
-    const emailCheck = z.string().trim().email('Enter a valid email').safeParse(email);
+    const emailCheck = z
+      .string()
+      .trim()
+      .email("Enter a valid email")
+      .safeParse(email);
     if (!emailCheck.success) {
-      toast.error(emailCheck.error.errors[0]?.message ?? 'Enter a valid email');
+      notifier.error(null, MESSAGES.VALIDATION.INVALID_INPUT);
       return;
     }
     try {
-      await dispatch(resendOtp({ email: emailCheck.data })).unwrap();
-      toast.success('OTP resent');
+      await resendOtpMutation({ email: emailCheck.data }).unwrap();
+      notifier.success(MESSAGES.AUTH.OTP_RESEND);
     } catch (err: unknown) {
-      const message = typeof err === 'string' ? err : 'Failed to resend OTP';
-      toast.error(message);
+      notifier.error(err, MESSAGES.AUTH.SIGNUP_FAILED);
     }
   };
 
   const onVerifyOtp = async () => {
     const schema = z.object({
-      email: z.string().trim().min(1, 'Email is required').email('Enter a valid email'),
-      otp: z.string().trim().min(1, 'OTP is required').regex(/^\d{6}$/, 'OTP must be 6 digits'),
+      email: z
+        .string()
+        .trim()
+        .min(1, "Email is required")
+        .email("Enter a valid email"),
+      otp: z
+        .string()
+        .trim()
+        .min(1, "OTP is required")
+        .regex(/^\d{6}$/, "OTP must be 6 digits"),
     });
     const parsed = schema.safeParse({ email, otp });
     if (!parsed.success) {
@@ -124,51 +173,72 @@ export default function SignUpPage() {
         if (err.path[0]) errors[err.path[0]] = err.message;
       });
       setFieldErrors(errors);
-      toast.error(parsed.error.errors[0]?.message ?? 'Invalid OTP');
+      notifier.error(null, MESSAGES.VALIDATION.INVALID_INPUT);
       return;
     } else {
       setFieldErrors({});
     }
     try {
-      await dispatch(verifyOtp(parsed.data)).unwrap();
-      toast.success('OTP verified');
+      await verifyOtpMutation(parsed.data).unwrap();
+      notifier.success(MESSAGES.AUTH.OTP_VERIFIED);
     } catch (err: unknown) {
-      const message = typeof err === 'string' ? err : 'OTP verification failed';
-      toast.error(message);
+      notifier.error(err, MESSAGES.AUTH.SIGNUP_FAILED);
     }
   };
 
   const onCompleteSignup = async () => {
-    const schema = z.object({
-      email: z.string().trim().min(1, 'Email is required').email('Enter a valid email'),
-      firstName: z.string().trim().min(2, 'First name too short'),
-      lastName: z.string().trim().min(2, 'Last name too short'),
-      password: z.string().trim().min(8, 'Password must be at least 8 characters'),
-      confirmPassword: z.string().trim().min(1, 'Confirm password is required'),
-    }).refine((data) => data.password === data.confirmPassword, {
-      message: 'Passwords do not match',
-      path: ['confirmPassword']
-    });
+    const schema = z
+      .object({
+        email: z
+          .string()
+          .trim()
+          .min(1, "Email is required")
+          .email("Enter a valid email"),
+        firstName: z.string().trim().min(2, "First name too short"),
+        lastName: z.string().trim().min(2, "Last name too short"),
+        password: z
+          .string()
+          .trim()
+          .min(8, "Password must be at least 8 characters"),
+        confirmPassword: z
+          .string()
+          .trim()
+          .min(1, "Confirm password is required"),
+      })
+      .refine((data) => data.password === data.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
+      });
 
-    const parsed = schema.safeParse({ email, firstName, lastName, password, confirmPassword });
+    const parsed = schema.safeParse({
+      email,
+      firstName,
+      lastName,
+      password,
+      confirmPassword,
+    });
     if (!parsed.success) {
       const errors: { [key: string]: string } = {};
       parsed.error.errors.forEach((err) => {
         if (err.path[0]) errors[err.path[0]] = err.message;
       });
       setFieldErrors(errors);
-      toast.error(parsed.error.errors[0]?.message ?? 'Invalid input');
+      notifier.error(null, MESSAGES.VALIDATION.FIX_ERRORS);
       return;
     } else {
       setFieldErrors({});
     }
     try {
-      await dispatch(completeSignup({ email: parsed.data.email, firstName: parsed.data.firstName, lastName: parsed.data.lastName, password: parsed.data.password })).unwrap();
-      toast.success('Signup complete. You can now sign in.');
-      router.push('/login');
+      await completeSignupMutation({
+        email: parsed.data.email,
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+        password: parsed.data.password,
+      }).unwrap();
+      notifier.success(MESSAGES.AUTH.SIGNUP_SUCCESS);
+      router.push("/login");
     } catch (err: unknown) {
-      const message = typeof err === 'string' ? err : 'Signup failed';
-      toast.error(message);
+      notifier.error(err, MESSAGES.AUTH.SIGNUP_FAILED);
     }
   };
 
@@ -179,29 +249,28 @@ export default function SignUpPage() {
   const handleGoogleSignIn = async (credentialResponse: CredentialResponse) => {
     const { credential } = credentialResponse;
     if (!credential) {
-      toast.error("Google sign-in failed: No credential received");
+      notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED);
       return;
     }
 
     try {
-      await dispatch(
-        googleSignIn({ idToken: credential })
-      ).unwrap();
-      toast.success("Signed in successfully!");
+      await googleSignInMutation({ idToken: credential }).unwrap();
+      notifier.success(MESSAGES.AUTH.GOOGLE_SIGNIN_SUCCESS);
     } catch (err: unknown) {
-      const errorMessage = (err as Record<string, unknown>)?.message || (typeof err === "string" ? err : "Unknown error");
+      const error = err as { data?: { message?: string }; message?: string };
+      const errorMessage =
+        error?.data?.message || error?.message || "Unknown error";
 
-      if (typeof errorMessage === "string" && errorMessage.includes("Organization Name Required")) {
-        toast("Please enter your Organization Name to complete signup", { icon: "🏢" });
+      if (
+        typeof errorMessage === "string" &&
+        errorMessage.includes("Organization Name Required")
+      ) {
+        notifier.info(MESSAGES.AUTH.ORG_NAME_REQUIRED, { icon: "🏢" });
         setPendingIdToken(credential);
         setShowOrgModal(true);
         return;
       }
-      if (typeof errorMessage === "string") {
-        toast.error(errorMessage);
-      } else {
-        toast.error("Google sign-in failed");
-      }
+      notifier.error(err, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED);
     }
   };
 
@@ -210,19 +279,17 @@ export default function SignUpPage() {
     if (!googleOrgName.trim() || !pendingIdToken) return;
 
     try {
-      await dispatch(
-        googleSignIn({ idToken: pendingIdToken, orgName: googleOrgName })
-      ).unwrap();
+      await googleSignInMutation({
+        idToken: pendingIdToken,
+        orgName: googleOrgName,
+      }).unwrap();
       setShowOrgModal(false);
       setPendingIdToken(null);
       setGoogleOrgName("");
-      toast.success("Account created successfully!");
-      router.push('/login')
+      notifier.success(MESSAGES.AUTH.GOOGLE_SIGNIN_SUCCESS);
+      router.push("/login");
     } catch (err: unknown) {
-      console.error("Google Sign-In with Org Name Failed:", err);
-      const message =
-        typeof err === "string" ? err : "Failed to complete signup";
-      toast.error(message);
+      notifier.error(err, MESSAGES.AUTH.SIGNUP_FAILED);
     }
   };
 
@@ -241,14 +308,15 @@ export default function SignUpPage() {
             <div className="flex items-start gap-12 justify-center">
               <div className="flex-1 max-w-2xl">
                 <h1 className="text-5xl font-extrabold text-gray-900 mb-6">
-                  Great outcomes start with{' '}
+                  Great outcomes start with{" "}
                   <span className="bg-gradient-to-r from-[#326DEC] to-[#8D65F1] bg-clip-text text-transparent">
                     Project Hub
                   </span>
                 </h1>
 
                 <p className="text-gray-600 text-base mb-4 max-w-lg">
-                  The modern project management tool your team needs to plan and track work across every team.
+                  The modern project management tool your team needs to plan and
+                  track work across every team.
                 </p>
 
                 <p className="text-xs text-gray-600 mb-6">
@@ -258,34 +326,58 @@ export default function SignUpPage() {
                 {/* Signup form steps */}
                 {signupStep === 1 && (
                   <div className="grid gap-3 mb-6 max-w-xl">
-                      <Input
-                        type="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => { dispatch(setEmail(e.target.value)); setFieldErrors((prev) => ({ ...prev, email: '' })); }}
-                        disabled={loading}
-                        error={fieldErrors.email}
-                        leftIcon={
-                          <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 17 17">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33" d="M14.9964 5.33655L9.00242 9.15455C8.79902 9.27269 8.56798 9.33492 8.33275 9.33492C8.09753 9.33492 7.86649 9.27269 7.66309 9.15455L1.66309 5.33655" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33" d="M13.6631 3.33655H2.99642C2.26004 3.33655 1.66309 3.9335 1.66309 4.66988V12.6699C1.66309 13.4063 2.26004 14.0032 2.99642 14.0032H13.6631C14.3995 14.0032 14.9964 13.4063 14.9964 12.6699V4.66988C14.9964 3.9335 14.3995 3.33655 13.6631 3.33655Z" />
-                          </svg>
-                        }
-                      />
-                      <Input
-                        type="text"
-                        placeholder="Organization Name"
-                        value={name}
-                        onChange={(e) => { dispatch(setName(e.target.value)); setFieldErrors((prev) => ({ ...prev, organizationName: '' })); }}
-                        disabled={loading}
-                        error={fieldErrors.organizationName}
-                      />
+                    <Input
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => {
+                        dispatch(setEmail(e.target.value));
+                        setFieldErrors((prev) => ({ ...prev, email: "" }));
+                      }}
+                      disabled={loading}
+                      error={fieldErrors.email}
+                      leftIcon={
+                        <svg
+                          className="h-4 w-4 text-gray-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 17 17"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="1.33"
+                            d="M14.9964 5.33655L9.00242 9.15455C8.79902 9.27269 8.56798 9.33492 8.33275 9.33492C8.09753 9.33492 7.86649 9.27269 7.66309 9.15455L1.66309 5.33655"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="1.33"
+                            d="M13.6631 3.33655H2.99642C2.26004 3.33655 1.66309 3.9335 1.66309 4.66988V12.6699C1.66309 13.4063 2.26004 14.0032 2.99642 14.0032H13.6631C14.3995 14.0032 14.9964 13.4063 14.9964 12.6699V4.66988C14.9964 3.9335 14.3995 3.33655 13.6631 3.33655Z"
+                          />
+                        </svg>
+                      }
+                    />
+                    <Input
+                      type="text"
+                      placeholder="Organization Name"
+                      value={name}
+                      onChange={(e) => {
+                        dispatch(setName(e.target.value));
+                        setFieldErrors((prev) => ({
+                          ...prev,
+                          organizationName: "",
+                        }));
+                      }}
+                      disabled={loading}
+                      error={fieldErrors.organizationName}
+                    />
                     <Button
                       onClick={onRegisterManager}
                       disabled={loading || !email?.trim() || !name?.trim()}
                       isLoading={loading}
                     >
-                      {loading ? 'Creating...' : 'Create org & Send OTP'}
+                      {loading ? "Creating..." : "Create org & Send OTP"}
                     </Button>
                   </div>
                 )}
@@ -298,30 +390,41 @@ export default function SignUpPage() {
                           type="text"
                           placeholder="Enter 6-digit OTP"
                           value={otp}
-                          onChange={(e) => { dispatch(setOtp(e.target.value)); setFieldErrors((prev) => ({ ...prev, otp: '' })); }}
+                          onChange={(e) => {
+                            dispatch(setOtp(e.target.value));
+                            setFieldErrors((prev) => ({ ...prev, otp: "" }));
+                          }}
                           disabled={loading}
                           error={fieldErrors.otp}
-                           leftIcon={
-                            <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                          leftIcon={
+                            <svg
+                              className="h-4 w-4 text-gray-500"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="1.5"
+                                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                              />
                             </svg>
                           }
                         />
                       </div>
-                      <div className="mt-[-25px]"> 
-                       <Button
-                        onClick={onVerifyOtp}
-                        disabled={loading || otp.length !== 6}
-                        isLoading={loading}
-                      >
-                        {loading ? 'Verify OTP...' : 'Verify OTP'}
-                      </Button>
+                      <div className="mt-[-25px]">
+                        <Button
+                          onClick={onVerifyOtp}
+                          disabled={loading || otp.length !== 6}
+                          isLoading={loading}
+                        >
+                          {loading ? "Verify OTP..." : "Verify OTP"}
+                        </Button>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <span>
-                        Didn&apos;t get the code?
-                      </span>
+                      <span>Didn&apos;t get the code?</span>
                       <button
                         className="text-[#2463EB] hover:underline disabled:text-gray-400"
                         type="button"
@@ -345,7 +448,10 @@ export default function SignUpPage() {
                       type="text"
                       placeholder="First Name"
                       value={firstName}
-                      onChange={(e) => { dispatch(setFirstName(e.target.value)); setFieldErrors((prev) => ({ ...prev, firstName: '' })); }}
+                      onChange={(e) => {
+                        dispatch(setFirstName(e.target.value));
+                        setFieldErrors((prev) => ({ ...prev, firstName: "" }));
+                      }}
                       disabled={loading}
                       error={fieldErrors.firstName}
                     />
@@ -353,7 +459,10 @@ export default function SignUpPage() {
                       type="text"
                       placeholder="Last Name"
                       value={lastName}
-                      onChange={(e) => { dispatch(setLastName(e.target.value)); setFieldErrors((prev) => ({ ...prev, lastName: '' })); }}
+                      onChange={(e) => {
+                        dispatch(setLastName(e.target.value));
+                        setFieldErrors((prev) => ({ ...prev, lastName: "" }));
+                      }}
                       disabled={loading}
                       error={fieldErrors.lastName}
                     />
@@ -361,7 +470,10 @@ export default function SignUpPage() {
                       type="password"
                       placeholder="Password"
                       value={password}
-                      onChange={(e) => { dispatch(setPassword(e.target.value)); setFieldErrors((prev) => ({ ...prev, password: '' })); }}
+                      onChange={(e) => {
+                        dispatch(setPassword(e.target.value));
+                        setFieldErrors((prev) => ({ ...prev, password: "" }));
+                      }}
                       disabled={loading}
                       error={fieldErrors.password}
                     />
@@ -369,28 +481,42 @@ export default function SignUpPage() {
                       type="password"
                       placeholder="Confirm Password"
                       value={confirmPassword}
-                      onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, confirmPassword: '' })); }}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setFieldErrors((prev) => ({
+                          ...prev,
+                          confirmPassword: "",
+                        }));
+                      }}
                       disabled={loading}
                       error={fieldErrors.confirmPassword}
                     />
                     <Button
                       fullWidth
                       onClick={onCompleteSignup}
-                      disabled={loading || !firstName?.trim() || !lastName?.trim() || !name?.trim() || !password?.trim() || !confirmPassword?.trim()}
+                      disabled={
+                        loading ||
+                        !firstName?.trim() ||
+                        !lastName?.trim() ||
+                        !name?.trim() ||
+                        !password?.trim() ||
+                        !confirmPassword?.trim()
+                      }
                       isLoading={loading}
                     >
-                      {loading ? 'Signing Up...' : 'Complete Signup'}
+                      {loading ? "Signing Up..." : "Complete Signup"}
                     </Button>
                   </div>
                 )}
 
-                {error && (
-                  <></>
-                )}
+                {error && <></>}
 
                 <p className="mt-8 text-gray-600 text-xs max-w-xl">
-                  Already have an account?{' '}
-                  <Link href="/login" className="text-[#2463EB] hover:underline">
+                  Already have an account?{" "}
+                  <Link
+                    href="/login"
+                    className="text-[#2463EB] hover:underline"
+                  >
                     Sign in
                   </Link>
                 </p>
@@ -400,7 +526,9 @@ export default function SignUpPage() {
                     <div className="w-full border-t border-gray-300" />
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="bg-white px-2 text-gray-500">Or sign up with</span>
+                    <span className="bg-white px-2 text-gray-500">
+                      Or sign up with
+                    </span>
                   </div>
                 </div>
 
@@ -408,8 +536,10 @@ export default function SignUpPage() {
                   <GoogleLogin
                     onSuccess={handleGoogleSignIn}
                     onError={() => {
-                      console.error("[GoogleLogin Error] Sign-in failed on signup page");
-                      toast.error("Google sign-in failed. Please try again or use email signup.");
+                      console.error(
+                        "[GoogleLogin Error] Sign-in failed on signup page",
+                      );
+                      notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED);
                     }}
                     text="signup_with"
                   />

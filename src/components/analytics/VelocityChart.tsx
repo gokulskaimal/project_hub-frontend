@@ -1,6 +1,5 @@
 import React from "react";
-import { Sprint } from "@/services/sprintService";
-import { Task } from "@/services/taskService";
+import { Sprint, Task } from "@/types/project";
 
 interface VelocityChartProps {
   sprints: Sprint[];

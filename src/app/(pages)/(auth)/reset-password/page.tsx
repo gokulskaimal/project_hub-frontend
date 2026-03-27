@@ -3,7 +3,8 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
-import toast from "react-hot-toast";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import api, { API_ROUTES } from "@/utils/api";
 import { getFriendlyError } from "@/utils/errors";
 import Header from "@/components/Header";
@@ -41,7 +42,10 @@ function RequestResetForm() {
     const parsed = requestSchema.safeParse({ email });
     if (!parsed.success) {
       setError(parsed.error.errors[0]?.message);
-      toast.error(parsed.error.errors[0]?.message ?? "Invalid email");
+      notifier.error(
+        null,
+        parsed.error.errors[0]?.message ?? MESSAGES.VALIDATION.INVALID_INPUT,
+      );
       return;
     }
     setError(undefined);
@@ -50,9 +54,9 @@ function RequestResetForm() {
     try {
       await api.post(API_ROUTES.AUTH.RESET_PASSWORD_REQUEST, { email });
       setSent(true);
-      toast.success("Reset link sent!");
+      notifier.success(MESSAGES.AUTH.RESET_LINK_SENT);
     } catch (err: unknown) {
-      toast.error(getFriendlyError(err, "Failed to send reset link"));
+      notifier.error(err, MESSAGES.GENERAL.ERROR);
     } finally {
       setLoading(false);
     }
@@ -159,7 +163,7 @@ function ResetPasswordForm({ token }: { token: string }) {
             err.message;
       });
       setErrors(newErrors);
-      toast.error("Please fix the errors");
+      notifier.error(null, MESSAGES.VALIDATION.FIX_ERRORS);
       return;
     }
     setErrors({});
@@ -171,10 +175,10 @@ function ResetPasswordForm({ token }: { token: string }) {
         password: parsed.data.password,
       });
 
-      toast.success("Password reset successful! Please log in.");
+      notifier.success(MESSAGES.AUTH.RESET_PASSWORD_SUCCESS);
       router.push("/login");
     } catch (err: unknown) {
-      toast.error(getFriendlyError(err, "Failed to reset password"));
+      notifier.error(err, MESSAGES.GENERAL.ERROR);
     } finally {
       setLoading(false);
     }

@@ -7,21 +7,22 @@ import {
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd";
-import { Task, taskService } from "@/services/taskService";
-import { User } from "@/services/userService";
+import { Task, TimeLog } from "@/types/project";
+import { User } from "@/types/auth";
+import { useToggleTaskTimerMutation } from "@/store/api/projectApiSlice";
 import {
   Trash2,
   Flag,
   Calendar as CalendarIcon,
-  Play,
-  Square,
   CornerDownRight,
 } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import toast from "react-hot-toast";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import TaskDetailsModal from "@/components/modals/TaskDetailsModal";
+import TaskTimer from "./TaskTimer";
 import { motion } from "framer-motion";
 
 interface KanbanBoardProps {
@@ -31,6 +32,7 @@ interface KanbanBoardProps {
   onDeleteTask?: (taskId: string) => void;
   onEditTask: (task: Task) => void;
   showProjectBadges?: boolean;
+  projectId?: string;
 }
 
 const COLUMNS = [
@@ -40,7 +42,7 @@ const COLUMNS = [
     color: "bg-gray-50/50",
     border: "border-gray-200",
     borderStyle: "border-dashed",
-    titleColor: "text-gray-700",
+    titleColor: "text-gray-900",
   },
   {
     id: "IN_PROGRESS",
@@ -48,7 +50,7 @@ const COLUMNS = [
     color: "bg-blue-50/50",
     border: "border-blue-200",
     borderStyle: "border-dashed",
-    titleColor: "text-blue-700",
+    titleColor: "text-blue-900",
   },
   {
     id: "REVIEW",
@@ -56,7 +58,7 @@ const COLUMNS = [
     color: "bg-yellow-50/50",
     border: "border-yellow-200",
     borderStyle: "border-dashed",
-    titleColor: "text-yellow-700",
+    titleColor: "text-yellow-900",
   },
   {
     id: "DONE",
@@ -64,7 +66,7 @@ const COLUMNS = [
     color: "bg-green-50/50",
     border: "border-green-200",
     borderStyle: "border-dashed",
-    titleColor: "text-green-700",
+    titleColor: "text-green-900",
   },
 ];
 
@@ -75,21 +77,14 @@ export default function KanbanBoard({
   onDeleteTask,
   onEditTask,
   showProjectBadges = false,
+  projectId: propProjectId,
 }: KanbanBoardProps) {
+  const [toggleTimer] = useToggleTaskTimerMutation();
   const { user } = useSelector((state: RootState) => state.auth);
   const userRole = user?.role;
 
-  // Local state to force re-render for timer updates
-  const [, setTick] = useState(0);
-
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-
-  useEffect(() => {
-    // Timer interval to update UI every second for active timers
-    const interval = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -99,8 +94,8 @@ export default function KanbanBoard({
       destination.index === source.index
     )
       return;
-    if (destination.droppableId === "DONE" && userRole !== "org-manager") {
-      toast.error("Only Managers can move tasks to Done.");
+    if (destination.droppableId === "DONE" && userRole !== "ORG_MANAGER") {
+      notifier.error(null, MESSAGES.GENERAL.FORBIDDEN);
       return;
     }
 
@@ -117,8 +112,12 @@ export default function KanbanBoard({
           source.droppableId !== "IN_PROGRESS"
         ) {
           try {
-            await taskService.toggleTimer(task.id, "start");
-            toast.success("Timer started automatically");
+            await toggleTimer({
+              id: task.id,
+              action: "start",
+              projectId: task.projectId,
+            }).unwrap();
+            notifier.success(MESSAGES.TASKS.TIMER_STARTED);
           } catch (error) {
             console.error("Auto-start timer failed", error);
           }
@@ -129,12 +128,16 @@ export default function KanbanBoard({
           destination.droppableId !== "IN_PROGRESS"
         ) {
           const activeLog = task.timeLogs?.find(
-            (l) => l.userId === user?.id && !l.endTime,
+            (l: TimeLog) => l.userId === user?.id && !l.endTime,
           );
           if (activeLog) {
             try {
-              await taskService.toggleTimer(task.id, "stop");
-              toast.success("Timer stopped automatically");
+              await toggleTimer({
+                id: task.id,
+                action: "stop",
+                projectId: task.projectId,
+              }).unwrap();
+              notifier.success(MESSAGES.TASKS.TIMER_STOPPED);
             } catch (error) {
               console.error("Auto-stop timer failed", error);
             }
@@ -145,31 +148,8 @@ export default function KanbanBoard({
   };
 
   const getTasksByStatus = (status: string) =>
-    tasks.filter((task) => task.status === status && !task.parentTaskId);
+    tasks.filter((task) => task.status === status);
   const getUser = (userId?: string) => users.find((u) => u.id === userId);
-
-  const formatDuration = (ms: number) => {
-    if (!ms) return "00:00:00";
-    const seconds = Math.floor((ms / 1000) % 60);
-    const minutes = Math.floor((ms / (1000 * 60)) % 60);
-    const hours = Math.floor(ms / (1000 * 60 * 60));
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-  };
-
-  // Helper to calculate total time including current active session
-  const getDisplayTime = (task: Task) => {
-    let total = task.totalTimeSpent || 0;
-    const activeLog = task.timeLogs?.find(
-      (l) => l.userId === user?.id && !l.endTime,
-    );
-
-    if (activeLog) {
-      const currentSessionDuration =
-        new Date().getTime() - new Date(activeLog.startTime).getTime();
-      total += currentSessionDuration;
-    }
-    return formatDuration(total);
-  };
 
   const getTypeIcon = (type?: string) => {
     switch (type) {
@@ -197,17 +177,24 @@ export default function KanbanBoard({
   const handleToggleTimer = async (e: React.MouseEvent, task: Task) => {
     e.stopPropagation();
     const activeLog = task.timeLogs?.find(
-      (l) => l.userId === user?.id && !l.endTime,
+      (l: TimeLog) => l.userId === user?.id && !l.endTime,
     );
     const isTracking = !!activeLog;
 
     try {
       const action = isTracking ? "stop" : "start";
-      await taskService.toggleTimer(task.id, action);
-      toast.success(isTracking ? "Timer Stopped" : "Timer Started");
+      await toggleTimer({
+        id: task.id,
+        action,
+        projectId: task.projectId,
+      }).unwrap();
+      notifier.success(
+        isTracking
+          ? MESSAGES.TASKS.TIMER_STOPPED
+          : MESSAGES.TASKS.TIMER_STARTED,
+      );
     } catch (error) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Failed to toggle timer");
+      notifier.error(error, MESSAGES.TASKS.SAVE_FAILED);
     }
   };
 
@@ -239,7 +226,7 @@ export default function KanbanBoard({
                 >
                   {getTasksByStatus(col.id).map((task, index) => {
                     const activeLog = task.timeLogs?.find(
-                      (l) => l.userId === user?.id && !l.endTime,
+                      (l: TimeLog) => l.userId === user?.id && !l.endTime,
                     );
                     const isTracking = !!activeLog;
 
@@ -276,7 +263,7 @@ export default function KanbanBoard({
                                       Sub-task
                                     </div>
                                   )}
-                                  <h4 className="text-sm font-bold text-gray-800 leading-tight line-clamp-2 flex items-center gap-2">
+                                  <h4 className="text-sm font-bold text-gray-900 leading-tight line-clamp-2 flex items-center gap-2">
                                     {getTypeIcon(task.type)}
                                     <span className="text-gray-400 text-xs font-mono">
                                       {task.taskKey}
@@ -284,7 +271,7 @@ export default function KanbanBoard({
                                     {task.title}
                                   </h4>
                                 </div>
-                                {userRole === "org-manager" && (
+                                {userRole === "ORG_MANAGER" && (
                                   <div className="flex gap-1 items-center">
                                     <button
                                       onClick={(e) => {
@@ -327,7 +314,7 @@ export default function KanbanBoard({
                               </div>
 
                               {task.description && (
-                                <p className="text-xs text-gray-500 mb-3 line-clamp-2">
+                                <p className="text-xs text-gray-600 mb-3 line-clamp-2 font-medium">
                                   {task.description}
                                 </p>
                               )}
@@ -373,25 +360,13 @@ export default function KanbanBoard({
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  {/* Timer Button */}
+                                  {/* Timer Component (Memoized) */}
                                   {task.assignedTo === user?.id && (
-                                    <button
-                                      onClick={(e) =>
-                                        handleToggleTimer(e, task)
-                                      }
-                                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors border ${
-                                        isTracking
-                                          ? "bg-red-50 text-red-600 border-red-100 animate-pulse"
-                                          : "bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100"
-                                      }`}
-                                    >
-                                      {isTracking ? (
-                                        <Square size={10} fill="currentColor" />
-                                      ) : (
-                                        <Play size={10} fill="currentColor" />
-                                      )}
-                                      {getDisplayTime(task)}
-                                    </button>
+                                    <TaskTimer
+                                      task={task}
+                                      userId={user?.id}
+                                      onToggle={handleToggleTimer}
+                                    />
                                   )}
 
                                   {task.assignedTo && (
@@ -433,6 +408,7 @@ export default function KanbanBoard({
           // You also typically want to resync the single task but the container will pull via websockets/polling soon
           // For immediate feedback, maybe a toast that WS handles the rest.
         }}
+        projectId={propProjectId || ""}
       />
     </DragDropContext>
   );

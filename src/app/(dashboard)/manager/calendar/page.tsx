@@ -1,43 +1,39 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
-import { taskService, Task } from "@/services/taskService";
-import { userService, User } from "@/services/userService";
-import { projectService, Project } from "@/services/projectService";
-import { toast } from "react-hot-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
+import {
+  useGetMyTasksQuery,
+  useGetOrganizationUsersQuery,
+} from "@/store/api/projectApiSlice";
+import { useGetManagerProjectsQuery } from "@/store/api/managerApiSlice";
+
 export default function ManagerCalendarPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [orgUsers, setOrgUsers] = useState<User[]>([]);
+  const {
+    data: tasks = [],
+    isLoading: tasksLoading,
+    refetch: refetchTasks,
+  } = useGetMyTasksQuery();
+  const {
+    data: orgUsers = [],
+    isLoading: usersLoading,
+    refetch: refetchUsers,
+  } = useGetOrganizationUsersQuery();
+  const {
+    data: projects = [],
+    isLoading: projectsLoading,
+    refetch: refetchProjects,
+  } = useGetManagerProjectsQuery();
 
-  const fetchAllData = async () => {
-    try {
-      setLoading(true);
+  const loading = tasksLoading || usersLoading || projectsLoading;
 
-      const [myTasks, users, allProjects] = await Promise.all([
-        taskService.getMyTasks(),
-        userService.getOrganizationUsers(),
-        projectService.getProjects(), // Managers fetch all org projects
-      ]);
-
-      setTasks(myTasks);
-      setOrgUsers(users);
-      setProjects(allProjects);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load calendar data");
-    } finally {
-      setLoading(false);
-    }
+  const handleTaskUpdate = () => {
+    refetchTasks();
+    refetchUsers();
+    refetchProjects();
   };
-
-  useEffect(() => {
-    fetchAllData();
-  }, []);
 
   return (
     <DashboardLayout title="Organization Calendar">
@@ -59,7 +55,7 @@ export default function ManagerCalendarPage() {
               projects={projects}
               projectId={undefined} // Undefined = Global Mode
               projectMembers={orgUsers}
-              onTaskUpdate={fetchAllData}
+              onTaskUpdate={handleTaskUpdate}
             />
           </div>
         </div>

@@ -1,112 +1,70 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import api, { API_ROUTES } from "@/utils/api";
+import React, { useState, useMemo } from "react";
 import {
-  Mail,
   Trash2,
-  RefreshCw,
+  Mail,
   Search,
-  Clock,
-  Plus,
   ArrowUpDown,
+  RefreshCw,
+  Plus,
+  Clock,
+  CheckCircle,
+  XCircle,
   Filter,
   Users,
 } from "lucide-react";
-import toast from "react-hot-toast";
-import InviteModal from "@/components/modals/InviteModal";
-import Swal from "sweetalert2";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import UserAvatar from "@/components/ui/UserAvatar";
-
-interface Invite {
-  id: string;
-  email: string;
-  role: string;
-  status: string;
-  createdAt: string;
-}
+import InviteModal from "@/components/modals/InviteModal";
+import {
+  useGetManagerInvitationsQuery,
+  useCancelManagerInvitationMutation,
+} from "@/store/api/managerApiSlice";
+import { Input } from "@/components/ui/Input";
+import { notifier } from "@/utils/notifier";
+import { confirmWithAlert } from "@/utils/confirm";
 
 export default function InvitesPage() {
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const {
+    data: invitations = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetManagerInvitationsQuery();
+  const [cancelInvite] = useCancelManagerInvitationMutation();
 
   // Search, Filter, Sort State
-  const [search, setSearch] = useState("");
-  const [filterRole, setFilterRole] = useState("ALL");
-  const [sortBy, setSortBy] = useState("email");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const [showInviteModal, setShowInviteModal] = useState(false);
+  const loading = isLoading || isFetching;
 
-  const fetchInvites = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get(API_ROUTES.MANAGER.INVITATIONS);
-      setInvites(res.data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch invites", error);
-      toast.error("Failed to load invites");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Derived Data
+  const filteredInvitations = useMemo(() => {
+    let result = [...invitations];
 
-  useEffect(() => {
-    fetchInvites();
-  }, []);
-
-  const handleCancel = async (id: string) => {
-    const result = await Swal.fire({
-      title: "Cancel Invitation?",
-      text: "This will revoke the invitation link.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, cancel it!",
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      await api.delete(`${API_ROUTES.MANAGER.INVITATIONS}/${id}`);
-      toast.success("Invitation has been revoked");
-      fetchInvites();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to cancel invitation");
-    }
-  };
-
-  const filteredInvites = useMemo(() => {
-    let result = [...invites];
-
-    // Search
-    if (search) {
-      const lowerTerm = search.toLowerCase();
-      result = result.filter((i) => i.email.toLowerCase().includes(lowerTerm));
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      result = result.filter((i) => i.email?.toLowerCase().includes(lowerTerm));
     }
 
-    // Filter
-    if (filterRole !== "ALL") {
-      result = result.filter((i) => i.role === filterRole);
+    if (filterStatus !== "ALL") {
+      result = result.filter((i) => (i.status || "PENDING") === filterStatus);
     }
 
-    // Sort
     result.sort((a, b) => {
-      let valA = "";
-      let valB = "";
+      let valA: any = "";
+      let valB: any = "";
 
       if (sortBy === "email") {
-        valA = a.email.toLowerCase();
-        valB = b.email.toLowerCase();
-      } else if (sortBy === "role") {
-        valA = a.role || "";
-        valB = b.role || "";
-      } else if (sortBy === "date") {
-        valA = a.createdAt || "";
-        valB = b.createdAt || "";
+        valA = a.email?.toLowerCase() || "";
+        valB = b.email?.toLowerCase() || "";
+      } else if (sortBy === "createdAt") {
+        valA = new Date(a.createdAt || 0).getTime();
+        valB = new Date(b.createdAt || 0).getTime();
       }
 
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
@@ -115,221 +73,207 @@ export default function InvitesPage() {
     });
 
     return result;
-  }, [invites, search, filterRole, sortBy, sortOrder]);
+  }, [invitations, searchTerm, filterStatus, sortBy, sortOrder]);
 
-  const toggleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
+  const handleCancelInvite = async (id: string) => {
+    const confirmed = await confirmWithAlert(
+      "Cancel Invitation?",
+      "This will invalidate the invitation link sent to the user.",
+    );
+    if (!confirmed) return;
+
+    try {
+      await cancelInvite(id).unwrap();
+      notifier.success("Invitation cancelled successfully");
+    } catch (error) {
+      notifier.error(error, "Failed to cancel invitation");
     }
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "N/A";
-    try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    } catch {
-      return "Invalid Date";
+  const getStatusIcon = (status?: string) => {
+    switch (status) {
+      case "ACCEPTED":
+        return <CheckCircle size={14} className="text-green-500" />;
+      case "EXPIRED":
+        return <XCircle size={14} className="text-red-500" />;
+      default:
+        return <Clock size={14} className="text-amber-500" />;
     }
   };
 
   return (
-    <DashboardLayout title="Invitations">
-      <div className="space-y-6">
-        {/* Header Actions */}
-        <div className="flex justify-end gap-2 mb-2">
-          <button
-            onClick={fetchInvites}
-            className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw size={20} />
-          </button>
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm hover:shadow"
-          >
-            <Plus className="w-4 h-4" />
-            Invite Member
-          </button>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-              <Mail size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Invites</p>
-              <p className="text-xl font-bold text-gray-900">
-                {invites.length}
-              </p>
-            </div>
+    <DashboardLayout title="Member Invitations">
+      <div className="space-y-8 pb-10">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+              <Users className="w-8 h-8 text-blue-600" />
+              Manage Invitations
+            </h1>
+            <p className="text-sm font-medium text-gray-500 mt-1">
+              Track and manage all pending and accepted organization invites
+            </p>
           </div>
-          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
-              <Users size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Manager Roles</p>
-              <p className="text-xl font-bold text-gray-900">
-                {invites.filter((i) => i.role === "ORG_MANAGER").length}
-              </p>
-            </div>
-          </div>
-          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-              <Users size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Member Roles</p>
-              <p className="text-xl font-bold text-gray-900">
-                {invites.filter((i) => i.role !== "ORG_MANAGER").length}
-              </p>
-            </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={refetch}
+              className="p-3 bg-white border border-gray-100 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all shadow-sm"
+            >
+              <RefreshCw
+                size={20}
+                className={isFetching ? "animate-spin" : ""}
+              />
+            </button>
+            <button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white hover:bg-black rounded-xl text-sm font-black transition-all shadow-xl shadow-gray-200"
+            >
+              <Plus size={18} />
+              Dispatch Invites
+            </button>
           </div>
         </div>
 
-        {/* Unified Controls Card */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search invites..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 bg-white placeholder-gray-500"
+        {/* Improved Filter Bar */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
+          <div className="flex-1 w-full relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+            <Input
+              placeholder="Filter by email address..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-10 w-full"
             />
           </div>
 
-          {/* Filters & Sort */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="relative">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:flex-none">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <select
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="appearance-none pl-10 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
               >
-                <option value="ALL">All Roles</option>
-                <option value="ORG_MANAGER">Managers</option>
-                <option value="MEMBER">Members</option>
+                <option value="ALL">All Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="ACCEPTED">Accepted</option>
+                <option value="EXPIRED">Expired</option>
               </select>
-              <Filter className="w-3 h-3 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-
-            <div className="w-px h-6 bg-gray-200 mx-2 hidden md:block"></div>
-
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              {["email", "role", "date"].map((field) => (
-                <button
-                  key={field}
-                  onClick={() => toggleSort(field)}
-                  className={`px-3 py-2 text-sm font-medium flex items-center gap-1 transition-colors ${
-                    sortBy === field
-                      ? "bg-blue-50 text-blue-700"
-                      : "bg-white text-gray-600 hover:bg-gray-50"
-                  } ${field !== "date" ? "border-r border-gray-300" : ""}`}
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg
+                  className="fill-current h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
                 >
-                  {field.charAt(0).toUpperCase() + field.slice(1)}
-                  <ArrowUpDown className="w-3 h-3" />
-                </button>
-              ))}
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
             </div>
+
+            <button
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              className="p-2 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-blue-600 transition-all shadow-sm"
+              title="Toggle Sort Order"
+            >
+              <ArrowUpDown
+                className={`w-5 h-5 transition-transform duration-300 ${sortOrder === "desc" ? "rotate-180" : ""}`}
+              />
+            </button>
           </div>
         </div>
+
+        <InviteModal
+          isOpen={isInviteModalOpen}
+          onClose={() => setIsInviteModalOpen(false)}
+          onSuccess={refetch}
+        />
 
         {/* Content */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl p-6 h-48 animate-pulse border border-gray-100"
-              ></div>
+                className="bg-white rounded-[2rem] p-8 h-48 animate-pulse border border-gray-100 shadow-sm"
+              />
             ))}
           </div>
-        ) : filteredInvites.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 border-dashed">
-            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-8 h-8 text-blue-500" />
+        ) : filteredInvitations.length === 0 ? (
+          <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
+            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Mail className="w-10 h-10 text-blue-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <h3 className="text-xl font-black text-gray-900 mb-2">
               No invitations found
             </h3>
-            <p className="text-gray-500 text-sm mb-6">
-              Send an invite to grow your team
+            <p className="text-gray-500 font-medium">
+              Try adjusting your filters or send a new invitation.
             </p>
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              Invite Member
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredInvites.map((invite) => (
+            {filteredInvitations.map((invite) => (
               <div
                 key={invite.id}
-                className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200"
+                className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <UserAvatar user={invite} size="md" />
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 bg-yellow-50 text-yellow-700 border border-yellow-100">
-                    <Clock size={12} /> Pending
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`p-2 rounded-xl ${
+                        invite.status === "ACCEPTED"
+                          ? "bg-green-50 text-green-600"
+                          : invite.status === "EXPIRED"
+                            ? "bg-red-50 text-red-600"
+                            : "bg-amber-50 text-amber-600"
+                      }`}
+                    >
+                      {getStatusIcon(invite.status)}
+                    </div>
+                    <span
+                      className={`text-[10px] font-black px-3 py-1 rounded-full border uppercase tracking-wider ${
+                        invite.status === "ACCEPTED"
+                          ? "bg-green-50 text-green-700 border-green-100"
+                          : invite.status === "EXPIRED"
+                            ? "bg-red-50 text-red-700 border-red-100"
+                            : "bg-amber-50 text-amber-700 border-amber-100"
+                      }`}
+                    >
+                      {invite.status || "PENDING"}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                    {invite.createdAt
+                      ? new Date(invite.createdAt).toLocaleDateString()
+                      : "N/A"}
                   </span>
                 </div>
 
                 <div className="mb-6">
                   <h3
-                    className="text-base font-semibold text-gray-900 truncate mb-1"
+                    className="font-black text-gray-900 text-lg truncate group-hover:text-blue-600 transition-colors"
                     title={invite.email}
                   >
                     {invite.email}
                   </h3>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span
-                      className={`px-2 py-0.5 rounded border ${
-                        invite.role === "ORG_MANAGER"
-                          ? "bg-purple-50 text-purple-700 border-purple-100"
-                          : "bg-gray-50 text-gray-600 border-gray-100"
-                      }`}
-                    >
-                      {invite.role === "ORG_MANAGER" ? "Manager" : "Member"}
-                    </span>
-                    <span>•</span>
-                    <span>{formatDate(invite.createdAt)}</span>
-                  </div>
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
+                    Role: {invite.role?.toLowerCase().replace("_", " ")}
+                  </p>
                 </div>
 
-                <div className="pt-4 border-t border-gray-50">
+                {invite.status === "PENDING" && (
                   <button
-                    onClick={() => handleCancel(invite.id)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors group-hover:bg-red-50/50"
+                    onClick={() => handleCancelInvite(invite.id)}
+                    className="pt-6 border-t border-gray-50 w-full text-red-500 hover:text-red-700 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0"
                   >
-                    <Trash2 size={16} />
-                    Revoke Invite
+                    <Trash2 size={14} /> Cancel Invitation
                   </button>
-                </div>
+                )}
               </div>
             ))}
           </div>
         )}
-
-        <InviteModal
-          isOpen={showInviteModal}
-          onClose={() => setShowInviteModal(false)}
-          onSuccess={fetchInvites}
-        />
       </div>
     </DashboardLayout>
   );

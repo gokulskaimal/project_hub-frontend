@@ -1,87 +1,98 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store/store";
-import { useAdminData } from "@/hooks/useAdminData";
-import api, { API_ROUTES } from "@/utils/api";
-import { Users, Building2, CreditCard } from "lucide-react";
+import {
+  useGetAdminReportsQuery,
+  useGetAdminInvoicesQuery,
+} from "@/store/api/adminApiSlice";
+import {
+  Users,
+  Building2,
+  CreditCard,
+  ReceiptText,
+  Banknote,
+  Activity,
+} from "lucide-react";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
+import { StatCard } from "@/components/ui/StatCard";
 
 export default function AdminDashboardPage() {
-  const { accessToken } = useSelector((s: RootState) => s.auth);
-  // data now contains { orgs: PaginatedResponse, users: PaginatedResponse }
-  const { data: adminData, actions } = useAdminData(accessToken);
-  const [plansCount, setPlansCount] = useState(0);
+  const { data: reportsData, isLoading: reportsLoading } =
+    useGetAdminReportsQuery();
+  const { data: invoicesData, isLoading: invoicesLoading } =
+    useGetAdminInvoicesQuery({
+      limit: 1,
+      page: 1,
+    });
 
-  useEffect(() => {
-    // Fetch just 1 item to get the total count efficiently
-    actions.fetchOrgs({ limit: 1 });
-    actions.fetchUsers({ limit: 1 });
-
-    const fetchPlansCount = async () => {
-      try {
-        const response = await api.get(API_ROUTES.ADMIN.PLANS);
-        if (response.data && Array.isArray(response.data.data)) {
-          setPlansCount(response.data.data.length);
-        }
-      } catch (error) {
-        console.error("Failed to fetch plans count", error);
-      }
-    };
-
-    fetchPlansCount();
-  }, [actions]);
-
-  const stats = [
-    {
-      label: "Total Organizations",
-      value: adminData.orgs.total || 0, // Updated to use .total
-      icon: Building2,
-      color: "bg-blue-500",
-    },
-    {
-      label: "Total Users",
-      value: adminData.users.total || 0, // Updated to use .total
-      icon: Users,
-      color: "bg-green-500",
-    },
-    {
-      label: "Total Plans",
-      value: plansCount,
-      icon: CreditCard,
-      color: "bg-purple-500",
-    },
-  ];
+  const loading = reportsLoading || invoicesLoading;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={index}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center"
-            >
+    <DashboardLayout title="Admin Dashboard">
+      <div className="p-6 space-y-8">
+        {/* Main Stats Overview using PremiumStatGrid */}
+        {reportsData ? (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-blue-600" />
+              System Overview
+            </h2>
+            <PremiumStatGrid
+              stats={{
+                total:
+                  reportsData.overview.totalUsers +
+                  reportsData.overview.totalOrganizations,
+                active:
+                  reportsData.users.active + reportsData.organizations.active,
+                suspended:
+                  reportsData.users.inactive +
+                  reportsData.organizations.inactive,
+              }}
+            />
+          </div>
+        ) : loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
               <div
-                className={`p-4 rounded-lg ${stat.color} bg-opacity-10 mr-4`}
-              >
-                <Icon
-                  className={`w-8 h-8 ${stat.color.replace("bg-", "text-")}`}
-                />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 font-medium">
-                  {stat.label}
-                </p>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {adminData.loading ? "..." : stat.value}
-                </h3>
-              </div>
-            </div>
-          );
-        })}
+                key={i}
+                className="h-32 bg-white rounded-xl animate-pulse border border-gray-100 shadow-sm"
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {/* Financial & Entity Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            label="Organizations"
+            value={reportsData?.overview.totalOrganizations || 0}
+            icon={Building2}
+            color="blue"
+            loading={loading}
+          />
+          <StatCard
+            label="Users"
+            value={reportsData?.overview.totalUsers || 0}
+            icon={Users}
+            color="green"
+            loading={loading}
+          />
+          <StatCard
+            label="Revenue"
+            value={`₹${(invoicesData?.totalRevenue || 0).toLocaleString()}`}
+            icon={Banknote}
+            color="emerald"
+            loading={loading}
+          />
+          <StatCard
+            label="Invoices"
+            value={invoicesData?.total || 0}
+            icon={ReceiptText}
+            color="orange"
+            loading={loading}
+          />
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

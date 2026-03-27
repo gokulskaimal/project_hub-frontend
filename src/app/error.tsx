@@ -17,7 +17,7 @@ export default function Error({
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="text-center max-w-md bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      <div className="text-center max-w-md bg-white p-8 rounded-xl shadow-sm border border-gray-100">
         <div className="mx-auto w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mb-6">
           <AlertTriangle className="w-8 h-8 text-orange-500" />
         </div>
@@ -31,7 +31,7 @@ export default function Error({
 
         <div className="flex gap-4">
           <button
-            onClick={() => (window.location.href = "/manager/dashboard")}
+            onClick={() => (window.location.href = "/")}
             className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
           >
             Go Home

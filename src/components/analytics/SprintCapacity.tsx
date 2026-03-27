@@ -1,6 +1,5 @@
 import React from "react";
-import { Sprint } from "@/services/sprintService";
-import { Task } from "@/services/taskService";
+import { Sprint, Task } from "@/types/project";
 import { getTime } from "date-fns";
 
 interface SprintCapacityProps {
@@ -69,10 +68,10 @@ export default function SprintCapacity({
       : 0;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 mb-4 flex items-center gap-4 shadow-sm">
+    <div className="bg-white border border-gray-200 rounded-xl p-3 mb-4 flex items-center gap-4 shadow-sm">
       <div className="flex-1">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs font-semibold text-gray-500 uppercase">
+          <span className="text-xs font-bold text-gray-900 uppercase">
             Team Capacity
           </span>
           <span className={`text-xs font-bold ${textColor}`}>

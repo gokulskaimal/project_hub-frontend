@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { taskService, Task } from "@/services/taskService";
+import React, { useState } from "react";
+import { Task } from "@/types/project";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "react-hot-toast";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import { Card } from "@/components/ui/Card";
 import {
   Search,
@@ -15,73 +16,76 @@ import {
   CheckSquare,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  useGetMyTasksQuery,
+  useUpdateTaskMutation,
+  useGetOrganizationUsersQuery,
+} from "@/store/api/projectApiSlice";
+import {
+  getStatusColor,
+  getPriorityColor,
+  formatDate,
+} from "@/utils/projectUtils";
+import TaskDetailsModal from "@/components/modals/TaskDetailsModal";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
+import { EntityCard } from "@/components/ui/EntityCard";
 
 export default function MemberTasksPage() {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: tasks = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetMyTasksQuery(undefined, { skip: !user });
+
+  const { data: orgUsers = [], isLoading: usersLoading } =
+    useGetOrganizationUsersQuery(undefined, { skip: !user });
+
+  const [updateTask] = useUpdateTaskMutation();
+
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Controls State
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
 
-  const fetchTasks = React.useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await taskService.getMyTasks();
-      setTasks(data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load tasks");
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+  const loading = isLoading || isFetching || usersLoading;
 
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
-
-  const handleStatusChange = async (taskId: string, newStatus: string) => {
+  const handleStatusChange = async (
+    taskId: string,
+    newStatus: string,
+    projectId: string,
+  ) => {
     try {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId ? { ...t, status: newStatus as Task["status"] } : t,
-        ),
-      );
-      await taskService.updateTask(taskId, {
-        status: newStatus as Task["status"],
-      });
-      toast.success("Status updated");
+      await updateTask({
+        id: taskId,
+        data: { status: newStatus as Task["status"] },
+        projectId,
+      }).unwrap();
+      notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
     } catch (error) {
-      toast.error("Failed to update task");
-      fetchTasks(); // Revert
+      notifier.error(error, MESSAGES.TASKS.SAVE_FAILED);
     }
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
   };
 
   // Stats Logic
   const stats = {
     total: tasks.length,
     pending: tasks.filter(
-      (t) => t.status === "TODO" || t.status === "IN_PROGRESS",
+      (t: Task) => t.status === "TODO" || t.status === "IN_PROGRESS",
     ).length,
-    completed: tasks.filter((t) => t.status === "DONE").length,
+    completed: tasks.filter((t: Task) => t.status === "DONE").length,
     critical: tasks.filter(
-      (t) => t.priority === "CRITICAL" && t.status !== "DONE",
+      (t: Task) => t.priority === "CRITICAL" && t.status !== "DONE",
     ).length,
   };
 
   // Filter Logic
-  const filteredTasks = tasks.filter((t) => {
+  const filteredTasks = tasks.filter((t: Task) => {
     const matchesSearch =
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (t.description &&
@@ -104,227 +108,182 @@ export default function MemberTasksPage() {
   }
 
   return (
-    <div className="p-8 w-full mx-auto space-y-8 animate-in fade-in duration-500">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
-              Total Assigned
-            </p>
-            <h3 className="text-2xl font-bold text-gray-900 mt-1">
-              {stats.total}
-            </h3>
-          </div>
-          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
-            <CheckSquare className="w-5 h-5" />
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
-              Pending
-            </p>
-            <h3 className="text-2xl font-bold text-orange-600 mt-1">
-              {stats.pending}
-            </h3>
-          </div>
-          <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600">
-            <Clock className="w-5 h-5" />
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
-              Critical
-            </p>
-            <h3 className="text-2xl font-bold text-red-600 mt-1">
-              {stats.critical}
-            </h3>
-          </div>
-          <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center text-red-600">
-            <AlertCircle className="w-5 h-5" />
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
-              Completed
-            </p>
-            <h3 className="text-2xl font-bold text-green-600 mt-1">
-              {stats.completed}
-            </h3>
-          </div>
-          <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-600">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
+    <DashboardLayout title="My Tasks">
+      <div className="space-y-8 pb-12">
+        {/* Task Overview Banner */}
+        <div className="relative overflow-hidden rounded-xl bg-gray-900 px-6 py-10 sm:px-10 sm:py-12 text-white shadow-xl">
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 rounded-full bg-purple-600/10 blur-3xl" />
 
-      {/* Controls Bar */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
-        {/* Search */}
-        <div className="relative w-full md:max-w-md">
-          <input
-            type="text"
-            placeholder="Search your tasks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black transition-all"
-          />
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[10px] font-black uppercase tracking-widest">
+                Mission Log
+              </span>
+            </div>
+            <h1 className="text-3xl font-black tracking-tight mb-2">
+              Workspace Tasks
+            </h1>
+            <p className="text-gray-400 text-sm font-medium max-w-xl">
+              You have{" "}
+              <span className="text-white font-bold">
+                {stats.total} total assignments
+              </span>
+              . Currently{" "}
+              <span className="text-red-400 font-bold">
+                {stats.critical} critical tasks
+              </span>{" "}
+              need immediate action.
+            </p>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="relative">
+        {/* Stats Grid */}
+        <PremiumStatGrid
+          items={[
+            {
+              label: "Assigned",
+              value: stats.total,
+              icon: CheckSquare,
+              color: "blue",
+            },
+            {
+              label: "Pending",
+              value: stats.pending,
+              icon: Clock,
+              color: "orange",
+            },
+            {
+              label: "Critical",
+              value: stats.critical,
+              icon: AlertCircle,
+              color: "red",
+            },
+            {
+              label: "Done",
+              value: stats.completed,
+              icon: CheckCircle2,
+              color: "green",
+            },
+          ]}
+        />
+
+        {/* Compact Controls Bar */}
+        <div className="flex items-center gap-2 bg-white p-2 sm:p-3 rounded-xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar">
+          <div className="relative flex-1 min-w-[120px] group">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-7 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs sm:text-sm text-gray-900 font-bold placeholder-gray-400 outline-none focus:bg-white focus:border-blue-100 transition-all"
+            />
+          </div>
+
+          <div className="h-6 w-px bg-gray-100 mx-0.5 shrink-0" />
+
+          <div className="flex items-center gap-1.5 shrink-0">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="w-20 sm:w-32 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
             >
-              <option value="ALL">All Status</option>
+              <option value="ALL">Status</option>
               <option value="TODO">To Do</option>
-              <option value="IN_PROGRESS">In Progress</option>
+              <option value="IN_PROGRESS">Progress</option>
               <option value="REVIEW">Review</option>
               <option value="DONE">Done</option>
             </select>
-            <Filter className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
 
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
-          >
-            <option value="ALL">All Priority</option>
-            <option value="CRITICAL">Critical</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Task Grid */}
-      {filteredTasks.length === 0 ? (
-        <div className="bg-white p-12 rounded-2xl text-center border-2 border-dashed border-gray-200">
-          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 text-2xl">
-            📋
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            No tasks found
-          </h3>
-          <p className="text-gray-500 mt-1 text-sm">
-            You&apos;re all caught up! Or try adjusting filters.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTasks.map((task) => (
-            <div
-              key={task.id}
-              className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden"
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="w-20 sm:w-32 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
             >
-              <div className="p-5 flex flex-col h-full">
-                {/* Header */}
-                <div className="flex justify-between items-start mb-3">
+              <option value="ALL">Priority</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Med</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
+        </div>
+
+        {filteredTasks.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-xl border border-gray-100 border-dashed">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckSquare className="w-8 h-8 text-blue-500" />
+            </div>
+            <h3 className="text-lg font-black text-gray-900 mb-1">
+              No tasks found
+            </h3>
+            <p className="text-gray-500 text-sm">You&apos;re all caught up!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
+            {filteredTasks.map((task: Task) => (
+              <EntityCard
+                key={task.id}
+                id={task.id}
+                title={task.title}
+                description={task.description || "No description."}
+                icon={CheckSquare}
+                status={task.status}
+                statusColor={getStatusColor(task.status)}
+                sideBorderColor={
+                  task.status === "DONE"
+                    ? "bg-green-500"
+                    : task.status === "IN_PROGRESS"
+                      ? "bg-blue-500"
+                      : task.status === "REVIEW"
+                        ? "bg-purple-500"
+                        : "bg-gray-400"
+                }
+                onClick={() => {
+                  setSelectedTask(task);
+                  setIsModalOpen(true);
+                }}
+                footerLeft={
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider uppercase ${
-                        task.priority === "HIGH" || task.priority === "CRITICAL"
-                          ? "bg-red-50 text-red-600 border border-red-100"
-                          : task.priority === "MEDIUM"
-                            ? "bg-amber-50 text-amber-600 border border-amber-100"
-                            : "bg-green-50 text-green-600 border border-green-100"
-                      }`}
+                      className={`text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider ${getPriorityColor(task.priority)}`}
                     >
                       {task.priority}
                     </span>
                   </div>
-                  {task.dueDate && (
-                    <span className="text-xs text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded-md border border-gray-100 flex items-center gap-1">
+                }
+                footerRight={
+                  task.dueDate && (
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                       <Calendar className="w-3 h-3" />
-                      {formatDate(task.dueDate)}
-                    </span>
-                  )}
+                      <span>{formatDate(task.dueDate)}</span>
+                    </div>
+                  )
+                }
+              >
+                <div className="mt-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest truncate">
+                  {task.project?.name || "Project"}
                 </div>
+              </EntityCard>
+            ))}
+          </div>
+        )}
+      </div>
 
-                {/* Content */}
-                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
-                  {task.title}
-                </h3>
-                <p className="text-sm text-gray-500 line-clamp-3 mb-4 flex-1">
-                  {task.description || "No description."}
-                </p>
-
-                {/* Project Info */}
-                <div className="mb-4 pt-4 border-t border-gray-50">
-                  <div className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">
-                    Project
-                  </div>
-                  <Link
-                    href={`/member/projects/${task.projectId}`}
-                    className="text-sm font-medium text-blue-600 hover:underline truncate block"
-                  >
-                    {task.project?.name || "View Project"}
-                  </Link>
-                </div>
-
-                {/* Footer: Status Action */}
-                <div className="relative mt-auto">
-                  <div
-                    className={`absolute inset-y-0 left-0 w-1 rounded-l-md ${
-                      task.status === "DONE"
-                        ? "bg-green-500"
-                        : task.status === "IN_PROGRESS"
-                          ? "bg-blue-500"
-                          : task.status === "REVIEW"
-                            ? "bg-purple-500"
-                            : "bg-gray-400"
-                    }`}
-                  ></div>
-                  <select
-                    value={task.status}
-                    onChange={(e) =>
-                      handleStatusChange(task.id, e.target.value)
-                    }
-                    disabled={
-                      task.status === "REVIEW" || task.status === "DONE"
-                    }
-                    title={
-                      task.status === "REVIEW"
-                        ? "Tasks in Review cannot be edited"
-                        : ""
-                    }
-                    className={`w-full appearance-none pl-4 pr-8 py-2.5 rounded-lg text-sm font-semibold outline-none border transition-all hover:bg-opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed ${
-                      task.status === "DONE"
-                        ? "bg-green-50 text-green-700 border-green-200"
-                        : task.status === "IN_PROGRESS"
-                          ? "bg-blue-50 text-blue-700 border-blue-200 cursor-pointer"
-                          : task.status === "REVIEW"
-                            ? "bg-purple-50 text-purple-700 border-purple-200"
-                            : "bg-gray-50 text-gray-700 border-gray-200 cursor-pointer"
-                    }`}
-                  >
-                    <option
-                      value="TODO"
-                      disabled={task.status === "IN_PROGRESS"}
-                    >
-                      To Do
-                    </option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="REVIEW">Review</option>
-                    {task.status === "DONE" && (
-                      <option value="DONE">Done</option>
-                    )}
-                  </select>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+      <TaskDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedTask(null);
+        }}
+        task={selectedTask}
+        allTasks={tasks}
+        users={orgUsers}
+        currentUserId={user?.id || ""}
+        userRole={user?.role}
+        onTaskUpdated={() => refetch()}
+        projectId={selectedTask?.projectId || ""}
+      />
+    </DashboardLayout>
   );
 }

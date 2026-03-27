@@ -1,10 +1,11 @@
-'use client'
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
-import { toast } from "react-hot-toast";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 // Components
@@ -15,25 +16,36 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 
 // Redux
-import { RootState, AppDispatch } from "@/store/store";
-import { loginUser, googleSignIn } from "@/features/auth/authSlice";
+import { RootState } from "@/store/store";
+import {
+  useLoginMutation,
+  useGoogleSignInMutation,
+} from "@/store/api/authApiSlice";
 import Link from "next/link";
 
 // Define schema outside component
 const loginSchema = z.object({
-  email: z.string().trim().email('Enter a valid email'),
-  password: z.string().trim().min(8, 'Password must be at least 8 characters')
+  email: z.string().trim().email("Enter a valid email"),
+  password: z.string().trim().min(8, "Password must be at least 8 characters"),
 });
 
 export default function LoginPage() {
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
+  const [login, { isLoading: loginLoading }] = useLoginMutation();
+  const [googleSignInMutation, { isLoading: googleLoading }] =
+    useGoogleSignInMutation();
 
   // Local state for form inputs (Performance Optimization)
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
+  const [formErrors, setFormErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
 
-  const { error, loading, isLoggedIn, role, accessToken } = useSelector((state: RootState) => state.auth);
+  const { error, isLoggedIn, role, accessToken } = useSelector(
+    (state: RootState) => state.auth,
+  );
+  const loading = loginLoading || googleLoading;
 
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [orgName, setOrgName] = useState("");
@@ -42,17 +54,17 @@ export default function LoginPage() {
   // Handle local input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     // Clear error for field on change
     if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors(prev => ({ ...prev, [name]: undefined }));
+      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
   // Error/Redirect effects remain
   useEffect(() => {
-    if (error && error !== "Organization Name Required") {
-      toast.error(error);
+    if (error) {
+      notifier.error(null, error);
     }
   }, [error]);
 
@@ -61,68 +73,78 @@ export default function LoginPage() {
 
     if (accessToken) {
       try {
-        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem("accessToken", accessToken);
         // Note: For Middleware security, your backend MUST also set a 'role' cookie.
-      } catch { }
+      } catch {}
     }
 
-    const normalizedRole = role.toLowerCase().replace(/[\s_]+/g, '-');
+    const normalizedRole = role.toUpperCase().replace(/[\s-]+/g, "_");
 
     switch (normalizedRole) {
-      case 'super-admin':
-        router.push('/admin/dashboard');
+      case "SUPER_ADMIN":
+        router.push("/admin/dashboard");
         break;
-      case 'org-manager':
-      case 'manager':
-        router.push('/manager/dashboard');
+      case "ORG_MANAGER":
+      case "MANAGER":
+        router.push("/manager/dashboard");
         break;
-      case 'team-member':
-      case 'member':
-        router.push('/member/dashboard');
+      case "TEAM_MEMBER":
+      case "MEMBER":
+        router.push("/member/dashboard");
         break;
       default:
-        router.push('/');
+        router.push("/");
         break;
     }
   }, [isLoggedIn, role, accessToken, router]);
 
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const parsed = loginSchema.safeParse(formData);
     if (!parsed.success) {
       const formattedErrors: { email?: string; password?: string } = {};
-      parsed.error.errors.forEach(err => {
-        if (err.path[0]) formattedErrors[err.path[0] as 'email' | 'password'] = err.message;
+      parsed.error.errors.forEach((err) => {
+        if (err.path[0])
+          formattedErrors[err.path[0] as "email" | "password"] = err.message;
       });
       setFormErrors(formattedErrors);
-      toast.error('Please fix the errors');
+      notifier.error(null, MESSAGES.VALIDATION.FIX_ERRORS);
       return;
     }
-    // Dispatch login using local state data
-    dispatch(loginUser(parsed.data));
+
+    try {
+      await login(parsed.data).unwrap();
+      notifier.success(MESSAGES.AUTH.LOGIN_SUCCESS);
+    } catch (err) {
+      // Error handled by authSlice matcher and effect
+    }
   };
 
   const handleGoogleSignIn = async (credentialResponse: CredentialResponse) => {
     const { credential } = credentialResponse;
     if (!credential) {
-      toast.error("Google sign-in failed: No credential");
+      notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED);
       return;
     }
     try {
-      await dispatch(googleSignIn({ idToken: credential })).unwrap();
-      toast.success("Signed in successfully!");
+      await googleSignInMutation({ idToken: credential }).unwrap();
+      notifier.success(MESSAGES.AUTH.LOGIN_SUCCESS);
     } catch (err: unknown) {
-      const errorMessage = (err as Record<string, unknown>)?.message || (typeof err === "string" ? err : "Unknown error");
+      const error = err as { data?: { message?: string }; message?: string };
+      const errorMessage =
+        error?.data?.message || error?.message || "Unknown error";
 
-      if (typeof errorMessage === "string" && errorMessage.includes("Organization Name Required")) {
-        toast("Please enter your Organization Name to complete signup", { icon: "🏢" });
+      if (
+        typeof errorMessage === "string" &&
+        errorMessage.includes("Organization Name Required")
+      ) {
+        notifier.info(MESSAGES.AUTH.ORG_NAME_REQUIRED, { icon: "🏢" });
         setPendingIdToken(credential);
         setShowOrgModal(true);
         return;
       }
-      toast.error(typeof errorMessage === "string" ? errorMessage : "Google sign-in failed");
+      notifier.error(err, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED);
     }
   };
 
@@ -131,14 +153,13 @@ export default function LoginPage() {
     if (!orgName.trim() || !pendingIdToken) return;
 
     try {
-      await dispatch(googleSignIn({ idToken: pendingIdToken, orgName })).unwrap();
+      await googleSignInMutation({ idToken: pendingIdToken, orgName }).unwrap();
       setShowOrgModal(false);
       setPendingIdToken(null);
       setOrgName("");
-      toast.success("Account created and you are now signed in!");
+      notifier.success(MESSAGES.AUTH.GOOGLE_SIGNIN_SUCCESS);
     } catch (err) {
-      const message = typeof err === "string" ? err : "Failed to complete signup";
-      toast.error(message);
+      notifier.error(err, MESSAGES.AUTH.SIGNUP_FAILED);
     }
   };
 
@@ -153,8 +174,12 @@ export default function LoginPage() {
           <div className="w-full max-w-md">
             <Card className="shadow-sm sm:p-8">
               <div className="mb-8 text-center">
-                <h1 className="mb-1 text-2xl font-bold text-gray-900">Welcome back</h1>
-                <p className="text-sm text-gray-600">Sign in to continue to Project Hub</p>
+                <h1 className="mb-1 text-2xl font-bold text-gray-900">
+                  Welcome back
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Sign in to continue to Project Hub
+                </p>
               </div>
 
               <form onSubmit={handleSubmit} className="mb-2 space-y-4">
@@ -166,8 +191,18 @@ export default function LoginPage() {
                   onChange={handleChange}
                   error={formErrors.email}
                   leftIcon={
-                    <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                    <svg
+                      className="h-4 w-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                      />
                     </svg>
                   }
                 />
@@ -180,24 +215,40 @@ export default function LoginPage() {
                   onChange={handleChange}
                   error={formErrors.password}
                   leftIcon={
-                    <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                    <svg
+                      className="h-4 w-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                      />
                     </svg>
                   }
                 />
 
-                <Button
-                  type="submit"
-                  fullWidth
-                  isLoading={loading}
-                >
-                  {loading ? 'Signing in...' : 'Sign in'}
+                <Button type="submit" fullWidth isLoading={loading}>
+                  {loading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
 
               <div className="mb-6 flex items-center justify-between">
-                <Link className="text-sm text-blue-600 hover:text-blue-700" href="/reset-password">Forgot password?</Link>
-                <Link className="text-sm text-gray-600 hover:text-gray-900" href="/signup">Create account</Link>
+                <Link
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                  href="/reset-password"
+                >
+                  Forgot password?
+                </Link>
+                <Link
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                  href="/signup"
+                >
+                  Create account
+                </Link>
               </div>
 
               <div className="mb-6 flex items-center">
@@ -209,7 +260,9 @@ export default function LoginPage() {
               <div className="flex justify-center">
                 <GoogleLogin
                   onSuccess={handleGoogleSignIn}
-                  onError={() => toast.error("Google sign-in failed. Please try email/password or refresh the page.")}
+                  onError={() =>
+                    notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED)
+                  }
                   text="signin_with"
                 />
               </div>
@@ -221,8 +274,13 @@ export default function LoginPage() {
         {showOrgModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
             <Card className="w-full max-w-md shadow-xl" noPadding={false}>
-              <h2 className="mb-2 text-xl font-bold text-gray-900">Create Organization</h2>
-              <p className="mb-4 text-sm text-gray-600">To complete your signup as a Manager, please enter your Organization Name.</p>
+              <h2 className="mb-2 text-xl font-bold text-gray-900">
+                Create Organization
+              </h2>
+              <p className="mb-4 text-sm text-gray-600">
+                To complete your signup as a Manager, please enter your
+                Organization Name.
+              </p>
               <form onSubmit={handleOrgSubmit}>
                 <Input
                   label="Organization Name"
@@ -238,15 +296,14 @@ export default function LoginPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => { setShowOrgModal(false); setPendingIdToken(null); }}
+                    onClick={() => {
+                      setShowOrgModal(false);
+                      setPendingIdToken(null);
+                    }}
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    isLoading={loading}
-                  >
+                  <Button type="submit" disabled={loading} isLoading={loading}>
                     {loading ? "Creating..." : "Complete Signup"}
                   </Button>
                 </div>

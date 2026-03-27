@@ -1,10 +1,12 @@
+"use client";
+
 import React from "react";
-import { Task } from "@/services/taskService";
 import { ArrowUpCircle, Calendar, Trash2, Pencil } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { User } from "@/services/userService";
 import { useState } from "react";
 import TaskDetailsModal from "@/components/modals/TaskDetailsModal";
+import { Task } from "@/types/project";
+import { User } from "@/types/auth";
 
 interface BacklogListProps {
   tasks: Task[];
@@ -13,6 +15,7 @@ interface BacklogListProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   isSidebarOpen?: boolean;
+  projectId: string;
 }
 
 export default function BacklogList({
@@ -22,6 +25,7 @@ export default function BacklogList({
   onEditTask,
   onDeleteTask,
   isSidebarOpen = true,
+  projectId,
 }: BacklogListProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -48,7 +52,7 @@ export default function BacklogList({
               setSelectedTask(task);
               setIsDetailsModalOpen(true);
             }}
-            className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group h-full cursor-pointer"
+            className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group h-full cursor-pointer"
           >
             {/* Top: Type, Priority, Actions */}
             <div className="flex items-start justify-between">
@@ -73,7 +77,7 @@ export default function BacklogList({
                 </span>
               </div>
 
-              {/* Actions (Always visible in Card mode for better UX) */}
+              {/* Actions */}
               <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={(e) => {
@@ -158,10 +162,11 @@ export default function BacklogList({
           setSelectedTask(null);
         }}
         task={selectedTask}
-        allTasks={tasks} // Added allTasks prop
+        allTasks={tasks}
         users={users}
         currentUserId=""
         onTaskUpdated={() => {}}
+        projectId={projectId}
       />
     </>
   );

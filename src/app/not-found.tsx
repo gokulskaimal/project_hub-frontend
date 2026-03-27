@@ -4,7 +4,7 @@ import { Home, AlertCircle } from "lucide-react";
 export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="text-center max-w-md bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      <div className="text-center max-w-md bg-white p-8 rounded-xl shadow-sm border border-gray-100">
         <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
           <AlertCircle className="w-8 h-8 text-red-500" />
         </div>
@@ -18,7 +18,7 @@ export default function NotFound() {
         </p>
 
         <Link
-          href="/manager/dashboard"
+          href="/"
           className="inline-flex items-center justify-center gap-2 w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors"
         >
           <Home className="w-5 h-5" />

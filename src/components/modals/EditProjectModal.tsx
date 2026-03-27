@@ -1,22 +1,20 @@
-import { Input } from '@/components/ui/Input';
-import { useState, useEffect } from 'react';
-import { X, Loader2, Save, Calendar, Users, Target, Check, Search, Tag, Edit2 } from 'lucide-react';
-import api, { API_ROUTES } from '@/utils/api';
-import toast from 'react-hot-toast';
+"use client";
 
-interface Project {
-    id: string;
-    name: string;
-    description: string;
-    status: string;
-    startDate: string;
-    endDate: string;
-    priority: string;
-    tags?: string[];
-    teamMemberIds?: string[];
-    progress?: number;
-    budget?: number;
-}
+import { useState, useEffect, Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import {
+  X,
+  Layout,
+  AlignLeft,
+  Calendar,
+  Loader2,
+  Save,
+  Sparkles,
+} from "lucide-react";
+import { useUpdateManagerProjectMutation } from "@/store/api/managerApiSlice";
+import { Project } from "@/types/project";
+import { notifier } from "@/utils/notifier";
+import { MESSAGES } from "@/constants/messages";
 
 interface EditProjectModalProps {
   isOpen: boolean;
@@ -25,331 +23,215 @@ interface EditProjectModalProps {
   project: Project | null;
 }
 
-interface OrganizationMember {
-  id: string;
-  _id?: string;
-  firstName: string;
-  lastName?: string;
-  email: string;
-  role: string;
-}
+export default function EditProjectModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  project,
+}: EditProjectModalProps) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [key, setKey] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-export default function EditProjectModal({ isOpen, onClose, onSuccess, project }: EditProjectModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
-  const [memberSearch, setMemberSearch] = useState('');
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    startDate: '',
-    endDate: '',
-    status: 'ACTIVE',
-    priority: 'MEDIUM',
-    tags: [] as string[],
-    teamMemberIds: [] as string[],
-    budget: 0,
-    progress: 0
-  });
-
-  const [tagInput, setTagInput] = useState('');
-  const [activeTab, setActiveTab] = useState<'details' | 'team'>('details');
+  const [updateProject, { isLoading }] = useUpdateManagerProjectMutation();
 
   useEffect(() => {
-    if (isOpen && project) {
-        setFormData({
-            name: project.name || '',
-            description: project.description || '',
-            startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
-            endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
-            status: project.status || 'ACTIVE',
-            priority: project.priority || 'MEDIUM',
-            tags: project.tags || [],
-            teamMemberIds: project.teamMemberIds || [],
-            budget: project.budget || 0,
-            progress: project.progress || 0
-        });
-        fetchMembers();
-        setActiveTab('details');
+    if (project) {
+      setName(project.name);
+      setDescription(project.description || "");
+      setKey(project.key || "");
+      setStartDate(
+        project.startDate
+          ? new Date(project.startDate).toISOString().split("T")[0]
+          : "",
+      );
+      setEndDate(
+        project.endDate
+          ? new Date(project.endDate).toISOString().split("T")[0]
+          : "",
+      );
     }
-  }, [isOpen, project]);
+  }, [project, isOpen]);
 
-  const fetchMembers = async () => {
-    try {
-        const res = await api.get(API_ROUTES.MANAGER.MEMBERS);
-        const team = res.data.data || res.data || [];
-        setMembers(team);
-    } catch (error) {
-        console.error("Failed to fetch members", error);
-    }
-  };
-
-  const addTag = () => {
-      if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-          setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
-          setTagInput('');
-      }
-  };
-
-  const removeTag = (tag: string) => {
-      setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
-  };
-
-  const toggleMember = (memberId: string) => {
-      setFormData(prev => {
-          const exists = prev.teamMemberIds.includes(memberId);
-          if (exists) {
-              return { ...prev, teamMemberIds: prev.teamMemberIds.filter(id => id !== memberId) };
-          } else {
-              return { ...prev, teamMemberIds: [...prev.teamMemberIds, memberId] };
-          }
-      });
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!project) return;
-    setLoading(true);
+
     try {
-      await api.put(`${API_ROUTES.PROJECTS.ROOT}/${project.id}`, formData);
-      toast.success('Project updated successfully');
+      await updateProject({
+        id: project.id,
+        data: {
+          name,
+          description,
+          key,
+          startDate: startDate ? new Date(startDate).toISOString() : undefined,
+          endDate: endDate ? new Date(endDate).toISOString() : undefined,
+        },
+      }).unwrap();
+      notifier.success(MESSAGES.PROJECTS.UPDATE_SUCCESS);
       onSuccess();
       onClose();
-    } catch (error: any) {
-        toast.error(error.response?.data?.message || "Failed to update project");
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      notifier.error(err, MESSAGES.PROJECTS.SAVE_FAILED);
     }
   };
 
-  if (!isOpen || !project) return null;
-
-  const filteredMembers = members.filter(m => 
-      m.firstName.toLowerCase().includes(memberSearch.toLowerCase()) || 
-      m.email.toLowerCase().includes(memberSearch.toLowerCase())
-  );
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-             <div>
-                 <h2 className="text-lg font-bold text-gray-900">Edit Project</h2>
-                 <p className="text-xs text-gray-500 mt-0.5">Update project details and settings</p>
-             </div>
-             <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-               <X className="w-5 h-5 text-gray-500" />
-             </button>
-        </div>
+    <Transition.Root show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" />
+        </Transition.Child>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-100">
-            <button 
-                onClick={() => setActiveTab('details')}
-                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-                Project Details
-            </button>
-            <button 
-                onClick={() => setActiveTab('team')}
-                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'team' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-            >
-                Team Members ({formData.teamMemberIds.length})
-            </button>
-        </div>
-        
-        {/* Body */}
-        <div className="p-6 overflow-y-auto flex-1 bg-white">
-             
-             {activeTab === 'details' && (
-                 <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl">
+                <div className="bg-white px-8 pt-8 pb-4">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-blue-50 rounded-xl">
+                        <Layout className="w-6 h-6 text-blue-600" />
+                      </div>
                       <div>
-                        <Input
-                          label="PROJECT NAME"
+                        <Dialog.Title
+                          as="h3"
+                          className="text-2xl font-black text-gray-900 tracking-tight leading-none"
+                        >
+                          Update Project
+                        </Dialog.Title>
+                        <p className="text-sm font-medium text-gray-400 mt-1">
+                          Refining the vision
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onClose}
+                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div className="md:col-span-3 space-y-2">
+                        <label className="text-sm font-bold text-gray-700">
+                          Project Name
+                        </label>
+                        <input
                           type="text"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          required
+                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all px-4 py-3 font-medium text-gray-800"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
                         />
                       </div>
-                      
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Description</label>
-                        <textarea
-                          rows={3}
-                          value={formData.description}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm resize-none text-gray-900"
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                          <Sparkles className="w-3 h-3 text-purple-500" />
+                          Key
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={5}
+                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-purple-500 focus:bg-white transition-all px-4 py-3 font-black text-center text-blue-600 uppercase"
+                          value={key}
+                          onChange={(e) => setKey(e.target.value.toUpperCase())}
                         />
                       </div>
+                    </div>
 
-                       <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Status</label>
-                                <select
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900"
-                                >
-                                <option value="PLANNING">Planning</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="ON_HOLD">On Hold</option>
-                                <option value="COMPLETED">Completed</option>
-                                <option value="ARCHIVED">Archived</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Priority</label>
-                                <select
-                                value={formData.priority}
-                                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900"
-                                >
-                                <option value="LOW">Low</option>
-                                <option value="MEDIUM">Medium</option>
-                                <option value="HIGH">High</option>
-                                <option value="CRITICAL">Critical</option>
-                                </select>
-                            </div>
-                       </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                        <AlignLeft className="w-4 h-4 text-blue-500" />
+                        Description
+                      </label>
+                      <textarea
+                        rows={3}
+                        className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all p-4 text-sm text-gray-600 leading-relaxed"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                      />
+                    </div>
 
-                       <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Input
-                                label="BUDGET ($)"
-                                type="number"
-                                min={0}
-                                value={formData.budget}
-                                onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
-                                />
-                            </div>
-                            <div>
-                                <Input
-                                label="PROGRESS (%)"
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={formData.progress}
-                                onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
-                                />
-                            </div>
-                       </div>
-
-                       <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Input
-                                label="START DATE"
-                                type="date"
-                                value={formData.startDate}
-                                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <Input
-                                label="END DATE"
-                                type="date"
-                                value={formData.endDate}
-                                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                />
-                            </div>
-                       </div>
-
-                      <div>
-                          <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Tags</label>
-                          <div className="flex gap-2 mb-2 flex-wrap">
-                              {formData.tags.map(tag => (
-                                  <span key={tag} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium flex items-center gap-1 group border border-blue-100">
-                                      {tag}
-                                      <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
-                                  </span>
-                              ))}
-                          </div>
-                          <div className="flex gap-2">
-                             <Input 
-                               type="text" 
-                               value={tagInput}
-                               containerClassName="flex-1"
-                               onChange={(e) => setTagInput(e.target.value)}
-                               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                               placeholder="Add a tag..."
-                             />
-                             <button onClick={addTag} type="button" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors border border-gray-200">Add</button>
-                          </div>
-                      </div>
-                 </div>
-             )}
-
-             {activeTab === 'team' && (
-                 <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200 h-full flex flex-col">
-                     <div className="relative">
-                        <Input 
-                           leftIcon={<Search className="w-4 h-4" />}
-                           type="text"
-                           value={memberSearch}
-                           onChange={(e) => setMemberSearch(e.target.value)}
-                           placeholder="Search team members..." 
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-blue-400" />
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all px-4 py-2.5 text-sm"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
                         />
-                     </div>
-                     
-                     <div className="overflow-y-auto max-h-[300px] space-y-2 pr-1 custom-scrollbar flex-1">
-                         {filteredMembers.length === 0 ? (
-                             <div className="text-center py-8 text-gray-400 text-sm">No members found.</div>
-                         ) : (
-                             filteredMembers.map(member => {
-                                 const isSelected = formData.teamMemberIds.includes(member.id || member._id!);
-                                 return (
-                                    <div 
-                                      key={member.id || member._id}
-                                      onClick={() => toggleMember(member.id || member._id!)}
-                                      className={`group p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                                          isSelected ? 'border-blue-500 bg-blue-50/50' : 'border-gray-100 hover:border-blue-300 hover:bg-gray-50'
-                                      }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                                                isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
-                                            }`}>
-                                                {member.firstName.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <h4 className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                                                    {member.firstName} {member.lastName}
-                                                </h4>
-                                                <p className="text-xs text-gray-500">{member.email}</p>
-                                            </div>
-                                        </div>
-                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                                            isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 group-hover:border-blue-400'
-                                        }`}>
-                                            {isSelected && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                    </div>
-                                 );
-                             })
-                         )}
-                     </div>
-                 </div>
-             )}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-blue-400" />
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all px-4 py-2.5 text-sm"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                        />
+                      </div>
+                    </div>
 
+                    <div className="bg-gray-50 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4">
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="inline-flex justify-center items-center rounded-xl bg-blue-600 px-8 py-3.5 text-sm font-black text-white shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all disabled:opacity-50 min-w-[140px]"
+                      >
+                        {isLoading ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Changes
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex justify-center rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all"
+                        onClick={onClose}
+                        disabled={isLoading}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
         </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end items-center gap-3">
-            <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-            Cancel
-            </button>
-            <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-6 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Save Changes</>}
-            </button>
-        </div>
-      </div>
-    </div>
+      </Dialog>
+    </Transition.Root>
   );
 }

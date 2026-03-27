@@ -28,7 +28,7 @@ export const Button: React.FC<ButtonProps> = ({
   }, []);
 
   const baseStyles =
-    "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center rounded-xl font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
@@ -48,7 +48,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   // During SSR and initial hydration, we ignore the isLoading prop to prevent mismatch if state differs
   const showLoading = isMounted && isLoading;
-  const isDisabled = isMounted ? (disabled || isLoading) : disabled;
+  const isDisabled = isMounted ? disabled || isLoading : disabled;
 
   return (
     <button

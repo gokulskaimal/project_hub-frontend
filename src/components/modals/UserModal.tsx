@@ -60,7 +60,7 @@ export default function UserModal({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center">
       <div className="absolute inset-0 bg-black/80" onClick={handleClose} />
-      <div className="relative bg-white rounded-lg border border-gray-200 shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 p-1 rounded hover:bg-gray-100"
@@ -94,7 +94,7 @@ export default function UserModal({
         </div>
 
         {/* Profile Header (Image & Name) */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-6">
           <div className="flex items-center gap-4">
             <div className="relative">
               <UserAvatar
@@ -157,12 +157,12 @@ export default function UserModal({
         </div>
 
         {/* Mode Switcher */}
-        <div className="mb-6 flex bg-gray-100 rounded-lg p-1">
+        <div className="mb-6 flex bg-gray-100 rounded-xl p-1">
           {["view", "edit"].map((m) => (
             <button
               key={m}
               onClick={() => setMode(m as "view" | "edit")}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors capitalize ${
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-xl transition-colors capitalize ${
                 mode === m
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
@@ -217,7 +217,7 @@ export default function UserModal({
         <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={handleClose}
-            className="px-4 py-2 border border-gray-200 text-gray-900 rounded-md text-sm font-medium hover:bg-gray-50"
+            className="px-4 py-2 border border-gray-200 text-gray-900 rounded-xl text-sm font-medium hover:bg-gray-50"
           >
             Close
           </button>
@@ -225,7 +225,7 @@ export default function UserModal({
             <button
               onClick={handleSaveProfile}
               disabled={state.loading}
-              className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+              className="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
             >
               {state.loading ? "Saving Profile..." : "Save Changes"}
             </button>

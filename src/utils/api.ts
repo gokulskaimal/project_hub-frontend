@@ -1,5 +1,11 @@
-import axios from "axios";
-import toast from "react-hot-toast";
+import axios, {
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+} from "axios";
+import { toast } from "react-hot-toast"; // Still used for internal fallback but preferred to use notifier
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import { startLoading, stopLoading } from "@/features/ui/uiSlice";
 
 export const API_BASE_URL = "/api";
@@ -11,32 +17,56 @@ export const API_ROUTES = {
     RESET_PASSWORD_REQUEST: "/auth/reset-password-request",
     RESET_PASSWORD: "/auth/reset-password",
     VERIFY_EMAIL: "/auth/verify-email",
-    REGISTER_MANAGER: "/auth/register-manager",
+    SIGNUP_MANAGER: "/auth/register-manager",
     SEND_OTP: "/auth/send-otp",
     VERIFY_OTP: "/auth/verify-otp",
     COMPLETE_SIGNUP: "/auth/complete-signup",
-    INVITE_MEMBER: "/auth/invite-member",
     ACCEPT_INVITE: "/auth/accept-invite",
     GOOGLE_SIGNIN: "/auth/google-signin",
   },
   USER: {
     PROFILE: "/user/profile",
     CHANGE_PASSWORD: "/user/change-password",
+    VELOCITY: "/user/velocity",
   },
   ADMIN: {
-    ORGS: "/admin/organizations",
+    ORGANIZATIONS: "/admin/organizations",
     USERS: "/admin/users",
     PLANS: "/admin/plans",
+    REPORTS: "/admin/reports",
+    INVOICES: "/admin/invoices",
   },
   MANAGER: {
     MEMBERS: "/manager/members",
     PLANS: "/plans",
     INVITATIONS: "/manager/invitations",
     ORGANIZATION: "/manager/organization",
+    INVITE: "/manager/invite-member",
+    BULK_INVITE: "/manager/bulk-invite",
+    INVOICES: "/manager/invoices",
+  },
+  PLANS: {
+    GET_ALL: "/plans",
   },
   PROJECTS: {
     ROOT: "/projects",
-    TASKS: "/projects/tasks",
+    MY_PROJECTS: "/projects/my-projects",
+    MY_TASKS: "/projects/tasks/my-tasks",
+    BY_ID: (projectId: string) => `/projects/${projectId}`,
+    TASKS_BY_PROJECT: (projectId: string) => `/projects/${projectId}/tasks`,
+    TASK_UPDATE: (taskId: string) => `/projects/tasks/${taskId}`,
+    TASK_DELETE: (taskId: string) => `/projects/tasks/${taskId}`,
+    TASK_TIMER: (taskId: string) => `/projects/tasks/${taskId}/timer`,
+    TASK_HISTORY: (taskId: string) => `/projects/tasks/${taskId}/history`,
+    TASK_COMMENTS: (taskId: string) => `/projects/tasks/${taskId}/comments`,
+    TASK_ATTACHMENTS: (taskId: string) =>
+      `/projects/tasks/${taskId}/attachments`,
+    SPRINTS_BY_PROJECT: (projectId: string) => `/projects/${projectId}/sprints`,
+    SPRINT_CREATE: "/projects/sprints",
+    SPRINT_UPDATE: (sprintId: string) => `/projects/sprints/${sprintId}`,
+    SPRINT_DELETE: (sprintId: string) => `/projects/sprints/${sprintId}`,
+    VELOCITY: (projectId: string) => `/projects/${projectId}/velocity`,
+    MEMBERS: (projectId: string) => `/projects/${projectId}/members`,
   },
   ORGANIZATION: {
     USERS: "/organization/users",
@@ -46,10 +76,16 @@ export const API_ROUTES = {
     PROJECT: (projectId: string) => `/chat/${projectId}`,
     MESSAGE: (messageId: string) => `/chat/${messageId}`,
   },
+  NOTIFICATIONS: {
+    GET_ALL: "/notifications",
+    READ_ALL: "/notifications/read-all",
+    READ_ONE: (id: string) => `/notifications/${id}/read`,
+  },
   UPLOAD: {
     BASE: "/upload",
   },
   PAYMENTS: {
+    SUBSCRIPTION: "/payments/subscription",
     VERIFY: "/payments/verify",
   },
 } as const;
@@ -203,9 +239,7 @@ api.interceptors.response.use(
 
             // Refresh failed - proceed to logout
             isRedirecting = true;
-            toast.error("Your session has expired. Please login again.", {
-              id: "session-expired",
-            });
+            notifier.error(null, MESSAGES.AUTH.SESSION_EXPIRED);
             localStorage.removeItem("accessToken");
             localStorage.removeItem("role");
             setTimeout(() => {
@@ -237,5 +271,24 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+/**
+ * Extracts a human-readable error message from an RTK Query or Axios error object.
+ */
+export const extractErrorMessage = (
+  error: unknown,
+  defaultMessage: string = "An unexpected error occurred",
+): string => {
+  const err = error as {
+    data?: { error?: { message?: string }; message?: string };
+    message?: string;
+  };
+  return (
+    err?.data?.error?.message ||
+    err?.data?.message ||
+    err?.message ||
+    defaultMessage
+  );
+};
 
 export default api;

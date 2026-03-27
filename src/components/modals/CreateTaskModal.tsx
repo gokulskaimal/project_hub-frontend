@@ -1,406 +1,426 @@
+"use client";
+
+import { useState, useEffect, Fragment, useMemo } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import {
+  X,
+  Layout,
+  Type,
+  AlignLeft,
+  Calendar,
+  Flag,
+  User as UserIcon,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  Lock,
+} from "lucide-react";
+import {
+  useCreateTaskMutation,
+  useUpdateTaskMutation,
+  useGetProjectSprintsQuery,
+  useGetProjectByIdQuery,
+} from "@/store/api/projectApiSlice";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-
-import { Input } from "@/components/ui/Input";
-import { useState, useEffect } from "react";
-import { X, Loader2 } from "lucide-react";
-import api, { API_ROUTES } from "@/utils/api";
-import toast from "react-hot-toast";
-import { PRIORITY_LEVELS } from "@/utils/constants";
-import { z } from "zod";
-import { projectService } from "@/services/projectService";
-import { sprintService, Sprint } from "@/services/sprintService";
-
-// Zod Schema
-const taskSchema = z.object({
-  title: z.string().trim().min(3, "Title must be at least 3 characters"),
-  description: z.string().trim().optional(),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
-  type: z.enum(["STORY", "BUG", "TASK"]),
-  storyPoints: z.number().min(0).optional(),
-  dueDate: z.string().optional(),
-  assignedTo: z.string().optional(),
-});
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  priority: string;
-  dueDate?: string;
-  assignedTo?: string;
-  status?: string;
-  type?: string;
-  storyPoints?: number;
-  projectId?: string;
-}
-
-interface Member {
-  id: string;
-  _id?: string;
-  firstName: string;
-  lastName?: string;
-  email: string;
-}
+import { User } from "@/types/auth";
+import { Task } from "@/types/project";
+import { notifier } from "@/utils/notifier";
+import { MESSAGES } from "@/constants/messages";
+import { USER_ROLES, PRIORITY_LEVELS } from "@/utils/constants";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  projectId?: string;
-  task?: Task | null;
-  projectMembers: Member[];
-  parentTaskId?: string;
+  projectId: string;
+  projectMembers: User[];
+  task?: Task | null; // If provided, we are in Edit mode
 }
+
+const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+const TYPES = ["TASK", "BUG", "STORY"];
+const VALID_STORY_POINTS = [0, 1, 2, 3, 5, 8, 13];
 
 export default function CreateTaskModal({
   isOpen,
   onClose,
   onSuccess,
   projectId,
-  task,
   projectMembers,
-  parentTaskId,
+  task,
 }: CreateTaskModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  // Get User Role
+  // Auth State for Locking Logic
   const role = useSelector((state: RootState) => state.auth.role);
-  const isManager = role === "org-manager";
+  const isManager = role === USER_ROLES.ORG_MANAGER;
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    priority: PRIORITY_LEVELS.MEDIUM as string,
-    type: "STORY",
-    storyPoints: 0,
-    dueDate: "",
-    assignedTo: "",
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState<Task["status"]>("TODO");
+  const [priority, setPriority] = useState<Task["priority"]>("MEDIUM");
+  const [type, setType] = useState<Task["type"]>("TASK");
+  const [storyPoints, setStoryPoints] = useState(0);
+  const [assignedTo, setAssignedTo] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [sprintId, setSprintId] = useState("");
+
+  const [createTask, { isLoading: isCreating }] = useCreateTaskMutation();
+  const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
+  const { data: sprints = [] } = useGetProjectSprintsQuery(projectId, {
+    skip: !projectId || !isOpen,
+  });
+  const { data: project } = useGetProjectByIdQuery(projectId, {
+    skip: !projectId || !isOpen,
   });
 
-  const [projectStart, setProjectStart] = useState("");
-  const [projectEnd, setProjectEnd] = useState("");
+  const isEdit = !!task;
+  const isLoading = isCreating || isUpdating;
 
-  const isEditing = !!task;
+  // Lock Logic from "perfect" state
   const isDone = task?.status === "DONE";
   const isReview = task?.status === "REVIEW";
+  const isLocked = isEdit && (isDone || (!isManager && isReview));
 
-  // Lock Logic
-  const isLocked = isEditing && (isDone || (!isManager && isReview));
+  const projectStart = project?.startDate
+    ? new Date(project.startDate).toISOString().split("T")[0]
+    : "";
+  const projectEnd = project?.endDate
+    ? new Date(project.endDate).toISOString().split("T")[0]
+    : "";
 
   useEffect(() => {
-    if (isOpen) {
-      setFormErrors({});
-
-      if (projectId) {
-        projectService
-          .getProject(projectId)
-          .then((res) => {
-            if (res.startDate)
-              setProjectStart(
-                new Date(res.startDate).toISOString().split("T")[0],
-              );
-            if (res.endDate)
-              setProjectEnd(new Date(res.endDate).toISOString().split("T")[0]);
-          })
-          .catch(console.error);
-      }
-
-      // [UPDATED] Populate form
-      if (task) {
-        setFormData({
-          title: task.title,
-          description: task.description || "",
-          priority: task.priority || PRIORITY_LEVELS.MEDIUM,
-          type: task.type || "STORY",
-          storyPoints: task.storyPoints || 0,
-          dueDate: task.dueDate
-            ? new Date(task.dueDate).toISOString().split("T")[0]
-            : "",
-          assignedTo: task.assignedTo || "",
-        });
-      } else {
-        setFormData({
-          title: "",
-          description: "",
-          priority: PRIORITY_LEVELS.MEDIUM,
-          type: "STORY",
-          storyPoints: 0,
-          dueDate: "",
-          assignedTo: "",
-        });
-      }
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description || "");
+      setStatus(task.status);
+      setPriority(task.priority);
+      setType(task.type);
+      setStoryPoints(task.storyPoints || 0);
+      setAssignedTo(task.assignedTo || "");
+      setDueDate(
+        task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
+      );
+      setSprintId(task.sprintId || "");
+    } else {
+      resetForm();
     }
-  }, [isOpen, task, projectId]);
+  }, [task, isOpen]);
 
-  if (!isOpen) return null;
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setStatus("TODO");
+    setPriority("MEDIUM");
+    setType("TASK");
+    setStoryPoints(0);
+    setAssignedTo("");
+    setDueDate("");
+    setSprintId("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormErrors({});
+    if (isLocked) return;
 
-    if (!projectId && !isEditing) {
-      toast.error("Cannot create task without selecting a project.");
-      return;
-    }
+    const data: any = {
+      projectId, // CRITICAL: Added to body
+      title,
+      description,
+      status,
+      priority,
+      type,
+      storyPoints: Number(storyPoints),
+      assignedTo: assignedTo || null,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      sprintId: sprintId || null,
+    };
 
-    // Validate using Zod
-    const result = taskSchema.safeParse(formData);
-    if (!result.success) {
-      const errors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        if (err.path[0]) {
-          errors[err.path[0] as string] = err.message;
-        }
-      });
-      setFormErrors(errors);
-      return;
-    }
-
-    setLoading(true);
     try {
-      if (isEditing && task) {
-        // [UPDATED] Update Logic
-        await api.put(`${API_ROUTES.PROJECTS.TASKS}/${task.id}`, {
-          ...formData,
-          priority: formData.priority,
-          assignedTo: formData.assignedTo || undefined,
-          storyPoints: Number(formData.storyPoints),
-          parentTaskId: parentTaskId || undefined,
-        });
-        toast.success("Task updated successfully");
-      } else if (projectId) {
-        // Create Logic
-        await api.post(`${API_ROUTES.PROJECTS.ROOT}/${projectId}/tasks`, {
-          ...formData,
-          projectId,
-          assignedTo: formData.assignedTo || undefined,
-          storyPoints: Number(formData.storyPoints),
-          parentTaskId: parentTaskId || undefined,
-        });
-        toast.success("Task created successfully");
+      if (isEdit && task) {
+        await updateTask({ id: task.id, data, projectId }).unwrap();
+        notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
+      } else {
+        await createTask({ projectId, data }).unwrap();
+        notifier.success(MESSAGES.TASKS.CREATE_SUCCESS);
       }
-
       onSuccess();
       onClose();
-    } catch (error) {
-      const err = error as Error;
-      const message = err.message || "Failed to save task";
-      toast.error(message);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      notifier.error(
+        err,
+        isEdit ? MESSAGES.TASKS.SAVE_FAILED : MESSAGES.TASKS.CREATE_FAILED,
+      );
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {isEditing ? "Edit Task" : "Add New Task"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+    <Transition.Root show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            >
+              <Dialog.Panel className="relative transform overflow-hidden rounded-[2rem] bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl">
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+
+                <div className="bg-white px-8 pt-8 pb-4">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-blue-50 rounded-xl shadow-inner">
+                        <Layout className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <Dialog.Title
+                          as="h3"
+                          className="text-2xl font-black text-gray-900 tracking-tight leading-none"
+                        >
+                          {isEdit ? "Refine Task" : "Launch New Task"}
+                        </Dialog.Title>
+                        <p className="text-xs font-medium text-gray-600 mt-1">
+                          Every great project starts with a single step
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onClose}
+                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  {isLocked && (
+                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm flex items-center gap-3">
+                      <Lock size={18} />
+                      {isDone
+                        ? "This task is completed and locked for edits."
+                        : "This task is currently under manager review and cannot be modified."}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2 space-y-2">
+                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <Type className="w-4 h-4 text-blue-500" />
+                            Task Title
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            disabled={isLocked}
+                            className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all text-base px-4 py-3 font-medium text-gray-800 disabled:opacity-50"
+                            placeholder="what needs to be done?"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-purple-500" />
+                            Task Type
+                          </label>
+                          <select
+                            disabled={isLocked}
+                            className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-purple-500 focus:bg-white transition-all text-sm px-4 py-3 font-bold text-gray-900"
+                            value={type}
+                            onChange={(e) => setType(e.target.value as any)}
+                          >
+                            <option value="STORY">Story 📘</option>
+                            <option value="BUG">Bug 🐞</option>
+                            <option value="TASK">Task 📋</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                          <AlignLeft className="w-4 h-4 text-indigo-500" />
+                          Description
+                        </label>
+                        <textarea
+                          rows={4}
+                          disabled={isLocked}
+                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-indigo-500 focus:bg-white transition-all text-sm p-4 text-gray-600 leading-relaxed disabled:opacity-50"
+                          placeholder="add context, details, or steps..."
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100">
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-black tracking-widest text-gray-400">
+                          Status
+                        </label>
+                        <select
+                          disabled={isLocked}
+                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-blue-500 transition-all text-xs font-bold py-2 px-3"
+                          value={status}
+                          onChange={(e) => setStatus(e.target.value as any)}
+                        >
+                          <option value="TODO">Backlog</option>
+                          <option value="IN_PROGRESS">Active</option>
+                          <option value="REVIEW">Quality Check</option>
+                          <option value="DONE">Completed</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-black tracking-widest text-gray-400">
+                          Priority
+                        </label>
+                        <select
+                          disabled={isLocked}
+                          className={`block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-orange-500 transition-all text-xs font-black py-2 px-3
+                            ${priority === "CRITICAL" ? "text-red-600" : priority === "HIGH" ? "text-orange-600" : "text-gray-600"}
+                          `}
+                          value={priority}
+                          onChange={(e) => setPriority(e.target.value as any)}
+                        >
+                          {PRIORITIES.map((p) => (
+                            <option key={p} value={p}>
+                              {p}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-black tracking-widest text-gray-400">
+                          Story Points
+                        </label>
+                        <select
+                          disabled={isLocked}
+                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-green-500 transition-all text-xs font-bold py-2 px-3"
+                          value={storyPoints}
+                          onChange={(e) =>
+                            setStoryPoints(Number(e.target.value))
+                          }
+                        >
+                          {VALID_STORY_POINTS.map((v) => (
+                            <option key={v} value={v}>
+                              {v}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-black tracking-widest text-gray-400">
+                          Due Date
+                        </label>
+                        <input
+                          type="date"
+                          disabled={isLocked}
+                          min={projectStart}
+                          max={projectEnd}
+                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-purple-500 transition-all text-xs font-bold py-2 px-3 disabled:opacity-50"
+                          value={dueDate}
+                          onChange={(e) => setDueDate(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                          <UserIcon className="w-4 h-4 text-blue-500" />
+                          Assignee
+                        </label>
+                        <div className="grid grid-cols-1 gap-2">
+                          <select
+                            disabled={isLocked}
+                            className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-medium py-2.5 disabled:opacity-50"
+                            value={assignedTo}
+                            onChange={(e) => setAssignedTo(e.target.value)}
+                          >
+                            <option value="">Unassigned</option>
+                            {projectMembers.map((member) => (
+                              <option key={member.id} value={member.id}>
+                                {member.firstName} {member.lastName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          Sprint
+                        </label>
+                        <select
+                          disabled={isLocked}
+                          className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-medium py-2.5 disabled:opacity-50"
+                          value={sprintId}
+                          onChange={(e) => setSprintId(e.target.value)}
+                        >
+                          <option value="">Backlog (No Sprint)</option>
+                          {sprints.map((sprint) => (
+                            <option key={sprint.id} value={sprint.id}>
+                              {sprint.name}{" "}
+                              {sprint.status === "ACTIVE" ? "(Current)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4">
+                      {!isLocked && (
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="inline-flex justify-center items-center rounded-xl bg-gray-900 px-8 py-3.5 text-sm font-black text-white shadow-2xl shadow-gray-200 hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[160px]"
+                        >
+                          {isLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : isEdit ? (
+                            "Update Changes"
+                          ) : (
+                            "Create Task"
+                          )}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="inline-flex justify-center rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all"
+                        onClick={onClose}
+                        disabled={isLoading}
+                      >
+                        {isLocked ? "Close" : "Discard"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {isLocked && (
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {isDone
-                ? "This task is completed and cannot be edited."
-                : "This task is under review by a manager."}
-            </div>
-          )}
-
-          <div>
-            <Input
-              label="Task Title"
-              required // Keep HTML required for basic UX, Zod for robust check
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              placeholder="e.g. Design Homepage"
-              error={formErrors.title}
-              disabled={isLocked}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              rows={3}
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Task details..."
-              disabled={isLocked}
-              className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm resize-none text-gray-900 placeholder-gray-500 shadow-sm ${isLocked ? "bg-gray-100 cursor-not-allowed" : ""}`}
-            />
-            {formErrors.description && (
-              <p className="text-xs text-red-500 mt-1">
-                {formErrors.description}
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Type
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) =>
-                  setFormData({ ...formData, type: e.target.value })
-                }
-                disabled={isLocked}
-                className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm ${isLocked ? "bg-gray-100 cursor-not-allowed" : ""}`}
-              >
-                <option value="STORY">Story 📘</option>
-                <option value="BUG">Bug 🐞</option>
-                <option value="TASK">Task 📋</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Priority
-              </label>
-              <select
-                value={formData.priority}
-                onChange={(e) =>
-                  setFormData({ ...formData, priority: e.target.value })
-                }
-                disabled={isLocked}
-                className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm ${isLocked ? "bg-gray-100 cursor-not-allowed" : ""}`}
-              >
-                {Object.values(PRIORITY_LEVELS).map((level) => (
-                  <option key={level} value={level}>
-                    {level.charAt(0) + level.slice(1).toLowerCase()}
-                  </option>
-                ))}
-              </select>
-              {formErrors.priority && (
-                <p className="text-xs text-red-500 mt-1">
-                  {formErrors.priority}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Points
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={formData.storyPoints}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    storyPoints: Number(e.target.value),
-                  })
-                }
-                disabled={isLocked}
-                className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 shadow-sm ${isLocked ? "bg-gray-100 cursor-not-allowed" : ""}`}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Input
-              label="Due Date"
-              type="date"
-              min={projectStart}
-              max={projectEnd}
-              value={formData.dueDate}
-              onChange={(e) =>
-                setFormData({ ...formData, dueDate: e.target.value })
-              }
-              error={formErrors.dueDate}
-              disabled={isLocked}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Assign To (Optional)
-            </label>
-            <select
-              value={formData.assignedTo}
-              onChange={(e) =>
-                setFormData({ ...formData, assignedTo: e.target.value })
-              }
-              disabled={isLocked}
-              className={`w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm bg-white text-gray-900 shadow-sm ${isLocked ? "bg-gray-100 cursor-not-allowed" : ""}`}
-            >
-              <option value="">Unassigned</option>
-              {projectMembers.map((member) => (
-                <option
-                  key={member.id || member._id}
-                  value={member.id || member._id}
-                >
-                  {member.firstName} {member.lastName} ({member.email})
-                </option>
-              ))}
-            </select>
-            {formErrors.assignedTo && (
-              <p className="text-xs text-red-500 mt-1">
-                {formErrors.assignedTo}
-              </p>
-            )}
-          </div>
-
-          <div className="pt-4 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            {!isLocked && (
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : isEditing ? (
-                  "Update Task"
-                ) : (
-                  "Create Task"
-                )}
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-    </div>
+      </Dialog>
+    </Transition.Root>
   );
 }

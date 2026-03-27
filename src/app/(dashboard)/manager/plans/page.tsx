@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { toast } from "react-hot-toast";
+import { MESSAGES } from "../../../../constants/messages";
+import { notifier } from "../../../../utils/notifier";
 import api, { API_ROUTES } from "../../../../utils/api";
 import { Plan } from "../../../../types/plan";
 import {
@@ -48,45 +49,40 @@ interface SubscriptionResponse {
   };
 }
 
+import {
+  useGetManagerPlansQuery,
+  useGetManagerOrganizationQuery,
+} from "@/store/api/managerApiSlice";
+
 export default function ManagerPlansPage() {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentOrg, setCurrentOrg] = useState<{
-    subscriptionStatus?: string;
-    trialEndsAt?: string;
-    planId?: string;
-  } | null>(null);
+  const {
+    data: plans = [],
+    isLoading: plansLoading,
+    refetch: refetchPlans,
+  } = useGetManagerPlansQuery();
+  const {
+    data: currentOrg,
+    isLoading: orgLoading,
+    refetch: refetchOrg,
+  } = useGetManagerOrganizationQuery();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const loading = plansLoading || orgLoading;
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [plansRes, orgRes] = await Promise.all([
-        api.get(API_ROUTES.MANAGER.PLANS),
-        api.get(API_ROUTES.MANAGER.ORGANIZATION),
-      ]);
-      setPlans(plansRes.data.data);
-      setCurrentOrg(orgRes.data.data);
-    } catch (error) {
-      toast.error("Failed to fetch plans or subscription details");
-    } finally {
-      setLoading(false);
-    }
+  const fetchData = () => {
+    refetchPlans();
+    refetchOrg();
   };
 
   const handleSubscribe = async (planId: string) => {
     try {
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        toast.error("Please login to subscribe");
+        notifier.error(null, MESSAGES.AUTH.LOGIN_REQUIRED_SUBSCRIPTION);
         return;
       }
 
       const response = await api.post<SubscriptionResponse>(
-        "/payments/subscription",
+        API_ROUTES.PAYMENTS.SUBSCRIPTION,
         { planId },
       );
 
@@ -108,10 +104,10 @@ export default function ManagerPlansPage() {
             razorpay_signature: `sig_mock_${Date.now()}`,
             planId: planId,
           });
-          toast.success("Plan upgraded successfully!");
+          notifier.success(MESSAGES.AUTH.PLAN_UPGRADE_SUCCESS);
           fetchData();
         } catch {
-          toast.error("Payment verification failed");
+          notifier.error(null, MESSAGES.AUTH.PAYMENT_VERIFY_FAILED);
         }
         return;
       }
@@ -132,10 +128,10 @@ export default function ManagerPlansPage() {
               planId: planId,
               // No subscription_id needed for One-Time
             });
-            toast.success("Subscription successful!");
+            notifier.success(MESSAGES.AUTH.PLAN_UPGRADE_SUCCESS);
             fetchData();
           } catch {
-            toast.error("Payment verification failed");
+            notifier.error(null, MESSAGES.AUTH.PAYMENT_VERIFY_FAILED);
           }
         },
         theme: {
@@ -146,11 +142,14 @@ export default function ManagerPlansPage() {
       const rzp1 = new window.Razorpay(options);
       rzp1.open();
     } catch {
-      toast.error("Failed to initiate subscription");
+      notifier.error(null, MESSAGES.AUTH.PAYMENT_INIT_FAILED);
     }
   };
 
-  const activePlans = useMemo(() => plans.filter((p) => p.isActive), [plans]);
+  const activePlans = useMemo(
+    () => plans.filter((p: Plan) => p.isActive),
+    [plans],
+  );
 
   const getPlanIcon = (type: string) => {
     switch (type) {
@@ -177,7 +176,7 @@ export default function ManagerPlansPage() {
   return (
     <DashboardLayout title="Subscription Plans">
       <div className="space-y-6">
-        <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">
               Current Status
@@ -192,7 +191,7 @@ export default function ManagerPlansPage() {
           </div>
           <button
             onClick={fetchData}
-            className="p-2 hover:bg-gray-50 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+            className="p-2 hover:bg-gray-50 rounded-xl text-gray-500 hover:text-blue-600 transition-colors"
             title="Refresh Plans"
           >
             <RefreshCw size={18} />
@@ -201,23 +200,23 @@ export default function ManagerPlansPage() {
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map((i: number) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl p-6 h-96 animate-pulse border border-gray-100"
+                className="bg-white rounded-xl p-6 h-96 animate-pulse border border-gray-100"
               ></div>
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activePlans.map((plan) => {
+            {activePlans.map((plan: Plan) => {
               const isCurrentPlan = currentOrg?.planId === plan.id;
               const colorClass = getPlanColor(plan.type);
 
               return (
                 <div
                   key={plan.id}
-                  className={`relative bg-white rounded-2xl border transition-all duration-300 flex flex-col ${isCurrentPlan ? `border-blue-500 ring-2 ring-blue-100 shadow-lg scale-[1.02] z-10` : "border-gray-200 hover:shadow-xl hover:-translate-y-1"}`}
+                  className={`relative bg-white rounded-xl border transition-all duration-300 flex flex-col ${isCurrentPlan ? `border-blue-500 ring-2 ring-blue-100 shadow-lg scale-[1.02] z-10` : "border-gray-200 hover:shadow-xl hover:-translate-y-1"}`}
                 >
                   {isCurrentPlan && (
                     <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
@@ -247,7 +246,7 @@ export default function ManagerPlansPage() {
                     </div>
 
                     <div className="space-y-3 mb-6">
-                      {plan.features.map((feature, i) => (
+                      {plan.features.map((feature: string, i: number) => (
                         <div key={i} className="flex items-start gap-3">
                           <div className="mt-0.5 p-0.5 rounded-full bg-green-100 text-green-600">
                             <CheckCircle size={12} />
@@ -274,7 +273,7 @@ export default function ManagerPlansPage() {
                       }
 
                       const currentPlanPrice = currentOrg?.planId
-                        ? plans.find((p) => p.id === currentOrg.planId)
+                        ? plans.find((p: Plan) => p.id === currentOrg.planId)
                             ?.price || 0
                         : 0;
 

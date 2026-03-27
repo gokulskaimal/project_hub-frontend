@@ -1,603 +1,626 @@
-import { Task, taskService, TaskComment } from "@/services/taskService";
-import { User } from "@/services/userService";
-import { useState, useEffect } from "react";
-import { X, Send, Paperclip } from "lucide-react";
-import toast from "react-hot-toast";
+"use client";
+
+import { useState, Fragment, useRef, useEffect } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import {
+  X,
+  Clock,
+  MessageSquare,
+  Paperclip,
+  Loader2,
+  Calendar,
+  User as UserIcon,
+  ShieldCheck,
+  Tag,
+  Info,
+  History,
+  File as FileIcon,
+  Download,
+  Trash2,
+} from "lucide-react";
+import {
+  useUpdateTaskMutation,
+  useToggleTaskTimerMutation,
+  useGetTaskHistoryQuery,
+  useAddCommentMutation,
+  useAddAttachmentMutation,
+  useGetTaskByIdQuery,
+} from "@/store/api/projectApiSlice";
+import { Task, TaskHistory } from "@/types/project";
+import { User } from "@/types/auth";
+import { formatDistanceToNow } from "date-fns";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { notifier } from "@/utils/notifier";
+import { MESSAGES } from "@/constants/messages";
 import api, { API_ROUTES } from "@/utils/api";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface TaskDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task | null;
-  allTasks: Task[]; // [NEW] Pass all tasks mapping names
-  users: User[];
-  currentUserId: string;
+  projectId: string;
+  allTasks?: Task[];
+  users?: User[];
+  currentUserId?: string;
   userRole?: string;
-  onTaskUpdated: () => void;
+  onTaskUpdated?: () => void;
 }
 
 export default function TaskDetailsModal({
   isOpen,
   onClose,
   task,
-  allTasks, // Destructured
-  users,
-  currentUserId,
-  userRole,
+  projectId,
+  users = [],
   onTaskUpdated,
 }: TaskDetailsModalProps) {
+  const [activeTab, setActiveTab] = useState<
+    "details" | "history" | "comments"
+  >("details");
   const [commentText, setCommentText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [localComments, setLocalComments] = useState<TaskComment[]>(
-    task?.comments || [],
-  );
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // NEW: Tab State and History Logs
-  const [activeTab, setActiveTab] = useState<"comments" | "history" | "linked">(
-    "comments",
-  );
-  const [historyLogs, setHistoryLogs] = useState<
-    Array<{
-      id?: string;
-      userId: string;
-      action: string;
-      details?: string;
-      createdAt: string;
-      previousValue?: string;
-      newValue?: string;
-      fields?: Array<{ field: string; old: string; new: string }>;
-    }>
-  >([]);
+  const [updateTask, { isLoading: isStatusUpdating }] = useUpdateTaskMutation();
+  const [toggleTimer, { isLoading: isTimerLoading }] =
+    useToggleTaskTimerMutation();
+  const [addComment, { isLoading: isAddingComment }] = useAddCommentMutation();
+  const [addAttachment] = useAddAttachmentMutation();
+  const [tick, setTick] = useState(0);
 
-  // New State for Task Mapping UI
-  const [selectedParentId, setSelectedParentId] = useState(
-    task?.parentTaskId || "",
-  );
-  const [dependencyType, setDependencyType] = useState<
-    "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO"
-  >("RELATES_TO");
-  const [selectedDepTaskId, setSelectedDepTaskId] = useState("");
-
-  // Update local comments when task changes
+  // Real-time ticker for the timer
   useEffect(() => {
-    if (task?.comments) {
-      setLocalComments(task.comments);
+    let interval: NodeJS.Timeout;
+    const isRunning = task?.timeLogs?.some((log) => !log.endTime);
+
+    if (isOpen && isRunning) {
+      interval = setInterval(() => {
+        setTick((t) => t + 1);
+      }, 1000);
     }
-  }, [task?.id, task?.comments]);
 
-  // Fetch History Logs when tab switches
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (activeTab === "history" && task?.id) {
-        try {
-          const logs = await taskService.getTaskHistory(task.id);
-          setHistoryLogs(logs);
-        } catch (error) {
-          console.error("Failed to fetch task history:", error);
-        }
-      }
+    return () => {
+      if (interval) clearInterval(interval);
     };
-    fetchHistory();
-  }, [activeTab, task?.id]);
+  }, [isOpen, task?.timeLogs]);
 
-  // if (!isOpen || !task) return null; // Removed early return for AnimatePresence
+  // Always fetch full task details when modal is open to ensure we have latest comments/attachments
+  // We must call hooks before any early returns to avoid "Rules of Hooks" violations
+  const { data: fullTaskData, isFetching: isTaskFetching } =
+    useGetTaskByIdQuery(task?.id || "", { skip: !isOpen || !task?.id });
+
+  const { data: history = [], isLoading: isHistoryLoading } =
+    useGetTaskHistoryQuery(task?.id || "", {
+      skip: !isOpen || !task?.id || activeTab !== "history",
+    });
+
+  // Early return if modal is closed or no task is provided
+  // This is placed AFTER hooks to satisfy React rules
+  if (!isOpen || !task) return null;
+
+  // Use the fullTaskData if available, otherwise fallback to the task prop (which is now guaranteed to be Task)
+  const currentTask = fullTaskData || task;
+
+  const handleStatusChange = async (newStatus: Task["status"]) => {
+    try {
+      await updateTask({
+        id: currentTask.id,
+        data: { status: newStatus },
+        projectId,
+      }).unwrap();
+      notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
+    } catch (err) {
+      notifier.error(err, MESSAGES.TASKS.SAVE_FAILED);
+    }
+  };
+
+  const handleTimerToggle = async (action: "start" | "stop") => {
+    try {
+      await toggleTimer({ id: currentTask.id, action, projectId }).unwrap();
+      notifier.success(
+        action === "start"
+          ? MESSAGES.TASKS.TIMER_STARTED
+          : MESSAGES.TASKS.TIMER_STOPPED,
+      );
+    } catch (err) {
+      notifier.error(err, MESSAGES.TASKS.TIMER_TOGGLE_FAILED);
+    }
+  };
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!task || !commentText.trim()) return;
-
-    const commentContent = commentText;
-    setCommentText("");
-    setLoading(true);
-
+    if (!commentText.trim()) return;
     try {
-      const updatedTask = await taskService.addComment(task.id, commentContent);
-
-      // Add comment immediately to local state (optimistic update)
-      // The API returns the full updated task, so extract just the new comments
-      if (updatedTask && updatedTask.comments) {
-        setLocalComments(updatedTask.comments);
-      }
-
-      // Refetch to sync with server
-      onTaskUpdated();
-      toast.success("Comment added");
+      await addComment({ taskId: currentTask.id, text: commentText }).unwrap();
+      setCommentText("");
+      notifier.success(MESSAGES.TASKS.COMMENT_ADDED);
     } catch (err) {
-      // Restore comment text on error
-      setCommentText(commentContent);
-      console.error("Failed to add comment:", err);
-      toast.error("Failed to add comment");
-    } finally {
-      setLoading(false);
+      notifier.error(err, "Failed to add comment");
     }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!task || !file) return;
+    if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      // 5MB limit
-      toast.error("File too large (max 5MB)");
-      return;
-    }
-
-    setLoading(true);
+    setIsUploading(true);
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await api.post(API_ROUTES.UPLOAD.BASE, formData, {
+      // 1. Upload to server
+      // 1. Upload to server - Correct path is just API_ROUTES.UPLOAD.BASE (/api/upload)
+      const response = await api.post(API_ROUTES.UPLOAD.BASE, formData, {
         headers: { "Content-Type": "multipart/form-data" },
-        skipGlobalLoader: true,
       });
 
-      if (res.data.success && res.data.data.url) {
-        await taskService.addAttachment(task.id, res.data.data.url);
-        toast.success("Attachment added");
-        onTaskUpdated();
-      } else {
-        toast.error("Upload failed");
-      }
+      const fileUrl = response.data?.data?.url;
+      if (!fileUrl) throw new Error("Upload failed - no URL returned");
+
+      // 2. Add as attachment to task
+      await addAttachment({
+        taskId: currentTask.id,
+        url: fileUrl,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      }).unwrap();
+
+      notifier.success("File uploaded successfully");
     } catch (err) {
-      console.error("Upload failed:", err);
-      toast.error("Upload failed. Please try again.");
+      notifier.error(err, "Failed to upload file");
     } finally {
-      setLoading(false);
-      if (e.target) e.target.value = "";
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const getUser = (id: string) => users.find((u) => u.id === id);
+  const isTimerRunning = currentTask.timeLogs?.some((log) => !log.endTime);
+
+  // Calculate total time spent including the current active log (if any)
+  const timeSpent =
+    currentTask.timeLogs?.reduce((acc: number, entry) => {
+      if (entry.endTime) {
+        return acc + (entry.duration || 0);
+      } else {
+        // Active log: calculate elapsed time from startTime to now
+        const elapsed = Date.now() - new Date(entry.startTime).getTime();
+        return acc + Math.max(0, elapsed);
+      }
+    }, 0) || 0;
+
+  // Formatter for HH:MM:SS
+  const formatTime = (ms: number) => {
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    return `${minutes}m ${seconds}s`;
+  };
 
   return (
-    <AnimatePresence>
-      {isOpen && task && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    <Transition.Root show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
         >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 10 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 10 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="bg-white rounded-xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden"
-          >
-            <div className="px-6 py-4 border-b flex justify-between items-center shrink-0">
-              <h2 className="text-xl text-gray-900 font-bold flex items-center gap-2">
-                <span className="text-gray-900 font-mono text-sm">
-                  {task.taskKey}
-                </span>
-                {task.title}
-              </h2>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-                title="Close modal"
-                aria-label="Close task details"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
+          <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity" />
+        </Transition.Child>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                  Description
-                </h3>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                  {task.description || "No description provided."}
-                </p>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">
-                    Attachments
-                  </h3>
-                  <label className="cursor-pointer flex items-center gap-1 text-sm bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 text-gray-700">
-                    <Paperclip className="w-4 h-4" /> Add
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                      disabled={loading}
-                    />
-                  </label>
-                </div>
-                {task.attachments && task.attachments.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {task.attachments.map((url, i) => (
-                      <a
-                        key={i}
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 text-sm p-2 border rounded hover:bg-gray-50 truncate text-blue-600"
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            >
+              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-4xl min-h-[600px] flex flex-col md:flex-row">
+                {/* Left Side: Main Content */}
+                <div className="flex-1 p-8 sm:p-10">
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="flex-1 mr-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black tracking-widest rounded-full uppercase">
+                          {currentTask.type}
+                        </span>
+                        <span
+                          className={`px-3 py-1 text-[10px] font-black tracking-widest rounded-full uppercase
+                                ${currentTask.priority === "CRITICAL" ? "bg-red-50 text-red-600" : "bg-orange-50 text-orange-600"}
+                            `}
+                        >
+                          {currentTask.priority}
+                        </span>
+                      </div>
+                      <Dialog.Title
+                        as="h3"
+                        className="text-3xl font-black text-gray-900 leading-tight"
                       >
-                        <Paperclip className="w-4 h-4 shrink-0" />
-                        <span className="truncate">Attachment {i + 1}</span>
-                      </a>
+                        {currentTask.title}
+                      </Dialog.Title>
+                    </div>
+                    <button
+                      onClick={onClose}
+                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  {/* Tabs */}
+                  <div className="flex items-center gap-6 border-b border-gray-100 mb-8">
+                    {[
+                      { id: "details", label: "Details", icon: Info },
+                      {
+                        id: "comments",
+                        label: "Comments",
+                        icon: MessageSquare,
+                      },
+                      { id: "history", label: "History", icon: History },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`flex items-center gap-2 px-1 py-4 text-sm font-bold transition-all relative
+                            ${activeTab === tab.id ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}
+                          `}
+                      >
+                        <tab.icon className="w-4 h-4" />
+                        {tab.label}
+                        {activeTab === tab.id && (
+                          <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600 rounded-full" />
+                        )}
+                      </button>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-xs text-gray-500">No attachments.</p>
-                )}
-              </div>
 
-              <div className="flex-1 flex flex-col border-t pt-4">
-                <div className="flex gap-4 border-b mb-4">
-                  <button
-                    onClick={() => setActiveTab("comments")}
-                    className={`pb-2 text-sm font-semibold transition-colors ${
-                      activeTab === "comments"
-                        ? "text-blue-600 border-b-2 border-blue-600"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    Comments
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("history")}
-                    className={`pb-2 text-sm font-semibold transition-colors ${
-                      activeTab === "history"
-                        ? "text-blue-600 border-b-2 border-blue-600"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    Activity History
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("linked")}
-                    className={`pb-2 text-sm font-semibold transition-colors ${
-                      activeTab === "linked"
-                        ? "text-blue-600 border-b-2 border-blue-600"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    Linked Tasks
-                  </button>
-                </div>
+                  {activeTab === "details" && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      {isTaskFetching && !fullTaskData && (
+                        <div className="flex items-center gap-2 text-blue-600 py-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-xs font-bold">
+                            Refreshing details...
+                          </span>
+                        </div>
+                      )}
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                          Description
+                        </h4>
+                        <p className="text-base text-gray-600 leading-relaxed font-medium">
+                          {currentTask.description ||
+                            "No description provided."}
+                        </p>
+                      </div>
 
-                {activeTab === "comments" ? (
-                  <>
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[150px]">
-                      {localComments && localComments.length > 0 ? (
-                        localComments.map(
-                          (comment: TaskComment, idx: number) => {
-                            const author = getUser(comment.userId);
-                            return (
+                      {/* Attachments Placeholder */}
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                          Attachments{" "}
+                          {currentTask.attachments?.length
+                            ? `(${currentTask.attachments.length})`
+                            : ""}
+                        </h4>
+
+                        {/* Attachment List */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {(currentTask.attachments || []).map(
+                            (attachment, idx) => (
                               <div
-                                key={comment.id || idx}
-                                className="flex gap-3"
+                                key={idx}
+                                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md"
+                              >
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                  <div className="p-2 bg-white rounded-xl border border-gray-100 text-blue-600">
+                                    <FileIcon className="w-4 h-4" />
+                                  </div>
+                                  <div className="overflow-hidden">
+                                    <p className="text-xs font-bold text-gray-900 truncate">
+                                      {attachment.name ||
+                                        `Attachment ${idx + 1}`}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400 font-medium tracking-tight">
+                                      {attachment.size
+                                        ? `${(attachment.size / 1024).toFixed(1)} KB`
+                                        : "Original file"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <a
+                                    href={attachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                    title="Download"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </a>
+                                </div>
+                              </div>
+                            ),
+                          )}
+
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            className="hidden"
+                          />
+
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-100 rounded-xl text-gray-400 hover:border-blue-200 hover:text-blue-500 hover:bg-blue-50/50 transition-all font-bold text-sm"
+                          >
+                            {isUploading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Paperclip className="w-4 h-4" />
+                            )}
+                            {isUploading ? "Uploading..." : "Add Attachment"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "comments" && (
+                    <div className="flex flex-col h-[500px]">
+                      {/* Messages List - Scrollable */}
+                      <div className="flex-1 overflow-y-auto pr-2 mb-4 scrollbar-thin scrollbar-thumb-gray-200">
+                        {(currentTask.comments || []).length === 0 ? (
+                          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-10 opacity-60">
+                            <div className="p-4 bg-gray-50 rounded-full">
+                              <MessageSquare className="w-8 h-8 text-gray-300" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-400">
+                              No discussions yet. Be the first to chime in!
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {(currentTask.comments || []).map((comment, i) => (
+                              <div
+                                key={i}
+                                className="flex gap-4 group animate-in fade-in slide-in-from-bottom-1 duration-300"
                               >
                                 <UserAvatar
-                                  user={author}
+                                  user={users.find(
+                                    (u) => u.id === comment.userId,
+                                  )}
                                   size="sm"
-                                  className="w-8 h-8 shrink-0"
                                 />
-                                <div className="bg-gray-50 p-3 rounded-lg flex-1">
-                                  <div className="flex justify-between items-center mb-1">
-                                    <span className="font-semibold text-xs text-gray-800">
-                                      {author
-                                        ? `${author.firstName} ${author.lastName}`
-                                        : "User"}
+                                <div className="flex-1 bg-gray-50/50 p-4 rounded-[1.5rem] border border-gray-100/50 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-black text-gray-900">
+                                      {users.find(
+                                        (u) => u.id === comment.userId,
+                                      )
+                                        ? `${users.find((u) => u.id === comment.userId)?.firstName} ${users.find((u) => u.id === comment.userId)?.lastName}`
+                                        : "Team Member"}
                                     </span>
-                                    <span className="text-[10px] text-gray-500">
-                                      {new Date(
-                                        comment.createdAt,
-                                      ).toLocaleString()}
+                                    <span className="text-[10px] font-bold text-gray-400">
+                                      {formatDistanceToNow(
+                                        new Date(comment.createdAt),
+                                      )}{" "}
+                                      ago
                                     </span>
                                   </div>
-                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                  <p className="text-sm text-gray-600 font-medium leading-relaxed">
                                     {comment.text}
                                   </p>
                                 </div>
                               </div>
-                            );
-                          },
-                        )
-                      ) : (
-                        <p className="text-xs text-gray-500 text-center py-4">
-                          No comments yet.
-                        </p>
-                      )}
-                    </div>
-
-                    <form
-                      onSubmit={handleAddComment}
-                      className="flex gap-2 shrink-0"
-                    >
-                      <input
-                        type="text"
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Write a comment..."
-                        aria-label="Comment input"
-                        className="flex-1 text-gray-900 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={loading}
-                      />
-                      <button
-                        type="submit"
-                        disabled={loading || !commentText.trim()}
-                        className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        title="Post comment"
-                        aria-label="Post comment"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </form>
-                  </>
-                ) : activeTab === "history" ? (
-                  <div className="flex-1 overflow-y-auto space-y-4 min-h-[150px]">
-                    {historyLogs.length > 0 ? (
-                      historyLogs.map(
-                        (
-                          log: {
-                            id?: string;
-                            userId: string;
-                            action: string;
-                            details?: string;
-                            createdAt: string;
-                            previousValue?: string;
-                            newValue?: string;
-                            fields?: Array<{
-                              field: string;
-                              old: string;
-                              new: string;
-                            }>;
-                          },
-                          idx: number,
-                        ) => {
-                          const author = getUser(log.userId);
-                          return (
-                            <div
-                              key={log.id || idx}
-                              className="flex gap-3 items-start"
-                            >
-                              <UserAvatar
-                                user={author}
-                                size="sm"
-                                className="w-6 h-6 shrink-0 mt-1"
-                              />
-                              <div className="flex-1">
-                                <p className="text-sm text-gray-800">
-                                  <span className="font-semibold">
-                                    {author
-                                      ? `${author.firstName} ${author.lastName}`
-                                      : "User"}
-                                  </span>{" "}
-                                  {log.action === "STATUS_CHANGED" && (
-                                    <span>
-                                      changed status from{" "}
-                                      <span className="font-mono bg-gray-100 px-1 py-0.5 rounded">
-                                        {log.previousValue}
-                                      </span>{" "}
-                                      to{" "}
-                                      <span className="font-mono bg-gray-100 px-1 py-0.5 rounded">
-                                        {log.newValue}
-                                      </span>
-                                    </span>
-                                  )}
-                                  {log.action === "ASSIGNEE_CHANGED" && (
-                                    <span>
-                                      changed assignee to{" "}
-                                      <span className="font-semibold">
-                                        {log.newValue !== "Unassigned"
-                                          ? getUser(log.newValue as string)
-                                              ?.firstName || log.newValue
-                                          : "Unassigned"}
-                                      </span>
-                                    </span>
-                                  )}
-                                  {log.action === "SPRINT_CHANGED" && (
-                                    <span>updated sprint assignment</span>
-                                  )}
-                                </p>
-                                <span className="text-[10px] text-gray-500">
-                                  {new Date(log.createdAt).toLocaleString()}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        },
-                      )
-                    ) : (
-                      <p className="text-xs text-gray-500 text-center py-4">
-                        No activity recorded yet.
-                      </p>
-                    )}
-                  </div>
-                ) : activeTab === "linked" ? (
-                  <div className="flex-1 overflow-y-auto space-y-6 min-h-[150px] p-1">
-                    {/* 1. Parent/Sub-task Section */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold text-gray-800">
-                          Sub-tasks
-                        </h4>
-                      </div>
-                      <div className="space-y-2 mb-4">
-                        {allTasks.filter((t) => t.parentTaskId === task.id)
-                          .length > 0 ? (
-                          allTasks
-                            .filter((t) => t.parentTaskId === task.id)
-                            .map((sub) => (
-                              <div
-                                key={sub.id}
-                                className="p-2 border rounded-lg flex items-center justify-between bg-white shadow-sm border-gray-200"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border shadow-sm">
-                                    {sub.taskKey}
-                                  </span>
-                                  <span className="text-sm font-medium text-gray-800">
-                                    {sub.title}
-                                  </span>
-                                </div>
-                                <span
-                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                    sub.status === "DONE"
-                                      ? "bg-green-100 text-green-700"
-                                      : sub.status === "IN_PROGRESS"
-                                        ? "bg-blue-100 text-blue-700"
-                                        : "bg-gray-100 text-gray-700"
-                                  }`}
-                                >
-                                  {sub.status}
-                                </span>
-                              </div>
-                            ))
-                        ) : (
-                          <div className="text-center py-4 text-gray-500 text-xs bg-gray-50 rounded-lg border border-dashed">
-                            No subtasks mapped to this task.
+                            ))}
                           </div>
                         )}
                       </div>
 
-                      {userRole === "org-manager" && (
-                        <div className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-100 mt-2">
-                          <select
-                            className="flex-1 text-sm border p-1 rounded font-medium text-gray-700"
-                            value={selectedParentId}
-                            onChange={(e) =>
-                              setSelectedParentId(e.target.value)
-                            }
-                          >
-                            <option value="">No Parent (Standalone)</option>
-                            {allTasks
-                              .filter((t) => t.id !== task.id)
-                              .map((t) => (
-                                <option key={t.id} value={t.id}>
-                                  {t.taskKey}: {t.title}
-                                </option>
-                              ))}
-                          </select>
-                          <button
-                            onClick={async () => {
-                              setLoading(true);
-                              await taskService.updateTask(task.id, {
-                                parentTaskId: selectedParentId || undefined,
-                              });
-                              setLoading(false);
-                              onTaskUpdated();
-                              toast.success("Parent updated");
-                            }}
-                            className="bg-blue-600 text-white text-xs px-2 py-1.5 rounded font-medium shadow-sm active:scale-95 transition-transform"
-                          >
-                            Set Parent
-                          </button>
+                      {/* Pinned Input Form */}
+                      <form
+                        onSubmit={handleAddComment}
+                        className="relative mt-auto pt-2 bg-white"
+                      >
+                        <input
+                          type="text"
+                          className="w-full bg-white border-2 border-gray-100 rounded-xl px-5 py-4 pr-16 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all font-bold text-gray-900 shadow-sm"
+                          placeholder="Write a comment..."
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          disabled={isAddingComment}
+                        />
+                        <button
+                          type="submit"
+                          disabled={isAddingComment || !commentText.trim()}
+                          className="absolute right-2 top-4 bottom-2 px-6 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-all disabled:opacity-50 shadow-md transform active:scale-95"
+                        >
+                          {isAddingComment ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            "Send"
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                  {activeTab === "history" && (
+                    <div className="space-y-6">
+                      {isHistoryLoading ? (
+                        <div className="flex items-center justify-center py-20">
+                          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                        </div>
+                      ) : history.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-20 font-bold">
+                          No history available.
+                        </p>
+                      ) : (
+                        <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+                          {history.map((item, i) => (
+                            <div key={i} className="flex gap-6 relative">
+                              <div className="w-6 h-6 rounded-full bg-white border-4 border-blue-500 z-10" />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-black text-gray-900">
+                                    {item.action}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-gray-400">
+                                    {formatDistanceToNow(
+                                      new Date(item.createdAt),
+                                    )}{" "}
+                                    ago
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 font-medium italic">
+                                  {item.details || `Performed ${item.action}`}
+                                  {item.previousValue && item.newValue && (
+                                    <>
+                                      {" "}
+                                      from{" "}
+                                      <span className="text-gray-800 line-through opacity-50">
+                                        {String(item.previousValue)}
+                                      </span>{" "}
+                                      to{" "}
+                                      <span className="text-blue-600 font-bold">
+                                        {String(item.newValue)}
+                                      </span>
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
+                  )}
+                </div>
 
-                    {/* 2. Dependencies Section */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-800 mb-2">
-                        Dependencies
+                {/* Right Side: Meta Sidebar */}
+                <div className="w-full md:w-80 bg-gray-50/50 border-l border-gray-100 p-8 sm:p-10 space-y-10">
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <ShieldCheck className="w-3 h-3" />
+                        Status Control
                       </h4>
-                      <ul className="space-y-2 mb-3">
-                        {task.dependencies && task.dependencies.length > 0 ? (
-                          task.dependencies.map((dep, i) => {
-                            const linked = allTasks.find(
-                              (t) => t.id === dep.taskId,
-                            );
-                            return (
-                              <li
-                                key={i}
-                                className="flex gap-2 items-center text-sm p-1.5 px-3 bg-gray-100 rounded border border-gray-300 shadow-sm"
-                              >
-                                <span
-                                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${dep.type === "BLOCKS" ? "bg-red-200 text-red-900 border border-red-300" : "bg-blue-200 text-blue-900 border border-blue-300"}`}
-                                >
-                                  {dep.type}
-                                </span>
-                                <span className="font-semibold text-gray-900 truncate tracking-tight">
-                                  {linked
-                                    ? `${linked.taskKey}: ${linked.title}`
-                                    : "Unknown Task"}
-                                </span>
-                              </li>
-                            );
-                          })
-                        ) : (
-                          <p className="text-xs text-gray-600 font-medium italic">
-                            No dependencies linked.
-                          </p>
-                        )}
-                      </ul>
+                      <select
+                        className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-black text-gray-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                        value={currentTask.status}
+                        onChange={(e) =>
+                          handleStatusChange(e.target.value as any)
+                        }
+                      >
+                        <option value="TODO">Backlog</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="REVIEW">Review</option>
+                        <option value="DONE">Done</option>
+                      </select>
+                    </div>
 
-                      {userRole === "org-manager" && (
-                        <div className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-100 mt-2">
-                          <select
-                            className="text-sm border p-1 rounded w-32 font-medium text-gray-700"
-                            value={dependencyType}
-                            onChange={(e) =>
-                              setDependencyType(
-                                e.target.value as
-                                  | "BLOCKS"
-                                  | "IS_BLOCKED_BY"
-                                  | "RELATES_TO",
-                              )
-                            }
-                          >
-                            <option value="RELATES_TO">Relates</option>
-                            <option value="BLOCKS">Blocks</option>
-                            <option value="IS_BLOCKED_BY">Blocked By</option>
-                          </select>
-                          <select
-                            className="flex-1 text-sm border p-1 rounded font-medium text-gray-700"
-                            value={selectedDepTaskId}
-                            onChange={(e) =>
-                              setSelectedDepTaskId(e.target.value)
-                            }
-                          >
-                            <option value="">Select task...</option>
-                            {allTasks
-                              .filter((t) => t.id !== task.id)
-                              .map((t) => (
-                                <option key={t.id} value={t.id}>
-                                  {t.taskKey}: {t.title}
-                                </option>
-                              ))}
-                          </select>
-                          <button
-                            onClick={async () => {
-                              if (!selectedDepTaskId) return;
-                              setLoading(true);
-                              const updatedDeps = [
-                                ...(task.dependencies || []),
-                                {
-                                  taskId: selectedDepTaskId,
-                                  type: dependencyType,
-                                },
-                              ];
-                              await taskService.updateTask(task.id, {
-                                dependencies: updatedDeps,
-                              });
-                              setLoading(false);
-                              onTaskUpdated();
-                              toast.success("Dependency added");
-                            }}
-                            className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded font-medium shadow-sm active:scale-95 transition-transform"
-                          >
-                            Link
-                          </button>
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Clock className="w-3 h-3" />
+                        Time Tracking
+                      </h4>
+                      <div className="bg-white rounded-xl p-6 border-2 border-gray-100 shadow-sm text-center">
+                        <div className="text-3xl font-black text-gray-900 mb-2 font-mono">
+                          {isTimerRunning
+                            ? formatTime(timeSpent)
+                            : `${(timeSpent / 3600000).toFixed(1)}h`}
                         </div>
-                      )}
+                        <button
+                          onClick={() =>
+                            handleTimerToggle(isTimerRunning ? "stop" : "start")
+                          }
+                          disabled={isTimerLoading}
+                          className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg
+                                        ${
+                                          isTimerRunning
+                                            ? "bg-red-500 text-white hover:bg-red-600 shadow-red-100"
+                                            : "bg-green-500 text-white hover:bg-green-600 shadow-green-100"
+                                        }
+                                    `}
+                        >
+                          {isTimerLoading
+                            ? "..."
+                            : isTimerRunning
+                              ? "Stop Timer"
+                              : "Start Timer"}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                ) : null}
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-xl border border-gray-100">
+                        <UserIcon className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                          Assignee
+                        </p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {currentTask.assignedTo
+                            ? users.find((u) => u.id === currentTask.assignedTo)
+                              ? `${users.find((u) => u.id === currentTask.assignedTo)?.firstName} ${users.find((u) => u.id === currentTask.assignedTo)?.lastName}`
+                              : "Assigned"
+                            : "Unassigned"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-xl border border-gray-100">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                          Due Date
+                        </p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {currentTask.dueDate
+                            ? new Date(currentTask.dueDate).toLocaleDateString()
+                            : "No deadline"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-xl border border-gray-100">
+                        <Tag className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                          Story Points
+                        </p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {currentTask.storyPoints || 0} pts
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition.Root>
   );
 }

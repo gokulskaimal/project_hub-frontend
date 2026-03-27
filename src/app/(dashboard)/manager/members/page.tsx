@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import api, { API_ROUTES } from "@/utils/api";
+import React, { useState, useMemo } from "react";
 import {
-  User,
   Trash2,
   Ban,
   CheckCircle,
@@ -13,27 +11,34 @@ import {
   ArrowUpDown,
   Users,
   Filter,
+  ChevronRight,
+  UserPlus,
 } from "lucide-react";
-import toast from "react-hot-toast";
-import Swal from "sweetalert2";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
+import { confirmWithAlert } from "@/utils/confirm";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import InviteModal from "@/components/modals/InviteModal";
 import UserAvatar from "@/components/ui/UserAvatar";
-
-interface Member {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  status: string;
-  orgId?: string;
-}
+import {
+  useDeleteManagerMemberMutation,
+  useGetManagerMembersQuery,
+  useUpdateManagerMemberStatusMutation,
+} from "@/store/api/managerApiSlice";
+import { extractErrorMessage } from "@/utils/api";
+import { StatCard } from "@/components/ui/StatCard";
+import { EntityCard } from "@/components/ui/EntityCard";
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const {
+    data: members = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetManagerMembersQuery();
+  const [deleteMember] = useDeleteManagerMemberMutation();
+  const [updateMemberStatus] = useUpdateManagerMemberStatusMutation();
 
   // Search, Filter, Sort State
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,22 +47,7 @@ export default function MembersPage() {
   const [sortBy, setSortBy] = useState("email");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchMembers = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get(API_ROUTES.MANAGER.MEMBERS);
-      setMembers(res.data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch members", error);
-      toast.error("Failed to load members");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchMembers();
-  }, []);
+  const loading = isLoading || isFetching;
 
   // Derived Data
   const filteredMembers = useMemo(() => {
@@ -131,25 +121,18 @@ export default function MembersPage() {
   }, [members]);
 
   const handleRemoveMember = async (id: string) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "This will permanently delete the member's account.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-    });
+    const confirmed = await confirmWithAlert(
+      "Are you sure?",
+      "This will permanently delete the member's account.",
+    );
 
-    if (!result.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
-      await api.delete(`${API_ROUTES.MANAGER.MEMBERS}/${id}`);
-      toast.success("Member deleted successfully");
-      fetchMembers();
+      await deleteMember(id).unwrap();
+      notifier.success(MESSAGES.TEAM.MEMBER_DELETED);
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to remove member");
+      notifier.error(error, MESSAGES.TEAM.MEMBER_DELETED);
     }
   };
 
@@ -157,35 +140,22 @@ export default function MembersPage() {
     const newStatus = currentStatus === "ACTIVE" ? "BLOCKED" : "ACTIVE";
     const action = currentStatus === "ACTIVE" ? "block" : "unblock";
 
-    const result = await Swal.fire({
-      title: `Are you sure?`,
-      text: `Do you want to ${action} this member?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: currentStatus === "ACTIVE" ? "#d33" : "#10B981",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: `Yes, ${action}!`,
-    });
+    const confirmed = await confirmWithAlert(
+      `Are you sure?`,
+      `Do you want to ${action} this member?`,
+    );
 
-    if (!result.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
-      await api.put(`${API_ROUTES.MANAGER.MEMBERS}/${id}/status`, {
-        status: newStatus,
-      });
-      setMembers((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, status: newStatus } : m)),
+      await updateMemberStatus({ id, status: newStatus }).unwrap();
+      notifier.success(
+        newStatus === "ACTIVE"
+          ? MESSAGES.TEAM.MEMBER_UNBLOCKED
+          : MESSAGES.TEAM.MEMBER_BLOCKED,
       );
-      Swal.fire({
-        title: action === "block" ? "Blocked!" : "Unblocked!",
-        text: `Member has been ${action}ed.`,
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-      });
     } catch (error) {
-      console.error(error);
-      toast.error(`Failed to ${action} member`);
+      notifier.error(error, `Failed to ${action} member`);
     }
   };
 
@@ -195,7 +165,7 @@ export default function MembersPage() {
         {/* Header Actions */}
         <div className="flex justify-end mb-2 gap-3">
           <button
-            onClick={fetchMembers}
+            onClick={refetch}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-medium transition-colors"
             title="Refresh List"
           >
@@ -215,100 +185,110 @@ export default function MembersPage() {
         <InviteModal
           isOpen={isInviteModalOpen}
           onClose={() => setIsInviteModalOpen(false)}
-          onSuccess={fetchMembers}
+          onSuccess={refetch}
         />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-              <Users size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Members</p>
-              <p className="text-xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-          </div>
-          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-green-50 text-green-600 rounded-lg">
-              <CheckCircle size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Active</p>
-              <p className="text-xl font-bold text-gray-900">{stats.active}</p>
-            </div>
-          </div>
-          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-red-50 text-red-600 rounded-lg">
-              <Ban size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Inactive</p>
-              <p className="text-xl font-bold text-gray-900">
-                {stats.inactive}
-              </p>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatCard
+            label="Total Members"
+            value={stats.total}
+            icon={Users}
+            color="blue"
+          />
+          <StatCard
+            label="Active Members"
+            value={stats.active}
+            icon={CheckCircle}
+            color="green"
+          />
+          <StatCard
+            label="Inactive Members"
+            value={stats.inactive}
+            icon={Ban}
+            color="red"
+          />
         </div>
 
-        {/* Unified Controls Card */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest overflow-hidden">
+            <span
+              className="hover:text-blue-600 cursor-pointer transition-colors shrink-0"
+              onClick={() => {
+                setSearchTerm("");
+                setFilterRole("ALL");
+                setFilterStatus("ALL");
+              }}
+            >
+              Members
+            </span>
+            <ChevronRight size={12} className="text-gray-300 shrink-0" />
+            <span className="text-blue-600 truncate">
+              {searchTerm
+                ? `"${searchTerm}"`
+                : filterStatus === "ALL"
+                  ? "Directory"
+                  : filterStatus}
+            </span>
+          </div>
+
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-all text-[10px] sm:text-xs font-black uppercase tracking-widest shrink-0"
+          >
+            <UserPlus size={14} />
+            <span className="hidden sm:inline">Invite</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white p-2 sm:p-3 rounded-xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar">
+          <div className="relative flex-1 min-w-[140px] group">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name or email..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 bg-white placeholder-gray-500"
+              placeholder="Search..."
+              className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs sm:text-sm text-gray-900 font-bold placeholder-gray-400 outline-none focus:bg-white focus:border-blue-100 transition-all font-sans"
             />
           </div>
 
-          {/* Filters & Sort */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="relative">
-              <select
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-              >
-                <option value="ALL">All Roles</option>
-                <option value="ORG MANAGER">Manager</option>
-                <option value="TEAM MEMBER">Member</option>
-              </select>
-              <Filter className="w-3 h-3 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+          <div className="h-6 w-px bg-gray-100 mx-1 shrink-0" />
 
-            <div className="relative">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
-              >
-                <option value="ALL">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
-              <Filter className="w-3 h-3 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className="w-20 sm:w-28 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-[10px] sm:text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
+            >
+              <option value="ALL">Role</option>
+              <option value="ORG MANAGER">Manager</option>
+              <option value="TEAM MEMBER">Member</option>
+            </select>
 
-            <div className="w-px h-6 bg-gray-200 mx-2 hidden md:block"></div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-20 sm:w-28 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-[10px] sm:text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
+            >
+              <option value="ALL">Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
 
-            {/* Sort Buttons */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              {["name", "email", "status"].map((field) => (
+            <div className="flex border border-gray-100 rounded-lg overflow-hidden bg-gray-50 translate-y-0 text-[10px]">
+              {["name", "status"].map((field) => (
                 <button
                   key={field}
                   onClick={() => toggleSort(field)}
-                  className={`px-3 py-2 text-sm font-medium flex items-center gap-1 transition-colors ${
+                  className={`px-2 py-1.5 font-bold uppercase tracking-wider flex items-center gap-1 transition-colors ${
                     sortBy === field
-                      ? "bg-blue-50 text-blue-700"
-                      : "bg-white text-gray-600 hover:bg-gray-50"
-                  } ${field !== "status" ? "border-r border-gray-300" : ""}`}
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-500 hover:bg-gray-100"
+                  } ${field !== "status" ? "border-r border-gray-200" : ""}`}
                 >
-                  {field.charAt(0).toUpperCase() + field.slice(1)}
-                  <ArrowUpDown className="w-3 h-3" />
+                  <span className="hidden sm:inline">{field}</span>
+                  <ArrowUpDown size={10} />
                 </button>
               ))}
             </div>
@@ -321,12 +301,12 @@ export default function MembersPage() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl p-6 h-48 animate-pulse border border-gray-100"
+                className="bg-white rounded-xl p-6 h-48 animate-pulse border border-gray-100"
               ></div>
             ))}
           </div>
         ) : filteredMembers.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 border-dashed">
+          <div className="text-center py-20 bg-white rounded-xl border border-gray-100 border-dashed">
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <Users className="w-8 h-8 text-blue-500" />
             </div>
@@ -338,66 +318,61 @@ export default function MembersPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
             {filteredMembers.map((member) => {
               const isActive = (member.status || "ACTIVE") === "ACTIVE";
               return (
-                <div
+                <EntityCard
                   key={member.id}
-                  className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
-                      <UserAvatar user={member} size="md" />
-                      <div>
-                        <h3 className="font-semibold text-gray-900 leading-tight">
-                          {member.firstName} {member.lastName}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {member.role === "ORG MANAGER"
-                            ? "Manager"
-                            : "Team Member"}
-                        </p>
-                      </div>
+                  id={member.id}
+                  title={`${member.firstName} ${member.lastName}`}
+                  subtitle={member.email}
+                  icon={<UserAvatar user={member} size="sm" />}
+                  status={isActive ? "ACTIVE" : "BLOCKED"}
+                  statusColor={
+                    isActive
+                      ? "bg-green-50 text-green-700 border-green-100"
+                      : "bg-red-50 text-red-700 border-red-100"
+                  }
+                  actions={
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          handleBlockMember(
+                            member.id,
+                            member.status || "ACTIVE",
+                          )
+                        }
+                        title={isActive ? "Block" : "Unblock"}
+                        className={`p-1.5 rounded-lg border transition-all ${
+                          isActive
+                            ? "bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100"
+                            : "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
+                        }`}
+                      >
+                        {isActive ? (
+                          <Ban size={16} />
+                        ) : (
+                          <CheckCircle size={16} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleRemoveMember(member.id)}
+                        title="Remove"
+                        className="p-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider border ${
-                        isActive
-                          ? "bg-green-50 text-green-700 border-green-100"
-                          : "bg-red-50 text-red-700 border-red-100"
-                      }`}
-                    >
-                      {isActive ? "ACTIVE" : "BLOCKED"}
+                  }
+                  footerLeft={
+                    <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-black uppercase tracking-wider border border-blue-100">
+                      {member.role === "ORG MANAGER"
+                        ? "Manager"
+                        : "Team Member"}
                     </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-2 rounded-lg mb-4">
-                    <Mail size={14} className="text-gray-400" />
-                    <span className="truncate">{member.email}</span>
-                  </div>
-
-                  <div className="mt-auto pt-4 border-t border-gray-50 grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() =>
-                        handleBlockMember(member.id, member.status || "ACTIVE")
-                      }
-                      className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${
-                        isActive
-                          ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                          : "bg-green-50 text-green-700 hover:bg-green-100"
-                      }`}
-                    >
-                      {isActive ? <Ban size={14} /> : <CheckCircle size={14} />}
-                      {isActive ? "Block" : "Unblock"}
-                    </button>
-                    <button
-                      onClick={() => handleRemoveMember(member.id)}
-                      className="px-3 py-2 rounded-lg text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <Trash2 size={14} /> Remove
-                    </button>
-                  </div>
-                </div>
+                  }
+                />
               );
             })}
           </div>

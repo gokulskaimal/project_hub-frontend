@@ -1,11 +1,13 @@
-import { useState, useCallback, useMemo, useRef } from "react";
-import toast from "react-hot-toast";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
 import { z } from "zod";
-import { getFriendlyError } from "@/utils/errors";
-import api, { API_ROUTES } from "@/utils/api";
-import { AppDispatch } from "@/store/store";
-import { useDispatch } from "react-redux";
-import { fetchProfile } from "@/features/auth/authSlice";
+import {
+  useGetProfileQuery,
+  useUpdateProfileMutation,
+  useChangePasswordMutation,
+  useUploadAvatarMutation,
+} from "@/store/api/userApiSlice";
 
 // Define schemas outside component for performance
 const profileUpdateSchema = z.object({
@@ -25,7 +27,21 @@ const passwordChangeSchema = z
   });
 
 export function useMemberProfile(token: string | null) {
-  const dispatch = useDispatch<AppDispatch>();
+  const {
+    data: profile,
+    isLoading: isFetching,
+    refetch: loadProfile,
+  } = useGetProfileQuery(undefined, {
+    skip: !token,
+  });
+
+  const [updateProfileMutation, { isLoading: isUpdating }] =
+    useUpdateProfileMutation();
+  const [changePasswordMutation, { isLoading: isChangingPassword }] =
+    useChangePasswordMutation();
+  const [uploadAvatarMutation, { isLoading: isUploadingAvatar }] =
+    useUploadAvatarMutation();
+
   // Profile State (local copy for editing)
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -33,14 +49,26 @@ export function useMemberProfile(token: string | null) {
   const [organizationName, setOrganizationName] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
+  // Synchronize local state with fetched profile
+  useEffect(() => {
+    if (profile) {
+      setEmail(profile.email || "");
+      setFirstName(profile.firstName || "");
+      setLastName(profile.lastName || "");
+      setOrganizationName(profile.organizationName || "");
+      setProfileImage(profile.avatar || null);
+    }
+  }, [profile]);
+
   // Password State
   const [passwords, setPasswords] = useState({
     current: "",
     new: "",
     confirm: "",
   });
-  const [loading, setLoading] = useState(false);
 
+  const loading =
+    isFetching || isUpdating || isChangingPassword || isUploadingAvatar;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const computedName = useMemo(() => {
@@ -52,50 +80,29 @@ export function useMemberProfile(token: string | null) {
     [computedName, email],
   );
 
-  const loadProfile = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      // GET /api/user/profile
-      const res = await api.get(API_ROUTES.USER.PROFILE);
-      const d = res.data?.data || {};
-      setEmail(d.email || "");
-      setFirstName(d.firstName || "");
-      setLastName(d.lastName || "");
-      setOrganizationName(d.organizationName || "");
-      setProfileImage(d.avatar || null);
-    } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to load profile"));
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
   const updateProfile = useCallback(async () => {
     const parsed = profileUpdateSchema.safeParse({ firstName, lastName });
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message || "Invalid input");
+      notifier.error(
+        null,
+        parsed.error.errors[0]?.message || MESSAGES.VALIDATION.INVALID_INPUT,
+      );
       return false;
     }
 
     try {
-      setLoading(true);
-      // PUT /api/user/profile
-      await api.put(API_ROUTES.USER.PROFILE, {
+      await updateProfileMutation({
         firstName,
         lastName,
         avatar: profileImage,
-      });
-      toast.success("Profile updated");
-      dispatch(fetchProfile());
+      }).unwrap();
+      notifier.success(MESSAGES.AUTH.PROFILE_UPDATE_SUCCESS);
       return true;
     } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to update profile"));
+      notifier.error(err, "Failed to update profile");
       return false;
-    } finally {
-      setLoading(false);
     }
-  }, [firstName, lastName, profileImage, dispatch]);
+  }, [firstName, lastName, profileImage, updateProfileMutation]);
 
   const changePassword = useCallback(async () => {
     const payload = {
@@ -106,24 +113,23 @@ export function useMemberProfile(token: string | null) {
 
     const parsed = passwordChangeSchema.safeParse(payload);
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message || "Invalid password input");
+      notifier.error(
+        null,
+        parsed.error.errors[0]?.message || MESSAGES.VALIDATION.INVALID_INPUT,
+      );
       return false;
     }
 
     try {
-      setLoading(true);
-      // POST /api/user/change-password
-      await api.post(API_ROUTES.USER.CHANGE_PASSWORD, payload);
-      toast.success("Password updated successfully!");
+      await changePasswordMutation(payload).unwrap();
+      notifier.success(MESSAGES.AUTH.PASSWORD_UPDATE_SUCCESS);
       setPasswords({ current: "", new: "", confirm: "" });
       return true;
     } catch (err) {
-      toast.error(getFriendlyError(err, "Failed to change password"));
+      notifier.error(err, "Failed to change password");
       return false;
-    } finally {
-      setLoading(false);
     }
-  }, [passwords]);
+  }, [passwords, changePasswordMutation]);
 
   const handleImageUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,32 +137,28 @@ export function useMemberProfile(token: string | null) {
       if (!file) return;
 
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size must be less than 5MB");
+        notifier.error(null, MESSAGES.VALIDATION.FILE_SIZE_ERROR);
         return;
       }
 
       try {
-        setLoading(true);
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder", "profiles");
 
-        const res = await api.post(API_ROUTES.UPLOAD.BASE, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const res = await uploadAvatarMutation(formData).unwrap();
 
-        if (res.data.success) {
-          setProfileImage(res.data.data.url);
-          toast.success("Image uploaded successfully");
+        if (res?.url) {
+          setProfileImage(res.url);
+          notifier.success(MESSAGES.AUTH.IMAGE_UPLOAD_SUCCESS);
         }
       } catch (err) {
-        toast.error(getFriendlyError(err, "Failed to upload image"));
+        notifier.error(err, "Failed to upload image");
       } finally {
-        setLoading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [],
+    [uploadAvatarMutation],
   );
 
   const removeImage = useCallback(() => {

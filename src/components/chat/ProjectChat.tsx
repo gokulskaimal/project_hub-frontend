@@ -6,6 +6,9 @@ import {
   useLayoutEffect,
 } from "react";
 import { useSocket } from "@/context/SocketContext";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
+import { confirmWithAlert } from "@/utils/confirm";
 import {
   Send,
   Paperclip,
@@ -14,6 +17,7 @@ import {
   Edit2,
   X,
   Check,
+  Loader2,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
@@ -29,7 +33,7 @@ interface ChatMessage {
   content: string;
   createdAt: string;
   updatedAt?: string;
-  type: "TEXT" | "FILE";
+  type: "TEXT" | "FILE" | "IMAGE" | "SYSTEM" | "ACTIVITY";
   fileUrl?: string;
 }
 
@@ -98,7 +102,6 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
     // Reset state on project change
     setMessages([]);
     setNextCursor(null);
-    setNextCursor(null);
     setInitialLoaded(false);
     fetchMessages();
   }, [projectId, fetchMessages]);
@@ -130,16 +133,14 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
     socket.emit("join-project", projectId);
 
     const handleMessage = (msg: ChatMessage) => {
-      // Prevent duplicate messages - only add if not already in the list
       setMessages((prev) => {
         const messageExists = prev.some((m) => m.id === msg.id);
         if (messageExists) {
-          return prev; // Message already exists, don't add duplicate
+          return prev;
         }
         return [...prev, msg];
       });
 
-      // Only scroll to bottom if we are already near bottom or if I sent the message
       if (scrollContainerRef.current) {
         const { scrollTop, scrollHeight, clientHeight } =
           scrollContainerRef.current;
@@ -156,29 +157,30 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
       );
     };
 
-    const handleDelete = ({ messageId }: { messageId: string }) => {
+    const handleDeleteEvent = ({ messageId }: { messageId: string }) => {
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
     };
 
     socket.on("chat:message", handleMessage);
     socket.on("chat:updated", handleUpdate);
-    socket.on("chat:deleted", handleDelete);
+    socket.on("chat:deleted", handleDeleteEvent);
 
     return () => {
       socket.off("chat:message", handleMessage);
       socket.off("chat:updated", handleUpdate);
-      socket.off("chat:deleted", handleDelete);
+      socket.off("chat:deleted", handleDeleteEvent);
       socket.emit("leave-project", projectId);
     };
   }, [socket, projectId, user?.id]);
 
+  const [isSending, setIsSending] = useState(false);
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || isSending) return;
 
     const messageContent = newMessage;
-    // Clear input immediately for better UX
     setNewMessage("");
+    setIsSending(true);
 
     try {
       const res = await api.post(
@@ -190,16 +192,23 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
         { skipGlobalLoader: true },
       );
 
-      // Add message to state immediately from API response (optimistic update)
       if (res.data.success && res.data.data) {
         const newMsg = res.data.data;
-        setMessages((prev) => [...prev, newMsg]);
-        // Scroll to bottom to show the new message
+        setMessages((prev) => {
+          const exists = prev.some((m) => m.id === newMsg.id);
+          if (exists) return prev;
+          return [...prev, newMsg];
+        });
         setTimeout(scrollToBottom, 50);
+        // Silent success is usually better for chat, but let's add a small toast if it helps the user feel confident
       }
     } catch (err) {
       console.error("Failed to send", err);
-      // Optionally show error toast
+      notifier.error(err, MESSAGES.CHAT.SEND_FAILED);
+      // Restore the message so they can try again
+      setNewMessage(messageContent);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -207,9 +216,8 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      // 5MB limit
-      alert("File too large (max 5MB)");
+    if (file.size > 10 * 1024 * 1024) {
+      notifier.error(null, MESSAGES.VALIDATION.FILE_SIZE_ERROR);
       return;
     }
 
@@ -234,17 +242,15 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
           { skipGlobalLoader: true },
         );
 
-        // Add file message to state immediately from API response (optimistic update)
         if (messageRes.data.success && messageRes.data.data) {
           const newMsg = messageRes.data.data;
           setMessages((prev) => [...prev, newMsg]);
-          // Scroll to bottom to show the new message
           setTimeout(scrollToBottom, 50);
         }
       }
     } catch (err) {
       console.error("Upload failed", err);
-      alert("Failed to upload file");
+      notifier.error(err, MESSAGES.CHAT.UPLOAD_FAILED);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -264,24 +270,32 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
         { skipGlobalLoader: true },
       );
       setEditingId(null);
+      notifier.success(MESSAGES.GENERAL.SUCCESS);
     } catch (err) {
       console.error("Failed to edit", err);
+      notifier.error(err, MESSAGES.CHAT.EDIT_FAILED);
     }
   };
 
-  const handleDelete = async (messageId: string) => {
-    if (!confirm("Delete this message?")) return;
-    try {
-      await api.delete(API_ROUTES.CHAT.MESSAGE(messageId), {
-        skipGlobalLoader: true,
-      });
-    } catch (err) {
-      console.error("Failed to delete", err);
+  const handleDeleteMessage = async (messageId: string) => {
+    const confirmed = await confirmWithAlert(
+      MESSAGES.CHAT.DELETE_CONFIRM,
+      "This action cannot be undone.",
+    );
+    if (confirmed) {
+      try {
+        await api.delete(API_ROUTES.CHAT.MESSAGE(messageId), {
+          skipGlobalLoader: true,
+        });
+        notifier.success(MESSAGES.GENERAL.SUCCESS);
+      } catch (err) {
+        notifier.error(err, MESSAGES.CHAT.DELETE_FAILED);
+      }
     }
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[600px] bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
         <h3 className="font-bold text-gray-700">Team Chat</h3>
         <span className="text-xs text-gray-400">Live</span>
@@ -304,6 +318,22 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
             minute: "2-digit",
           });
 
+          if (msg.type === "ACTIVITY" || msg.type === "SYSTEM") {
+            return (
+              <div key={idx} className="flex justify-center my-4 px-12">
+                <div className="bg-gray-50 border border-gray-100 rounded-full px-4 py-1.5 flex items-center gap-2 group/activity hover:bg-white transition-all">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 group-hover/activity:scale-125 transition-transform" />
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                    {msg.content}
+                  </p>
+                  <span className="text-[9px] text-gray-300 font-medium ml-1">
+                    {time}
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div
               key={idx}
@@ -315,8 +345,8 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
                 <div
                   className={`relative px-4 py-2 shadow-sm ${
                     isMe
-                      ? "bg-blue-600 text-white rounded-2xl rounded-tr-none"
-                      : "bg-gray-100 text-gray-900 rounded-2xl rounded-tl-none"
+                      ? "bg-blue-600 text-white rounded-xl rounded-tr-none"
+                      : "bg-gray-100 text-gray-900 rounded-xl rounded-tl-none"
                   }`}
                 >
                   {!isMe && (
@@ -336,19 +366,18 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
                   )}
 
                   {editingId === msg.id ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-black">
                       <input
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
                         placeholder="Edit message..."
-                        className="text-black text-sm px-2 py-1 rounded border border-gray-300 outline-none"
+                        className="text-black text-sm px-2 py-1 rounded border border-gray-300 outline-none w-full"
                         autoFocus
                       />
                       <button
                         onClick={() => handleSaveEdit(msg.id)}
                         className="p-1 hover:bg-green-100 rounded-full text-green-600"
                         title="Save edit"
-                        aria-label="Save edit"
                       >
                         <Check size={14} />
                       </button>
@@ -356,12 +385,12 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
                         onClick={() => setEditingId(null)}
                         className="p-1 hover:bg-red-100 rounded-full text-red-600"
                         title="Cancel edit"
-                        aria-label="Cancel edit"
                       >
                         <X size={14} />
                       </button>
                     </div>
-                  ) : msg.type === "FILE" && msg.fileUrl ? (
+                  ) : (msg.type === "FILE" || msg.type === "IMAGE") &&
+                    msg.fileUrl ? (
                     <div className="mt-1">
                       <a
                         href={msg.fileUrl}
@@ -369,16 +398,17 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
                         rel="noopener noreferrer"
                         className="block"
                       >
-                        {msg.fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                        {msg.type === "IMAGE" ||
+                        msg.fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                           <Image
                             src={msg.fileUrl}
                             alt="attachment"
                             width={200}
                             height={200}
-                            className="max-w-[200px] h-auto rounded-lg border border-gray-200"
+                            className="max-w-[200px] h-auto rounded-xl border border-gray-200"
                           />
                         ) : (
-                          <div className="flex items-center gap-2 p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                          <div className="flex items-center gap-2 p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
                             <Paperclip size={16} />
                             <span className="text-xs underline truncate max-w-[150px]">
                               {msg.content || "Download File"}
@@ -407,15 +437,13 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
                           onClick={() => handleEditClick(msg)}
                           className="p-1 hover:bg-gray-100 rounded text-gray-500"
                           title="Edit message"
-                          aria-label="Edit message"
                         >
                           <Edit2 size={12} />
                         </button>
                         <button
-                          onClick={() => handleDelete(msg.id)}
+                          onClick={() => handleDeleteMessage(msg.id)}
                           className="p-1 hover:bg-red-50 rounded text-red-500"
                           title="Delete message"
-                          aria-label="Delete message"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -438,8 +466,8 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
           type="file"
           ref={fileInputRef}
           className="hidden"
+          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip"
           onChange={handleFileSelect}
-          aria-label="Select file to upload"
         />
         <button
           type="button"
@@ -451,7 +479,6 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
               : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
           }`}
           title="Attach file"
-          aria-label="Attach file"
         >
           <Paperclip className="w-5 h-5" />
         </button>
@@ -460,16 +487,19 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
-          aria-label="Message input"
           className="flex-1 bg-gray-50 border-0 rounded-full px-4 focus:ring-2 focus:ring-blue-100 outline-none text-gray-900 placeholder:text-gray-400"
         />
         <button
           type="submit"
-          className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-sm"
+          disabled={isSending || !newMessage.trim()}
+          className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
           title="Send message"
-          aria-label="Send message"
         >
-          <Send className="w-5 h-5" />
+          {isSending ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Send className="w-5 h-5" />
+          )}
         </button>
       </form>
     </div>

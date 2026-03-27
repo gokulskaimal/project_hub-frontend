@@ -1,19 +1,8 @@
-import { api, API_ROUTES } from "../../utils/api";
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { getFriendlyError } from "../../utils/errors";
-
-export interface UserProfile {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  name?: string;
-  role: string;
-  orgId?: string;
-  status?: string;
-  lastLoginAt?: string | Date;
-  avatar?: string;
-}
+import { createSlice, PayloadAction, isAnyOf } from "@reduxjs/toolkit";
+import { apiSlice } from "../../store/api/apiSlice";
+import { authApiSlice } from "../../store/api/authApiSlice";
+import { userApiSlice } from "../../store/api/userApiSlice";
+import { UserProfile } from "@/types/auth";
 
 interface AuthState {
   email: string;
@@ -50,184 +39,16 @@ const baseInitialState: AuthState = {
   user: null,
 };
 
-// [REMOVED] loadPersistedAuth (Moved to hydratoFromStorage action)
-// const loadPersistedAuth = ...
-
 const initialState: AuthState = { ...baseInitialState };
 
 const normalizeRole = (role: string | null): string | null => {
   if (!role) return null;
-  // Normalize by lowercasing and converting spaces/underscores to hyphens
-  return role.toLowerCase().replace(/[\s_]+/g, "-");
+  // Standardize to uppercase and underscores (e.g., "ORG_MANAGER") to match server and constants
+  return role
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
 };
-
-export const acceptInvite = createAsyncThunk<
-  void,
-  { token: string; password: string; firstName: string; lastName: string },
-  { rejectValue: string }
->(
-  API_ROUTES.AUTH.ACCEPT_INVITE,
-  async ({ token, password, firstName, lastName }, thunkAPI) => {
-    try {
-      await api.post(API_ROUTES.AUTH.ACCEPT_INVITE, {
-        token,
-        password,
-        firstName,
-        lastName,
-      });
-    } catch (err: unknown) {
-      return thunkAPI.rejectWithValue(getFriendlyError(err, "Network error"));
-    }
-  },
-);
-
-export const registerManager = createAsyncThunk<
-  { organizationId: string; invitationToken: string; otpExpiresAt: string },
-  { email: string; organizationName: string },
-  { rejectValue: string }
->(API_ROUTES.AUTH.REGISTER_MANAGER, async (payload, thunkAPI) => {
-  try {
-    const res = await api.post(API_ROUTES.AUTH.REGISTER_MANAGER, payload);
-    // API returns { success, message, data: { organizationId, invitationToken, otpExpiresAt } }
-    const data = res.data?.data;
-    if (data?.organizationId && data?.otpExpiresAt) {
-      return {
-        organizationId: data.organizationId,
-        invitationToken: data.invitationToken,
-        otpExpiresAt: data.otpExpiresAt,
-      };
-    }
-    return thunkAPI.rejectWithValue("Invalid register response");
-  } catch (err: unknown) {
-    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network error"));
-  }
-});
-
-export const fetchProfile = createAsyncThunk<
-  UserProfile,
-  void,
-  { rejectValue: string }
->("auth/fetchProfile", async (_, thunkAPI) => {
-  try {
-    const res = await api.get(API_ROUTES.USER.PROFILE);
-    const data = res.data?.data;
-    if (data) {
-      return data as UserProfile;
-    }
-    return thunkAPI.rejectWithValue("Failed to load profile");
-  } catch (err: unknown) {
-    return thunkAPI.rejectWithValue(
-      getFriendlyError(err, "Failed to load profile"),
-    );
-  }
-});
-
-export const googleSignIn = createAsyncThunk<
-  { accessToken: string; role: string; user: UserProfile },
-  { idToken: string; inviteToken?: string; orgName?: string },
-  { rejectValue: string }
->("auth/googleSignIn", async ({ idToken, inviteToken, orgName }, thunkAPI) => {
-  try {
-    const response = await api.post(API_ROUTES.AUTH.GOOGLE_SIGNIN, {
-      idToken,
-      inviteToken,
-      orgName,
-    });
-    const { accessToken, user } = response.data.data;
-    if (accessToken && user?.role) {
-      return { accessToken, role: user.role, user };
-    }
-    return thunkAPI.rejectWithValue("Invalid Google sign-in response");
-  } catch (err: unknown) {
-    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network error"));
-  }
-});
-
-export const loginUser = createAsyncThunk<
-  { accessToken: string; role: string; user: UserProfile },
-  { email: string; password: string },
-  { rejectValue: string }
->("auth/loginUser", async (credentials, thunkAPI) => {
-  try {
-    // Normal API login - server handles super admin credential check
-    const response = await api.post(API_ROUTES.AUTH.LOGIN, credentials);
-    // API returns { success, message, data: { accessToken, role, ... } }
-    const payload =
-      response.data && response.data.data ? response.data.data : null;
-    if (payload && payload.accessToken && payload.user?.role) {
-      return {
-        accessToken: payload.accessToken,
-        role: payload.user.role,
-        user: payload.user,
-      };
-    }
-    return thunkAPI.rejectWithValue("Invalid login response");
-  } catch (err: unknown) {
-    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network error"));
-  }
-});
-
-export const sendOtp = createAsyncThunk<
-  void,
-  { email: string },
-  { rejectValue: string }
->("auth/sendOtp", async ({ email }, thunkAPI) => {
-  try {
-    await api.post(API_ROUTES.AUTH.SEND_OTP, { email });
-  } catch (err: unknown) {
-    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network Error"));
-  }
-});
-
-export const resendOtp = createAsyncThunk<
-  void,
-  { email: string },
-  { rejectValue: string }
->("auth/resendOtp", async ({ email }, thunkAPI) => {
-  try {
-    await api.post(API_ROUTES.AUTH.SEND_OTP, { email });
-  } catch (err: unknown) {
-    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network Error"));
-  }
-});
-
-export const verifyOtp = createAsyncThunk<
-  void,
-  { email: string; otp: string },
-  { rejectValue: string }
->("auth/verifyOtp", async ({ email, otp }, thunkAPI) => {
-  try {
-    const response = await api.post(API_ROUTES.AUTH.VERIFY_OTP, { email, otp });
-
-    const data = response.data?.data;
-    if (!data?.verified) {
-      const message = data?.message || "OTP verification failed";
-      return thunkAPI.rejectWithValue(message);
-    }
-  } catch (err: unknown) {
-    return thunkAPI.rejectWithValue(getFriendlyError(err, "Network Error"));
-  }
-});
-
-export const completeSignup = createAsyncThunk<
-  void,
-  { email: string; firstName: string; lastName: string; password: string },
-  { rejectValue: string }
->(
-  "auth/completeSignup",
-  async ({ email, firstName, lastName, password }, thunkAPI) => {
-    try {
-      await api.post(API_ROUTES.AUTH.COMPLETE_SIGNUP, {
-        email,
-        password,
-        firstName,
-        lastName,
-      });
-    } catch (err: unknown) {
-      return thunkAPI.rejectWithValue(getFriendlyError(err, "Network Error"));
-    }
-  },
-);
 
 const authSlice = createSlice({
   name: "auth",
@@ -291,199 +112,79 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginUser.pending, (state) => {
+      // RTK Query Matchers
+      .addMatcher(authApiSlice.endpoints.login.matchPending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isLoggedIn = true;
-        state.error = null;
-        state.accessToken = action.payload.accessToken;
-        state.role = normalizeRole(action.payload.role);
-        if (action.payload.user) {
-          action.payload.user.role =
-            normalizeRole(action.payload.user.role) || action.payload.user.role;
-        }
-        state.user = action.payload.user;
-        try {
-          if (typeof window !== "undefined") {
-            localStorage.setItem("accessToken", action.payload.accessToken);
-            // Store normalized role to ensure consistency on reload
-            localStorage.setItem("role", state.role || "");
-          }
-        } catch {}
-      })
-      .addCase(loginUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "Failed to Login";
-        state.isLoggedIn = false;
-        state.accessToken = null;
-        state.user = null;
-      })
-      .addCase(sendOtp.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(sendOtp.fulfilled, (state) => {
-        state.loading = false;
-        state.signupStep = 2;
-        state.otpResendAvailableAt = Date.now() + 60_000;
-      })
-      .addCase(sendOtp.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "Failed to send OTP";
-      })
-      .addCase(resendOtp.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(resendOtp.fulfilled, (state) => {
-        state.loading = false;
-        state.otpResendAvailableAt = Date.now() + 60_000;
-      })
-      .addCase(resendOtp.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "Failed to resend OTP";
-      })
-      .addCase(verifyOtp.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(verifyOtp.fulfilled, (state) => {
+      .addMatcher(
+        isAnyOf(
+          authApiSlice.endpoints.login.matchFulfilled,
+          authApiSlice.endpoints.googleSignIn.matchFulfilled,
+        ),
+        (state, action) => {
+          state.loading = false;
+          state.isLoggedIn = true;
+          state.error = null;
+          state.accessToken = action.payload.accessToken;
+          state.role = normalizeRole(action.payload.user.role);
+          state.user = {
+            ...action.payload.user,
+            role: state.role || action.payload.user.role,
+          };
+
+          try {
+            if (typeof window !== "undefined") {
+              localStorage.setItem("accessToken", action.payload.accessToken);
+              localStorage.setItem("role", state.role || "");
+            }
+          } catch {}
+        },
+      )
+      .addMatcher(
+        isAnyOf(
+          authApiSlice.endpoints.login.matchRejected,
+          authApiSlice.endpoints.googleSignIn.matchRejected,
+        ),
+        (state, action) => {
+          state.loading = false;
+          const payload = action.payload as
+            | { data?: { error?: { message?: string }; message?: string } }
+            | undefined;
+          state.error =
+            payload?.data?.error?.message ||
+            payload?.data?.message ||
+            "Authentication failed";
+          state.isLoggedIn = false;
+        },
+      )
+      .addMatcher(
+        userApiSlice.endpoints.getProfile.matchFulfilled,
+        (state, action) => {
+          state.loading = false;
+          const role = normalizeRole(action.payload.role);
+          state.user = {
+            ...action.payload,
+            role: role || action.payload.role,
+          };
+          state.role = role;
+          state.error = null;
+        },
+      )
+      .addMatcher(authApiSlice.endpoints.verifyOtp.matchFulfilled, (state) => {
         state.loading = false;
         state.signupStep = 3;
         state.otpResendAvailableAt = null;
       })
-      .addCase(verifyOtp.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "OTP verification failed";
-      })
-      .addCase(completeSignup.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(completeSignup.fulfilled, (state) => {
-        state.loading = false;
-        state.signupStep = 1;
-        state.email = "";
-        state.otp = "";
-        state.name = "";
-        state.password = "";
-        state.error = null;
-        state.otpResendAvailableAt = null;
-      })
-      .addCase(completeSignup.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string" ? action.payload : "Signup failed";
-      })
-      .addCase(registerManager.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(registerManager.fulfilled, (state, action) => {
-        state.loading = false;
-        state.signupStep = 2;
-        state.error = null;
-        // Use server-provided expiry time to ensure timer matches backend
-        // Parse the otpExpiresAt ISO string and convert to milliseconds
-        const expiresAt = new Date(action.payload.otpExpiresAt).getTime();
-        state.otpResendAvailableAt = expiresAt;
-      })
-      .addCase(registerManager.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "Registration failed";
-      })
-      .addCase(acceptInvite.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(acceptInvite.fulfilled, (state) => {
-        state.loading = false;
-        state.error = null;
-      })
-      .addCase(acceptInvite.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "Accept invite failed";
-      })
-      .addCase(googleSignIn.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(googleSignIn.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isLoggedIn = true;
-        state.error = null;
-        state.accessToken = action.payload.accessToken;
-        state.role = normalizeRole(action.payload.role);
-        if (action.payload.user) {
-          action.payload.user.role =
-            normalizeRole(action.payload.user.role) || action.payload.user.role;
-        }
-        state.user = action.payload.user;
-        try {
-          if (typeof window !== "undefined") {
-            localStorage.setItem("accessToken", action.payload.accessToken);
-            // Store normalized role to ensure consistency on reload
-            localStorage.setItem("role", state.role || "");
-          }
-        } catch {}
-      })
-      .addCase(googleSignIn.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          typeof action.payload === "string"
-            ? action.payload
-            : "Failed to sign in with Google";
-        state.isLoggedIn = false;
-        state.accessToken = null;
-      })
-      .addCase(fetchProfile.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchProfile.fulfilled, (state, action) => {
-        state.loading = false;
-        if (action.payload) {
-          action.payload.role =
-            normalizeRole(action.payload.role) || action.payload.role;
-        }
-        state.user = action.payload;
-        state.error = null;
-      })
-      .addCase(fetchProfile.rejected, (state, action) => {
-        state.isLoggedIn = false;
-        state.accessToken = null;
-        state.user = null;
-        state.role = null;
-        try {
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("role");
-          }
-        } catch (err) {
-          console.log(err);
-        }
-      });
+      .addMatcher(
+        authApiSlice.endpoints.registerManager.matchFulfilled,
+        (state, action) => {
+          state.loading = false;
+          state.signupStep = 2;
+          const expiresAt = new Date(action.payload.otpExpiresAt).getTime();
+          state.otpResendAvailableAt = expiresAt;
+        },
+      );
   },
 });
 

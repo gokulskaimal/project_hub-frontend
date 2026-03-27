@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Task } from "@/services/taskService";
+import { Task } from "@/types/project";
 
 export function useTaskFilters(initialTasks: Task[]) {
   const [searchQuery, setSearchQuery] = useState("");

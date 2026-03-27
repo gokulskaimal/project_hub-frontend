@@ -5,10 +5,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch, RootState } from "@/store/store";
 import {
-  fetchNotifications,
-  markRead,
-  markAllRead,
-} from "@/features/notification/notification";
+  useGetNotificationsQuery,
+  useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
+} from "@/store/api/userApiSlice";
+import { Notification } from "@/types/notification";
 import {
   Bell,
   Check,
@@ -21,21 +22,21 @@ import {
 export default function NotificationBell() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { items, unreadCount, loading } = useSelector(
-    (state: RootState) => state.notification,
-  );
+
+  const { data: items = [], isLoading: loading } = useGetNotificationsQuery();
+  const [markAsRead] = useMarkNotificationAsReadMutation();
+  const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
+
+  const unreadCount = items.filter((n: Notification) => !n.isRead).length;
+
   const [activeTab, setActiveTab] = useState<"unread" | "read">("unread");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const unreadItems = items.filter((n) => !n.isRead);
-  const readItems = items.filter((n) => n.isRead);
+  const unreadItems = items.filter((n: Notification) => !n.isRead);
+  const readItems = items.filter((n: Notification) => n.isRead);
 
   const displayedItems = activeTab === "unread" ? unreadItems : readItems;
-
-  useEffect(() => {
-    dispatch(fetchNotifications());
-  }, [dispatch]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -51,13 +52,13 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleMarkRead = (id: string, e: React.MouseEvent) => {
+  const handleMarkRead = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch(markRead(id));
+    await markAsRead(id).unwrap();
   };
 
-  const handleMarkAllRead = () => {
-    dispatch(markAllRead());
+  const handleMarkAllRead = async () => {
+    await markAllAsRead().unwrap();
   };
 
   const getIcon = (type: string) => {
@@ -96,7 +97,7 @@ export default function NotificationBell() {
   }) => {
     // Mark as read if not already
     if (!notification.isRead) {
-      dispatch(markRead(notification.id));
+      markAsRead(notification.id);
     }
 
     // Navigate if link exists
@@ -137,10 +138,10 @@ export default function NotificationBell() {
               )}
             </div>
 
-            <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
+            <div className="flex space-x-2 bg-gray-100 p-1 rounded-xl">
               <button
                 onClick={() => setActiveTab("unread")}
-                className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                className={`flex-1 py-1 text-xs font-medium rounded-xl transition-all ${
                   activeTab === "unread"
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
@@ -150,7 +151,7 @@ export default function NotificationBell() {
               </button>
               <button
                 onClick={() => setActiveTab("read")}
-                className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                className={`flex-1 py-1 text-xs font-medium rounded-xl transition-all ${
                   activeTab === "read"
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
@@ -168,7 +169,7 @@ export default function NotificationBell() {
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
-                {displayedItems.map((notification) => (
+                {displayedItems.map((notification: Notification) => (
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
@@ -193,10 +194,10 @@ export default function NotificationBell() {
                     {!notification.isRead && (
                       <button
                         onClick={(e) => handleMarkRead(notification.id, e)}
-                        className="shrink-0 text-gray-400 hover:text-blue-600 p-1 opacity-100 transition-opacity"
+                        className="shrink-0 p-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 group/mark flex items-center justify-center border border-blue-100 shadow-sm"
                         title="Mark as read"
                       >
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <Check size={12} strokeWidth={3} />
                       </button>
                     )}
                   </div>

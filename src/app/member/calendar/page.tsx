@@ -1,36 +1,32 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
-import { taskService, Task } from "@/services/taskService";
-import { projectService, Project } from "@/services/projectService";
-import { toast } from "react-hot-toast";
+import {
+  useGetMyTasksQuery,
+  useGetMyProjectsQuery,
+} from "@/store/api/projectApiSlice";
+
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 export default function GlobalCalendarPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: tasks = [],
+    isLoading: tasksLoading,
+    refetch: refetchTasks,
+  } = useGetMyTasksQuery();
+  const {
+    data: projects = [],
+    isLoading: projectsLoading,
+    refetch: refetchProjects,
+  } = useGetMyProjectsQuery();
 
-  const fetchAllData = async () => {
-    try {
-      setLoading(true);
-      const [myTasks, myProjects] = await Promise.all([
-        taskService.getMyTasks(),
-        projectService.getMyProjects(),
-      ]);
-      setTasks(myTasks);
-      setProjects(myProjects);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load calendar data");
-    } finally {
-      setLoading(false);
-    }
+  const loading = tasksLoading || projectsLoading;
+
+  const handleTaskUpdate = () => {
+    refetchTasks();
+    refetchProjects();
   };
-
-  useEffect(() => {
-    fetchAllData();
-  }, []);
 
   if (loading) {
     return (
@@ -41,21 +37,36 @@ export default function GlobalCalendarPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-gray-900">My Calendar</h1>
-        <p className="text-sm text-gray-500">
-          View your deadlines and active projects.
-        </p>
-      </div>
+    <DashboardLayout title="Calendar">
+      <div className="space-y-8 pb-12">
+        {/* Calendar Banner */}
+        <div className="relative overflow-hidden rounded-xl bg-gray-900 px-6 py-10 sm:px-10 sm:py-12 text-white shadow-xl">
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 rounded-full bg-indigo-600/10 blur-3xl" />
 
-      <TaskCalendar
-        tasks={tasks}
-        projects={projects}
-        projectId={undefined} // Undefined = Global Mode
-        projectMembers={[]} // We don't pass project members here for simplified view
-        onTaskUpdate={fetchAllData}
-      />
-    </div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
+                Schedule
+              </span>
+            </div>
+            <h1 className="text-3xl font-black tracking-tight mb-2">
+              Workspace Schedule
+            </h1>
+            <p className="text-gray-400 text-sm font-medium max-w-xl">
+              Track deadlines, milestones, and project timelines across your
+              entire organization in one unified view.
+            </p>
+          </div>
+        </div>
+
+        <TaskCalendar
+          tasks={tasks}
+          projects={projects}
+          projectId={undefined} // Undefined = Global Mode
+          projectMembers={[]} // We don't pass project members here for simplified view
+          onTaskUpdate={handleTaskUpdate}
+        />
+      </div>
+    </DashboardLayout>
   );
 }

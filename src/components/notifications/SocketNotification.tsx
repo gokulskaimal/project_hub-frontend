@@ -2,35 +2,42 @@
 import { useEffect } from "react";
 import { useSocket } from "@/context/SocketContext";
 import { useDispatch } from "react-redux";
-import { addNotification } from "@/features/notification/notification";
-import { toast } from "react-hot-toast";
+import { AppDispatch } from "@/store/store";
+import { userApiSlice } from "@/store/api/userApiSlice";
+import { notifier } from "@/utils/notifier";
+import { Notification } from "@/types/notification";
 
 export default function SocketNotification() {
   const { socket, isConnected } = useSocket();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    const handleNotification = (notification: {
-      id: string;
-      type: "SUCCESS" | "WARNING" | "ERROR" | "INFO";
-      title: string;
-      message: string;
-      isRead: boolean;
-      createdAt: string;
-      link?: string;
-      [key: string]: unknown;
-    }) => {
-      // Add to Redux Store
-      dispatch(addNotification(notification));
+    const handleNotification = (notification: Notification) => {
+      // Update RTK Query Cache for getNotifications
+      dispatch(
+        userApiSlice.util.updateQueryData(
+          "getNotifications",
+          undefined,
+          (draft: Notification[]) => {
+            const exists = draft.some(
+              (n: Notification) => n.id === notification.id,
+            );
+            if (!exists) {
+              draft.unshift(notification);
+            }
+          },
+        ),
+      );
 
       // Show Toast only if it's NOT a chat message (ChatNotificationListener handles that)
       if (notification.title !== "New Chat Message") {
-        toast(notification.message, {
-          icon: notification.type === "SUCCESS" ? "✅" : "ℹ️",
-          duration: 4000,
-        });
+        if (notification.type === "SUCCESS") {
+          notifier.success(notification.message);
+        } else {
+          notifier.info(notification.message);
+        }
       }
     };
 

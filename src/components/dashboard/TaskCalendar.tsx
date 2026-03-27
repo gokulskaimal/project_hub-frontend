@@ -16,10 +16,10 @@ import {
   ChevronRight,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { Task } from "@/services/taskService";
-import { Project } from "@/services/projectService";
+import { Sprint, Task, Project } from "@/types/project";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
-import { User } from "@/services/userService";
+import { User } from "@/types/auth";
+import { getPriorityColor, getStatusColor } from "@/utils/projectUtils";
 
 interface TaskCalendarProps {
   tasks: Task[];
@@ -56,20 +56,6 @@ export default function TaskCalendar({
   });
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "CRITICAL":
-      case "HIGH":
-        return "bg-red-100 text-red-700 border-red-200";
-      case "MEDIUM":
-        return "bg-amber-100 text-amber-700 border-amber-200";
-      case "LOW":
-        return "bg-green-100 text-green-700 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
-  };
 
   const handleTaskClick = (e: React.MouseEvent, task: Task) => {
     e.stopPropagation();
@@ -111,13 +97,13 @@ export default function TaskCalendar({
           <div className="flex gap-2">
             <button
               onClick={prevMonth}
-              className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition-all text-gray-600 hover:text-gray-900 shadow-sm"
+              className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all text-gray-600 hover:text-gray-900 shadow-sm"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={nextMonth}
-              className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition-all text-gray-600 hover:text-gray-900 shadow-sm"
+              className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all text-gray-600 hover:text-gray-900 shadow-sm"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -175,7 +161,7 @@ export default function TaskCalendar({
                     <div
                       key={`proj-${project.id}`}
                       title={`Project Deadline: ${project.name}`}
-                      className="text-[10px] p-1.5 rounded border truncate select-none shadow-sm flex items-center justify-between bg-purple-100 text-purple-700 border-purple-200"
+                      className={`text-[10px] p-1.5 rounded border truncate select-none shadow-sm flex items-center justify-between ${getStatusColor("PLANNING")}`}
                     >
                       <span className="font-bold truncate w-full flex items-center gap-1">
                         🚀 {project.name}

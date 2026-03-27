@@ -8,10 +8,12 @@ export interface Plan {
   type: "STARTER" | "PRO" | "ENTERPRISE";
   isActive: boolean;
   razorpayPlanId: string;
+  interval?: "month" | "year";
   limits: {
     projects: number;
     members: number;
     storage?: number;
+    messages?: number;
   };
   createdAt: string;
   updatedAt: string;

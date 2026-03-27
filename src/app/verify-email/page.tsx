@@ -46,7 +46,7 @@ function VerifyEmailContent() {
   }, []);
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-xl text-center">
+    <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-xl text-center">
       {status === "verifying" && (
         <div className="flex flex-col items-center space-y-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
@@ -80,7 +80,7 @@ function VerifyEmailContent() {
           </p>
           <Link
             href="/login"
-            className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300"
+            className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300"
           >
             Continue to Login
           </Link>
@@ -111,7 +111,7 @@ function VerifyEmailContent() {
           <div className="flex gap-3 w-full mt-2">
             <Link
               href="/login"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Back to Login
             </Link>
