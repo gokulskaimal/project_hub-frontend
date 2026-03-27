@@ -56,8 +56,8 @@ export default function InvitesPage() {
     }
 
     result.sort((a, b) => {
-      let valA: any = "";
-      let valB: any = "";
+      let valA: string | number = "";
+      let valB: string | number = "";
 
       if (sortBy === "email") {
         valA = a.email?.toLowerCase() || "";

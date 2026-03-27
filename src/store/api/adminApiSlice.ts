@@ -3,6 +3,7 @@ import { API_ROUTES } from "@/utils/api";
 import type { Plan } from "@/types/plan";
 import type { AdminOrg, AdminUser, PaginatedResponse } from "@/types/project";
 import type { Invoice } from "@/types/invoice";
+import type { AdminReport } from "@/types/stats";
 
 const extractList = <T>(response: unknown): T[] => {
   if (Array.isArray(response)) return response as T[];
@@ -225,13 +226,13 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }) => response.data,
       providesTags: ["AdminInvoices"],
     }),
-    getAdminReports: builder.query<any, void>({
+    getAdminReports: builder.query<AdminReport, void>({
       query: () => ({
         url: API_ROUTES.ADMIN.REPORTS,
         method: "GET",
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: { data: any }) => response.data,
+      transformResponse: (response: { data: AdminReport }) => response.data,
       providesTags: ["AdminReports"],
     }),
   }),

@@ -24,6 +24,8 @@ import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
 import Link from "next/link";
 import { EntityCard } from "@/components/ui/EntityCard";
 import { getStatusColor } from "@/utils/projectUtils";
+import { User } from "@/types/auth";
+import { DashboardStats } from "@/types/stats";
 
 export default function ManagerDashboardPage() {
   const { data: organization } = useGetManagerOrganizationQuery();
@@ -55,7 +57,7 @@ export default function ManagerDashboardPage() {
   const onHoldProjects = projects.filter((p) => p.status === "ON_HOLD").length;
   const pendingInvites = invites.filter((i) => i.status === "PENDING").length;
 
-  const dashboardStats = {
+  const dashboardStats: DashboardStats = {
     total: members.length + pendingInvites,
     active: activeProjects,
     suspended: onHoldProjects,
@@ -153,14 +155,23 @@ export default function ManagerDashboardPage() {
                   }
                   footerLeft={project.members
                     ?.slice(0, 3)
-                    .map((m: any, i: number) => (
-                      <div
-                        key={i}
-                        className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-bold ring-2 ring-gray-50"
-                      >
-                        {m.firstName?.[0] || "U"}
-                      </div>
-                    ))}
+                    .map(
+                      (
+                        m: {
+                          firstName?: string;
+                          lastName?: string;
+                          email?: string;
+                        },
+                        i: number,
+                      ) => (
+                        <div
+                          key={i}
+                          className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-bold ring-2 ring-gray-50"
+                        >
+                          {m.firstName?.[0] || "U"}
+                        </div>
+                      ),
+                    )}
                   footerRight={`${project.members?.length || project.teamMemberIds?.length || 0} Members`}
                 />
               ))}

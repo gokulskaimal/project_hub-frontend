@@ -35,7 +35,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { EntityCard } from "@/components/ui/EntityCard";
 
 export default function ProjectsPage() {
-  const [isModaOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState("");

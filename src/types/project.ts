@@ -149,7 +149,8 @@ export interface CreateTaskPayload {
   projectId: string;
   title: string;
   description?: string;
-  priority?: Task["priority"];
+  priority: Task["priority"];
+  type: Task["type"];
   dueDate?: string | Date;
   assignedTo?: string;
   storyPoints?: number;
@@ -162,6 +163,7 @@ export interface UpdateTaskPayload {
   description?: string;
   status?: Task["status"];
   priority?: Task["priority"];
+  type?: Task["type"];
   dueDate?: string | Date;
   assignedTo?: string;
   storyPoints?: number;

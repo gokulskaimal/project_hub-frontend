@@ -24,7 +24,7 @@ import {
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { User } from "@/types/auth";
-import { Task } from "@/types/project";
+import { Task, CreateTaskPayload, UpdateTaskPayload } from "@/types/project";
 import { notifier } from "@/utils/notifier";
 import { MESSAGES } from "@/constants/messages";
 import { USER_ROLES, PRIORITY_LEVELS } from "@/utils/constants";
@@ -123,25 +123,33 @@ export default function CreateTaskModal({
     e.preventDefault();
     if (isLocked) return;
 
-    const data: any = {
-      projectId, // CRITICAL: Added to body
-      title,
-      description,
-      status,
-      priority,
-      type,
-      storyPoints: Number(storyPoints),
-      assignedTo: assignedTo || null,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-      sprintId: sprintId || null,
-    };
-
     try {
       if (isEdit && task) {
-        await updateTask({ id: task.id, data, projectId }).unwrap();
+        const updateData: UpdateTaskPayload = {
+          title,
+          description: description || undefined,
+          status,
+          priority,
+          type,
+          storyPoints: Number(storyPoints),
+          assignedTo: assignedTo || undefined,
+          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          sprintId: sprintId || undefined,
+        };
+        await updateTask({ id: task.id, data: updateData, projectId }).unwrap();
         notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
       } else {
-        await createTask({ projectId, data }).unwrap();
+        const createData: CreateTaskPayload = {
+          projectId,
+          title,
+          description: description || undefined,
+          priority,
+          type,
+          storyPoints: Number(storyPoints),
+          assignedTo: assignedTo || undefined,
+          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        };
+        await createTask({ projectId, data: createData }).unwrap();
         notifier.success(MESSAGES.TASKS.CREATE_SUCCESS);
       }
       onSuccess();

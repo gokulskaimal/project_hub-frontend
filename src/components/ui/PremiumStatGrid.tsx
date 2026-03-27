@@ -1,6 +1,7 @@
 import React from "react";
 import { LucideIcon } from "lucide-react";
 import { StatCard } from "./StatCard";
+import { DashboardStats } from "@/types/stats";
 
 interface StatItem {
   label: string;
@@ -17,13 +18,7 @@ interface StatItem {
 interface PremiumStatGridProps {
   items?: StatItem[];
   // For backward compatibility
-  stats?: {
-    total: number;
-    active: number;
-    suspended: number;
-    engagement?: number;
-    [key: string]: any;
-  };
+  stats?: DashboardStats & { [key: string]: unknown };
 }
 
 export default function PremiumStatGrid({
