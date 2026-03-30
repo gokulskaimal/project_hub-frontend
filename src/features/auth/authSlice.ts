@@ -1,216 +1,202 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from 'axios'
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, PayloadAction, isAnyOf } from "@reduxjs/toolkit";
+import { apiSlice } from "../../store/api/apiSlice";
+import { authApiSlice } from "../../store/api/authApiSlice";
+import { userApiSlice } from "../../store/api/userApiSlice";
+import { UserProfile } from "@/types/auth";
 
 interface AuthState {
-    email: string,
-    password: string,
-    isLoggedIn: boolean
-    error: string | null
-    loading: boolean
+  email: string;
+  password: string;
+  isLoggedIn: boolean;
+  error: string | null;
+  loading: boolean;
 
-    signupStep: number
-    otp: string
-    name: string
-    otpResendAvailableAt: number | null
-    accessToken: string | null
-    role: string | null
+  signupStep: number;
+  otp: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  otpResendAvailableAt: number | null;
+  accessToken: string | null;
+  role: string | null;
+  user: UserProfile | null;
 }
 
-const initialState: AuthState = {
-    email: '',
-    password: '',
-    isLoggedIn: false,
-    error: null,
-    loading: false,
-    signupStep: 1,
-    otp: '',
-    name: '',
-    otpResendAvailableAt: null,
-    accessToken : null,
-    role : null
-}
+const baseInitialState: AuthState = {
+  email: "",
+  password: "",
+  isLoggedIn: false,
+  error: null,
+  loading: false,
+  signupStep: 1,
+  otp: "",
+  name: "",
+  firstName: "",
+  lastName: "",
+  otpResendAvailableAt: null,
+  accessToken: null,
+  role: null,
+  user: null,
+};
 
-const api = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000'}/api`,
-  withCredentials: true,
-})
+const initialState: AuthState = { ...baseInitialState };
 
-export const loginUser = createAsyncThunk<{ accessToken: string; role: string }, { email: string, password: string }, { rejectValue: string }>(
-    'auth/loginUser',
-    async (credentials, thunkAPI) => {
-        try {
-            const response = await api.post('/auth/login', credentials)
-            return response.data
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                const message = err.response?.data?.message
-                if (message) {
-                    return thunkAPI.rejectWithValue(message)
-                }
-            }
-            return thunkAPI.rejectWithValue('Network error')
-        }
-    }
-)
-
-export const sendOtp = createAsyncThunk<void, { email: string }, { rejectValue: string }>(
-    'auth/sendOtp',
-    async ({ email }, thunkAPI) => {
-        try {
-            await api.post('/auth/send-otp', { email })
-        } catch (err: any) {
-            if (err.response?.data?.message) return thunkAPI.rejectWithValue(err.response.data.message)
-            return thunkAPI.rejectWithValue('Network Error')
-        }
-    }
-)
-
-export const resendOtp = createAsyncThunk<void, { email: string }, { rejectValue: string }>(
-    'auth/resendOtp',
-    async ({ email }, thunkAPI) => {
-        try {
-            await api.post('/auth/send-otp', { email })
-        } catch (err: any) {
-            if (err.response?.data?.message) return thunkAPI.rejectWithValue(err.response.data.message)
-            return thunkAPI.rejectWithValue('Network Error')
-        }
-    }
-)
-
-export const verifyOtp = createAsyncThunk<void, { email: string, otp: string }, { rejectValue: string }>(
-    'auth/verifyOtp',
-    async ({ email, otp }, thunkAPI) => {
-        try {
-            await api.post('/auth/verify-otp', { email, otp })
-        } catch (err: any) {
-            if (err.response?.data?.message) return thunkAPI.rejectWithValue(err.response.data.message)
-            return thunkAPI.rejectWithValue('Network Error')
-        }
-    }
-)
-
-export const completeSignup = createAsyncThunk<void, { email: string, name: string, password: string }, { rejectValue: string }>(
-    'auth/completeSignup',
-    async ({ email, name, password }, thunkAPI) => {
-        try {
-            await api.post('/auth/complete-signup', { email, name, password })
-        } catch (err: any) {
-            if (err.response?.data?.message) return thunkAPI.rejectWithValue(err.response.data.message)
-            return thunkAPI.rejectWithValue('Network Error')
-        }
-    }
-)
+const normalizeRole = (role: string | null): string | null => {
+  if (!role) return null;
+  // Standardize to uppercase and underscores (e.g., "ORG_MANAGER") to match server and constants
+  return role
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+};
 
 const authSlice = createSlice({
-    name: 'auth',
-    initialState,
-    reducers: {
-        setEmail(state, action: PayloadAction<string>) {
-            state.email = action.payload
-        },
-        setPassword(state, action: PayloadAction<string>) {
-            state.password = action.payload
-        },
-        setOtp(state, action: PayloadAction<string>) {
-            state.otp = action.payload
-        },
-        setName(state, action: PayloadAction<string>) {
-            state.name = action.payload
-        },
-        setSignupStep(state, action: PayloadAction<number>) {
-            state.signupStep = action.payload
-        },
-        logout(state) {
-            state.isLoggedIn = false
-            state.email = ''
-            state.password = ''
-            state.error = null
-            state.loading = false
-            state.signupStep = 1
-            state.otp = ''
-            state.name = ''
-            state.otpResendAvailableAt = null
-            state.accessToken = null
-            state.role = null
-        }
+  name: "auth",
+  initialState,
+  reducers: {
+    setEmail(state, action: PayloadAction<string>) {
+      state.email = action.payload;
     },
-    extraReducers: (builder) => {
-        builder.addCase(loginUser.pending, (state) => {
-            state.loading = true
-            state.error = null
-        })
-            .addCase(loginUser.fulfilled, (state , action) => {
-                state.loading = false
-                state.isLoggedIn = true
-                state.error = null
-                state.accessToken = action.payload.accessToken
-                state.role = action.payload.role
-            })
-            .addCase(loginUser.rejected, (state, action) => {
-                state.loading = false
-                state.error = (typeof action.payload === 'string') ? action.payload : 'Failed to Login'
-                state.isLoggedIn = false
-                state.accessToken = null
-            })
-            .addCase(sendOtp.pending, (state) => {
-                state.loading = true
-                state.error = null
-            })
-            .addCase(sendOtp.fulfilled, (state) => {
-                state.loading = false
-                state.signupStep = 2
-                state.otpResendAvailableAt = Date.now() + 60_000
-            })
-            .addCase(sendOtp.rejected, (state, action) => {
-                state.loading = false
-                state.error = (typeof action.payload === 'string') ? action.payload : 'Failed to send OTP'
-            })
-            .addCase(resendOtp.pending, (state) => {
-                state.loading = true
-                state.error = null
-            })
-            .addCase(resendOtp.fulfilled, (state) => {
-                state.loading = false
-                state.otpResendAvailableAt = Date.now() + 60_000
-            })
-            .addCase(resendOtp.rejected, (state, action) => {
-                state.loading = false
-                state.error = (typeof action.payload === 'string') ? action.payload : 'Failed to resend OTP'
-            })
-            .addCase(verifyOtp.pending, (state) => {
-                state.loading = true
-                state.error = null
-            })
-            .addCase(verifyOtp.fulfilled, (state) => {
-                state.loading = false
-                state.signupStep = 3
-                state.otpResendAvailableAt = null
-            })
-            .addCase(verifyOtp.rejected, (state, action) => {
-                state.loading = false
-                state.error = (typeof action.payload === 'string') ? action.payload : 'OTP verification failed'
-            })
-            .addCase(completeSignup.pending, (state) => {
-                state.loading = true
-                state.error = null
-            })
-            .addCase(completeSignup.fulfilled, (state) => {
-                state.loading = false
-                state.signupStep = 1
-                state.email = ''
-                state.otp = ''
-                state.name = ''
-                state.password = ''
-                state.error = null
-                state.otpResendAvailableAt = null
-            })
-            .addCase(completeSignup.rejected, (state, action) => {
-                state.loading = false
-                state.error = (typeof action.payload === 'string') ? action.payload : 'Signup failed'
-            })
-    }
-})
+    setPassword(state, action: PayloadAction<string>) {
+      state.password = action.payload;
+    },
+    setOtp(state, action: PayloadAction<string>) {
+      state.otp = action.payload;
+    },
+    setName(state, action: PayloadAction<string>) {
+      state.name = action.payload;
+    },
+    setFirstName(state, action: PayloadAction<string>) {
+      state.firstName = action.payload;
+    },
+    setLastName(state, action: PayloadAction<string>) {
+      state.lastName = action.payload;
+    },
+    setSignupStep(state, action: PayloadAction<number>) {
+      state.signupStep = action.payload;
+    },
+    hydrateFromStorage(state) {
+      try {
+        if (typeof window === "undefined") return;
+        const token = localStorage.getItem("accessToken");
+        const role = localStorage.getItem("role");
+        if (token && role) {
+          state.isLoggedIn = true;
+          state.accessToken = token;
+          state.role = normalizeRole(role);
+        }
+      } catch {}
+    },
+    logout(state) {
+      state.isLoggedIn = false;
+      state.email = "";
+      state.password = "";
+      state.error = null;
+      state.loading = false;
+      state.signupStep = 1;
+      state.otp = "";
+      state.name = "";
+      state.firstName = "";
+      state.lastName = "";
+      state.otpResendAvailableAt = null;
+      state.accessToken = null;
+      state.role = null;
+      state.user = null;
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("role");
+        }
+      } catch {}
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // RTK Query Matchers
+      .addMatcher(authApiSlice.endpoints.login.matchPending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addMatcher(
+        isAnyOf(
+          authApiSlice.endpoints.login.matchFulfilled,
+          authApiSlice.endpoints.googleSignIn.matchFulfilled,
+        ),
+        (state, action) => {
+          state.loading = false;
+          state.isLoggedIn = true;
+          state.error = null;
+          state.accessToken = action.payload.accessToken;
+          state.role = normalizeRole(action.payload.user.role);
+          state.user = {
+            ...action.payload.user,
+            role: state.role || action.payload.user.role,
+          };
 
-export const { setEmail, setPassword, logout, setOtp, setName, setSignupStep } = authSlice.actions
-export default authSlice.reducer
+          try {
+            if (typeof window !== "undefined") {
+              localStorage.setItem("accessToken", action.payload.accessToken);
+              localStorage.setItem("role", state.role || "");
+            }
+          } catch {}
+        },
+      )
+      .addMatcher(
+        isAnyOf(
+          authApiSlice.endpoints.login.matchRejected,
+          authApiSlice.endpoints.googleSignIn.matchRejected,
+        ),
+        (state, action) => {
+          state.loading = false;
+          const payload = action.payload as
+            | { data?: { error?: { message?: string }; message?: string } }
+            | undefined;
+          state.error =
+            payload?.data?.error?.message ||
+            payload?.data?.message ||
+            "Authentication failed";
+          state.isLoggedIn = false;
+        },
+      )
+      .addMatcher(
+        userApiSlice.endpoints.getProfile.matchFulfilled,
+        (state, action) => {
+          state.loading = false;
+          const role = normalizeRole(action.payload.role);
+          state.user = {
+            ...action.payload,
+            role: role || action.payload.role,
+          };
+          state.role = role;
+          state.error = null;
+        },
+      )
+      .addMatcher(authApiSlice.endpoints.verifyOtp.matchFulfilled, (state) => {
+        state.loading = false;
+        state.signupStep = 3;
+        state.otpResendAvailableAt = null;
+      })
+      .addMatcher(
+        authApiSlice.endpoints.registerManager.matchFulfilled,
+        (state, action) => {
+          state.loading = false;
+          state.signupStep = 2;
+          const expiresAt = new Date(action.payload.otpExpiresAt).getTime();
+          state.otpResendAvailableAt = expiresAt;
+        },
+      );
+  },
+});
+
+export const {
+  setEmail,
+  setPassword,
+  logout,
+  setOtp,
+  setName,
+  setSignupStep,
+  setFirstName,
+  setLastName,
+  hydrateFromStorage,
+} = authSlice.actions;
+export default authSlice.reducer;

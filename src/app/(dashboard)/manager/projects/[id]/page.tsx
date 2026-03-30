@@ -1,0 +1,563 @@
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
+import { confirmWithAlert } from "@/utils/confirm";
+import { extractErrorMessage } from "@/utils/api";
+import {
+  Pencil,
+  Trash2,
+  ArrowLeft,
+  Calendar,
+  User as UserIcon,
+  CheckCircle2,
+  Search,
+  LayoutGrid,
+  Layout,
+  Clock,
+  AlertCircle,
+  MessageSquare,
+  Rows,
+  Layers,
+  Play,
+  PenLine,
+  PanelRight,
+  Plus,
+  BarChart3,
+} from "lucide-react";
+import TaskCalendar from "@/components/dashboard/TaskCalendar";
+import KanbanBoard from "@/components/dashboard/KanbanBoard";
+import BacklogList from "@/components/dashboard/BacklogList";
+import { Task, Sprint } from "@/types/project";
+import { User } from "@/types/auth";
+import CreateTaskModal from "@/components/modals/CreateTaskModal";
+import CreateSprintModal from "@/components/modals/CreateSprintModal";
+import ProjectChat from "@/components/chat/ProjectChat";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import { useSocket } from "@/context/SocketContext";
+import { Button } from "@/components/ui/Button";
+import UserAvatar from "@/components/ui/UserAvatar";
+import VelocityChart from "@/components/analytics/VelocityChart";
+import SprintCapacity from "@/components/analytics/SprintCapacity";
+import SprintBurndownChart from "@/components/analytics/SprintBurndownChart";
+import StartSprintModal from "@/components/modals/StartSprintModal";
+import { useTaskFilters } from "@/hooks/useTaskFilters";
+import ProjectFilters from "@/components/project/ProjectFilters";
+import { USER_ROLES } from "@/utils/constants";
+import {
+  useGetProjectByIdQuery,
+  useGetProjectTasksQuery,
+  useGetProjectMembersQuery,
+  useGetProjectSprintsQuery,
+  useGetProjectVelocityQuery,
+  useDeleteTaskMutation,
+  useDeleteSprintMutation,
+  useUpdateSprintMutation,
+  useUpdateTaskMutation,
+  useCreateTaskMutation,
+} from "@/store/api/projectApiSlice";
+
+import ProjectDetailsHeader from "@/components/project/ProjectDetailsHeader";
+import ProjectDetailsSidebar from "@/components/project/ProjectDetailsSidebar";
+import ProjectStatsCards from "@/components/project/ProjectStatsCards";
+import SprintSelectorHeader from "@/components/project/SprintSelectorHeader";
+
+export default function ProjectDetailsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const projectId = params.id as string;
+
+  // Auth State
+  const role = useSelector((state: RootState) => state.auth.role);
+  const isManager =
+    role === USER_ROLES.ORG_MANAGER ||
+    role === USER_ROLES.SUPER_ADMIN ||
+    role === "ADMIN";
+
+  // RTK Query Hooks
+  const { data: project, isLoading: projectLoading } =
+    useGetProjectByIdQuery(projectId);
+  const {
+    data: tasks = [],
+    isLoading: tasksLoading,
+    refetch: refetchTasks,
+  } = useGetProjectTasksQuery(projectId);
+  const {
+    data: sprints = [],
+    isLoading: sprintsLoading,
+    refetch: refetchSprints,
+  } = useGetProjectSprintsQuery(projectId);
+  const { data: projectMembers = [], isLoading: membersLoading } =
+    useGetProjectMembersQuery(projectId);
+  const { data: velocityData } = useGetProjectVelocityQuery({
+    projectId,
+    days: 7,
+  });
+  const projectVelocity = velocityData?.totalPoints ?? null;
+
+  // Mutations
+  const [deleteTask] = useDeleteTaskMutation();
+  const [deleteSprint] = useDeleteSprintMutation();
+  const [updateSprint] = useUpdateSprintMutation();
+  const [updateTask] = useUpdateTaskMutation();
+  const [createTask] = useCreateTaskMutation();
+
+  const [activeTab, setActiveTab] = useState<
+    "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS"
+  >("TASKS");
+
+  // Filter & Search State via Custom Hook
+  const {
+    filteredTasks,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    assigneeFilter,
+    setAssigneeFilter,
+    priorityFilter,
+    setPriorityFilter,
+    typeFilter,
+    setTypeFilter,
+    dateFilter,
+    setDateFilter,
+  } = useTaskFilters(tasks);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
+  const [isStartSprintOpen, setIsStartSprintOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
+
+  // UI State: Sidebar Toggle (Professional Style)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Sprint State
+  const [selectedSprintId, setSelectedSprintId] = useState<string>("ACTIVE");
+
+  // Calculate stats
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t: Task) => t.status === "DONE").length;
+  const highPriorityTasks = tasks.filter(
+    (t: Task) => t.priority === "HIGH" || t.priority === "CRITICAL",
+  ).length;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingTasks = tasks.filter(
+    (t: Task) =>
+      t.dueDate && new Date(t.dueDate) >= today && t.status !== "DONE",
+  ).length;
+
+  // Get Team Members
+  const teamMembers = projectMembers;
+
+  // Determine Active Sprint & Selected Sprint
+  const activeSprint = sprints.find((s: Sprint) => s.status === "ACTIVE");
+  const selectedSprint =
+    selectedSprintId === "ACTIVE"
+      ? activeSprint
+      : sprints.find((s: Sprint) => s.id === selectedSprintId);
+
+  // Split into Active Board vs Backlog
+  const backlogTasks = useMemo(
+    () => filteredTasks.filter((t: Task) => !t.sprintId),
+    [filteredTasks],
+  );
+  const boardTasks = useMemo(
+    () =>
+      filteredTasks.filter(
+        (t: Task) =>
+          t.sprintId &&
+          selectedSprint &&
+          String(t.sprintId) === String(selectedSprint.id),
+      ),
+    [filteredTasks, selectedSprint],
+  );
+
+  // Socket Listeners
+  const { socket, isConnected, syncTimestamp } = useSocket();
+
+  // Reconnection Sync
+  useEffect(() => {
+    if (syncTimestamp > 0) {
+      refetchTasks();
+      refetchSprints();
+    }
+  }, [syncTimestamp, refetchTasks, refetchSprints]);
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleTaskCreated = (newTask: Task) => {
+      if (String(newTask.projectId) === String(projectId)) {
+        refetchTasks();
+        notifier.success(`New task: ${newTask.title}`);
+      }
+    };
+
+    const handleTaskUpdated = (updatedTask: Task) => {
+      if (String(updatedTask.projectId) === String(projectId)) {
+        refetchTasks();
+        notifier.success(MESSAGES.GENERAL.SUCCESS);
+      }
+    };
+
+    socket.on("task:created", handleTaskCreated);
+    socket.on("task:updated", handleTaskUpdated);
+
+    return () => {
+      socket.off("task:created", handleTaskCreated);
+      socket.off("task:updated", handleTaskUpdated);
+    };
+  }, [socket, isConnected, projectId, refetchTasks]);
+
+  const loading =
+    projectLoading || tasksLoading || membersLoading || sprintsLoading;
+
+  const openCreateModal = () => {
+    setEditingTask(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (task: Task) => {
+    setEditingTask(task);
+    setIsModalOpen(true);
+  };
+
+  const openEditSprintModal = (sprint: Sprint) => {
+    setEditingSprint(sprint);
+    setIsSprintModalOpen(true);
+  };
+
+  const handleModalSuccess = () => refetchTasks();
+  const handleSprintSuccess = () => {
+    refetchSprints();
+    refetchTasks();
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    const confirmed = await confirmWithAlert(
+      "Are you sure?",
+      "You won't be able to revert this!",
+    );
+    if (confirmed) {
+      try {
+        await deleteTask({ id: taskId, projectId }).unwrap();
+        notifier.success(MESSAGES.TASKS.DELETE_SUCCESS);
+      } catch (err) {
+        notifier.error(err, MESSAGES.TASKS.DELETE_FAILED);
+      }
+    }
+  };
+
+  const handleDeleteSprint = async (sprintId: string) => {
+    const confirmed = await confirmWithAlert(
+      "Are you sure?",
+      "All tasks in this sprint will move back to the backlog.",
+    );
+    if (confirmed) {
+      try {
+        await deleteSprint({ id: sprintId, projectId }).unwrap();
+        notifier.success(MESSAGES.SPRINTS.DELETE_SUCCESS);
+        setSelectedSprintId("ACTIVE");
+      } catch (err) {
+        notifier.error(err, MESSAGES.SPRINTS.DELETE_FAILED);
+      }
+    }
+  };
+
+  const handleCompleteSprint = async () => {
+    if (!activeSprint) return;
+    const confirmed = await confirmWithAlert(
+      "Complete Sprint?",
+      `Are you sure you want to complete ${activeSprint.name}? All unfinished tasks will move to backlog.`,
+    );
+    if (confirmed) {
+      try {
+        await updateSprint({
+          id: activeSprint.id,
+          projectId,
+          data: { status: "COMPLETED" },
+        }).unwrap();
+        notifier.success(MESSAGES.SPRINTS.COMPLETE_SUCCESS);
+      } catch (err) {
+        notifier.error(err, MESSAGES.SPRINTS.UPDATE_FAILED);
+      }
+    }
+  };
+
+  const handleMoveToSprint = async (taskId: string) => {
+    if (!selectedSprint) {
+      notifier.error(null, MESSAGES.VALIDATION.SELECT_PROJECT);
+      return;
+    }
+    try {
+      await updateTask({
+        id: taskId,
+        projectId,
+        data: { sprintId: selectedSprint.id, status: "TODO" },
+      }).unwrap();
+      notifier.success(MESSAGES.SPRINTS.MOVED_TO_SPRINT(selectedSprint.name));
+    } catch (err) {
+      notifier.error(err, MESSAGES.TASKS.UPDATE_SUCCESS);
+    }
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    try {
+      await updateTask({
+        id: taskId,
+        projectId,
+        data: { status: newStatus as Task["status"] },
+      }).unwrap();
+      notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
+    } catch (err) {
+      notifier.error(err, MESSAGES.TASKS.SAVE_FAILED);
+    }
+  };
+
+  const handleConfirmStartSprint = async (data: {
+    goal: string;
+    startDate: string;
+    endDate: string;
+  }) => {
+    if (!selectedSprint) return;
+    try {
+      await updateSprint({
+        id: selectedSprint.id,
+        projectId,
+        data: {
+          ...data,
+          status: "ACTIVE",
+        },
+      }).unwrap();
+      notifier.success(MESSAGES.SPRINTS.START_SUCCESS);
+      setIsStartSprintOpen(false);
+      refetchSprints();
+    } catch (err) {
+      notifier.error(err, MESSAGES.SPRINTS.UPDATE_FAILED);
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <ProjectDetailsHeader
+        project={project}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div
+          className={`transition-all duration-300 ${isSidebarOpen ? "lg:w-3/4" : "w-full"}`}
+        >
+          {activeTab === "CHAT" ? (
+            <ProjectChat projectId={projectId} />
+          ) : activeTab === "CALENDAR" ? (
+            <TaskCalendar
+              tasks={tasks}
+              projectId={projectId}
+              projectMembers={projectMembers}
+              onTaskUpdate={refetchTasks}
+            />
+          ) : activeTab === "ANALYTICS" ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase mb-2">
+                    Weekly Velocity
+                  </h3>
+                  <div className="text-3xl font-bold text-gray-900">
+                    {projectVelocity ?? 0}{" "}
+                    <span className="text-sm font-normal text-gray-400">
+                      pts
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                  {activeSprint ? (
+                    <SprintBurndownChart sprint={activeSprint} tasks={tasks} />
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 py-10">
+                      <BarChart3 className="w-10 h-10 mb-2 opacity-50" />
+                      <p>Start a sprint to view the burndown chart</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <VelocityChart sprints={sprints} tasks={tasks} />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Real-time Analytics Header */}
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                  <Layout className="w-6 h-6 text-blue-600" />
+                  Real-time Analytics
+                </h2>
+                <div className="flex gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Live Sync
+                  </span>
+                </div>
+              </div>
+
+              <ProjectStatsCards
+                totalTasks={totalTasks}
+                completedTasks={completedTasks}
+                highPriorityTasks={highPriorityTasks}
+                upcomingTasks={upcomingTasks}
+              />
+
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex-1 w-full">
+                  <ProjectFilters
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    assigneeFilter={assigneeFilter}
+                    setAssigneeFilter={setAssigneeFilter}
+                    priorityFilter={priorityFilter}
+                    setPriorityFilter={setPriorityFilter}
+                    typeFilter={typeFilter}
+                    setTypeFilter={setTypeFilter}
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
+                    teamMembers={teamMembers}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={openCreateModal}
+                    className="bg-blue-600 h-10 px-6 flex items-center gap-2 shadow-sm"
+                  >
+                    <Plus size={18} />
+                    Create Task
+                  </Button>
+                  {isManager && (
+                    <Button
+                      onClick={() => setIsSprintModalOpen(true)}
+                      className="bg-blue-600 h-10 px-6 flex items-center gap-2 shadow-sm"
+                    >
+                      <Plus size={18} />
+                      Create Sprint
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-6">
+                <SprintSelectorHeader
+                  selectedSprintId={selectedSprintId}
+                  setSelectedSprintId={setSelectedSprintId}
+                  sprints={sprints}
+                  isManager={isManager}
+                  selectedSprint={selectedSprint || null}
+                  onNewSprint={() => {
+                    setEditingSprint(null);
+                    setIsSprintModalOpen(true);
+                  }}
+                  onEditSprint={() =>
+                    selectedSprint && openEditSprintModal(selectedSprint)
+                  }
+                  onCompleteSprint={handleCompleteSprint}
+                  onStartSprint={() => setIsStartSprintOpen(true)}
+                  onDeleteSprint={handleDeleteSprint}
+                />
+
+                {selectedSprint && (
+                  <>
+                    <SprintCapacity
+                      sprints={sprints}
+                      tasks={tasks}
+                      activeSprintId={selectedSprint.id}
+                    />
+                    <KanbanBoard
+                      tasks={boardTasks}
+                      users={projectMembers}
+                      onStatusChange={handleStatusChange}
+                      onDeleteTask={handleDeleteTask}
+                      onEditTask={openEditModal}
+                      projectId={projectId}
+                    />
+                  </>
+                )}
+
+                <div className="pt-6 border-t border-gray-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                      <Layers size={18} className="text-gray-400" />
+                      Backlog
+                      <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px]">
+                        {backlogTasks.length}
+                      </span>
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={openCreateModal}
+                      className="text-blue-600 hover:bg-blue-50 text-xs"
+                    >
+                      + Add Item
+                    </Button>
+                  </div>
+                  <BacklogList
+                    tasks={backlogTasks}
+                    users={projectMembers}
+                    onMoveToBoard={handleMoveToSprint}
+                    onEditTask={openEditModal}
+                    onDeleteTask={handleDeleteTask}
+                    isSidebarOpen={isSidebarOpen}
+                    projectId={projectId}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {isSidebarOpen && <ProjectDetailsSidebar teamMembers={teamMembers} />}
+      </div>
+
+      <CreateTaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        projectId={projectId}
+        task={editingTask}
+        projectMembers={teamMembers}
+        onSuccess={handleModalSuccess}
+      />
+      <CreateSprintModal
+        isOpen={isSprintModalOpen}
+        onClose={() => {
+          setIsSprintModalOpen(false);
+          setEditingSprint(null);
+        }}
+        projectId={projectId}
+        sprint={editingSprint}
+        onSuccess={handleSprintSuccess}
+      />
+      <StartSprintModal
+        isOpen={isStartSprintOpen}
+        onClose={() => setIsStartSprintOpen(false)}
+        onConfirm={handleConfirmStartSprint}
+        sprintName={selectedSprint?.name || ""}
+        taskCount={boardTasks.length}
+      />
+    </div>
+  );
+}
