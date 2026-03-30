@@ -73,8 +73,8 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
           params,
         });
         if (res.data.success) {
-          const newMessages = res.data.data;
-          const newCursor = res.data.nextCursor;
+          const newMessages = res.data.data.messages || [];
+          const newCursor = res.data.data.nextCursor;
 
           setNextCursor(newCursor);
 
@@ -311,7 +311,7 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
             <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
-        {messages.map((msg, idx) => {
+        {(messages || []).map((msg, idx) => {
           const isMe = msg.senderId === user?.id;
           const time = new Date(msg.createdAt).toLocaleTimeString([], {
             hour: "2-digit",

@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Search,
   LayoutGrid,
+  Layout,
   Clock,
   AlertCircle,
   MessageSquare,
@@ -41,6 +42,7 @@ import { Button } from "@/components/ui/Button";
 import UserAvatar from "@/components/ui/UserAvatar";
 import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
+import SprintBurndownChart from "@/components/analytics/SprintBurndownChart";
 import StartSprintModal from "@/components/modals/StartSprintModal";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import ProjectFilters from "@/components/project/ProjectFilters";
@@ -70,7 +72,10 @@ export default function ProjectDetailsPage() {
 
   // Auth State
   const role = useSelector((state: RootState) => state.auth.role);
-  const isManager = role === USER_ROLES.ORG_MANAGER;
+  const isManager =
+    role === USER_ROLES.ORG_MANAGER ||
+    role === USER_ROLES.SUPER_ADMIN ||
+    role === "ADMIN";
 
   // RTK Query Hooks
   const { data: project, isLoading: projectLoading } =
@@ -137,6 +142,15 @@ export default function ProjectDetailsPage() {
   // Calculate stats
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t: Task) => t.status === "DONE").length;
+  const highPriorityTasks = tasks.filter(
+    (t: Task) => t.priority === "HIGH" || t.priority === "CRITICAL",
+  ).length;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingTasks = tasks.filter(
+    (t: Task) =>
+      t.dueDate && new Date(t.dueDate) >= today && t.status !== "DONE",
+  ).length;
 
   // Get Team Members
   const teamMembers = projectMembers;
@@ -165,7 +179,15 @@ export default function ProjectDetailsPage() {
   );
 
   // Socket Listeners
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected, syncTimestamp } = useSocket();
+
+  // Reconnection Sync
+  useEffect(() => {
+    if (syncTimestamp > 0) {
+      refetchTasks();
+      refetchSprints();
+    }
+  }, [syncTimestamp, refetchTasks, refetchSprints]);
   useEffect(() => {
     if (!socket || !isConnected) return;
 
@@ -364,14 +386,40 @@ export default function ProjectDetailsPage() {
                     </span>
                   </div>
                 </div>
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                  {activeSprint ? (
+                    <SprintBurndownChart sprint={activeSprint} tasks={tasks} />
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 py-10">
+                      <BarChart3 className="w-10 h-10 mb-2 opacity-50" />
+                      <p>Start a sprint to view the burndown chart</p>
+                    </div>
+                  )}
+                </div>
               </div>
               <VelocityChart sprints={sprints} tasks={tasks} />
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Real-time Analytics Header */}
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                  <Layout className="w-6 h-6 text-blue-600" />
+                  Real-time Analytics
+                </h2>
+                <div className="flex gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Live Sync
+                  </span>
+                </div>
+              </div>
+
               <ProjectStatsCards
                 totalTasks={totalTasks}
                 completedTasks={completedTasks}
+                highPriorityTasks={highPriorityTasks}
+                upcomingTasks={upcomingTasks}
               />
 
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">

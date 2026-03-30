@@ -8,17 +8,20 @@ import { RootState } from "@/store/store";
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
+  syncTimestamp: number;
 }
 
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,
+  syncTimestamp: 0,
 });
 
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [syncTimestamp, setSyncTimestamp] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const { accessToken, user, loading } = useSelector(
     (state: RootState) => state.auth,
@@ -43,10 +46,15 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
       socketInstance.on("connect", () => {
         setIsConnected(true);
+        setSyncTimestamp(Date.now());
       });
 
       socketInstance.on("disconnect", () => {
         setIsConnected(false);
+      });
+
+      socketInstance.on("reconnect", () => {
+        setSyncTimestamp(Date.now());
       });
 
       socketInstance.on("connect_error", (err) => {
@@ -70,7 +78,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, [accessToken, user?.id, loading]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
+    <SocketContext.Provider value={{ socket, isConnected, syncTimestamp }}>
       {children}
     </SocketContext.Provider>
   );

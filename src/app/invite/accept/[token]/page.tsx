@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { z } from "zod";
 import { AppDispatch } from "@/store/store";
 import {
@@ -17,9 +17,17 @@ import Footer from "@/components/Footer";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 export default function AcceptInvitePage() {
-  const { token } = useParams<{ token: string }>();
+  const { token: routeToken } = useParams<{ token: string }>();
+  const [inviteToken] = useState(routeToken);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+
+  // Mask the sensitive token in the URL bar immediately
+  useEffect(() => {
+    if (inviteToken) {
+      window.history.replaceState({}, "", "/invite/accept/active");
+    }
+  }, [inviteToken]);
 
   const [acceptInviteMutation, { isLoading: acceptLoading }] =
     useAcceptInviteMutation();
@@ -52,7 +60,7 @@ export default function AcceptInvitePage() {
 
   const onSubmit = async () => {
     const parsed = schema.safeParse({
-      token,
+      token: inviteToken,
       firstName,
       lastName,
       password,
@@ -68,7 +76,7 @@ export default function AcceptInvitePage() {
 
     try {
       await acceptInviteMutation({
-        token,
+        token: inviteToken,
         firstName,
         lastName,
         password,
@@ -91,7 +99,7 @@ export default function AcceptInvitePage() {
     try {
       await googleSignInMutation({
         idToken: credential,
-        inviteToken: token,
+        inviteToken: inviteToken,
       }).unwrap();
       notifier.success(MESSAGES.TEAM.INVITE_ACCEPTED);
       router.push("/login");

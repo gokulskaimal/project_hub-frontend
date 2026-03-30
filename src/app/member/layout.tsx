@@ -63,10 +63,7 @@ export default function MemberLayout({
         router.push("/login?redirect=/member/dashboard");
       } else if (
         role !== "TEAM_MEMBER" &&
-        role !== "MEMBER" &&
-        role !== "PROJECT_MANAGER" &&
         role !== "ORG_MANAGER" &&
-        role !== "ADMIN" &&
         role !== "SUPER_ADMIN"
       ) {
         router.push("/");

@@ -131,9 +131,15 @@ export default function LoginPage() {
       await googleSignInMutation({ idToken: credential }).unwrap();
       notifier.success(MESSAGES.AUTH.LOGIN_SUCCESS);
     } catch (err: unknown) {
-      const error = err as { data?: { message?: string }; message?: string };
+      const error = err as {
+        data?: { error?: { message?: string }; message?: string };
+        message?: string;
+      };
       const errorMessage =
-        error?.data?.message || error?.message || "Unknown error";
+        error?.data?.error?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Unknown error";
 
       if (
         typeof errorMessage === "string" &&

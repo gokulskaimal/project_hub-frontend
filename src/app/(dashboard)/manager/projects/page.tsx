@@ -19,6 +19,7 @@ import {
   Trash2,
   Edit2,
   X,
+  Layout,
 } from "lucide-react";
 import Link from "next/link";
 import { MESSAGES } from "@/constants/messages";
@@ -138,6 +139,20 @@ export default function ProjectsPage() {
         </button>
       </div>
       <div className="space-y-8">
+        {/* Real-time Analytics Header */}
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <Layout className="w-6 h-6 text-blue-600" />
+            Real-time Analytics
+          </h2>
+          <div className="flex gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Live Sync
+            </span>
+          </div>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
@@ -342,7 +357,7 @@ export default function ProjectsPage() {
       </div>
 
       <CreateProjectModal
-        isOpen={isModaOpen}
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={refetch}
       />

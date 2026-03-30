@@ -13,8 +13,12 @@ import {
   Shield,
   Star,
   Rocket,
+  Layout,
+  Target,
+  Activity,
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { StatCard } from "@/components/ui/StatCard";
 
 // ... Razorpay interfaces (Keep existing)
 interface RazorpayResponse {
@@ -72,6 +76,21 @@ export default function ManagerPlansPage() {
     refetchPlans();
     refetchOrg();
   };
+
+  const activePlans = useMemo(
+    () => plans.filter((p: Plan) => p.isActive),
+    [plans],
+  );
+
+  // Stats Logic
+  const stats = useMemo(() => {
+    return {
+      currentPlan: currentOrg?.subscriptionStatus || "Free",
+      planCount: activePlans.length,
+      isPremium: (currentOrg?.subscriptionStatus || "Free") !== "Free",
+      orgName: currentOrg?.name || "Organization",
+    };
+  }, [currentOrg, activePlans]);
 
   const handleSubscribe = async (planId: string) => {
     try {
@@ -146,11 +165,6 @@ export default function ManagerPlansPage() {
     }
   };
 
-  const activePlans = useMemo(
-    () => plans.filter((p: Plan) => p.isActive),
-    [plans],
-  );
-
   const getPlanIcon = (type: string) => {
     switch (type) {
       case "ENTERPRISE":
@@ -175,27 +189,47 @@ export default function ManagerPlansPage() {
 
   return (
     <DashboardLayout title="Subscription Plans">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900">
-              Current Status
-            </h2>
-            <p className="text-xs text-gray-500">
-              You are currently on the{" "}
-              <span className="font-bold text-blue-600">
-                {currentOrg?.subscriptionStatus || "Free"}
-              </span>{" "}
-              plan
-            </p>
+      <div className="space-y-8">
+        {/* Real-time Analytics Header */}
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <Layout className="w-6 h-6 text-blue-600" />
+            Plan Analytics
+          </h2>
+          <div className="flex gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Live Sync
+            </span>
           </div>
-          <button
-            onClick={fetchData}
-            className="p-2 hover:bg-gray-50 rounded-xl text-gray-500 hover:text-blue-600 transition-colors"
-            title="Refresh Plans"
-          >
-            <RefreshCw size={18} />
-          </button>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            label="Current Plan"
+            value={stats.currentPlan}
+            icon={Zap}
+            color="blue"
+          />
+          <StatCard
+            label="Tier Status"
+            value={stats.isPremium ? "Premium" : "Standard"}
+            icon={Shield}
+            color={stats.isPremium ? "purple" : "blue"}
+          />
+          <StatCard
+            label="Available Plans"
+            value={stats.planCount}
+            icon={Target}
+            color="green"
+          />
+          <StatCard
+            label="Org Status"
+            value="Active"
+            icon={Activity}
+            color="blue"
+          />
         </div>
 
         {loading ? (

@@ -13,6 +13,7 @@ import {
   Filter,
   ChevronRight,
   UserPlus,
+  Layout,
 } from "lucide-react";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
@@ -20,10 +21,12 @@ import { confirmWithAlert } from "@/utils/confirm";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import InviteModal from "@/components/modals/InviteModal";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { USER_ROLES } from "@/utils/constants";
 import {
   useDeleteManagerMemberMutation,
   useGetManagerMembersQuery,
   useUpdateManagerMemberStatusMutation,
+  useGetManagerInvitationsQuery,
 } from "@/store/api/managerApiSlice";
 import { extractErrorMessage } from "@/utils/api";
 import { StatCard } from "@/components/ui/StatCard";
@@ -37,6 +40,7 @@ export default function MembersPage() {
     isFetching,
     refetch,
   } = useGetManagerMembersQuery();
+  const { data: invitations = [] } = useGetManagerInvitationsQuery();
   const [deleteMember] = useDeleteManagerMemberMutation();
   const [updateMemberStatus] = useUpdateManagerMemberStatusMutation();
 
@@ -117,8 +121,11 @@ export default function MembersPage() {
     const inactive = members.filter(
       (m) => (m.status || "ACTIVE") !== "ACTIVE",
     ).length;
-    return { total, active, inactive };
-  }, [members]);
+    const pendingInvites = invitations.filter(
+      (i) => (i.status || "PENDING") === "PENDING",
+    ).length;
+    return { total, active, inactive, pendingInvites };
+  }, [members, invitations]);
 
   const handleRemoveMember = async (id: string) => {
     const confirmed = await confirmWithAlert(
@@ -188,8 +195,22 @@ export default function MembersPage() {
           onSuccess={refetch}
         />
 
+        {/* Real-time Analytics Header */}
+        <div className="flex items-center justify-between mt-4 mb-2 px-1">
+          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <Layout className="w-6 h-6 text-blue-600" />
+            Real-time Analytics
+          </h2>
+          <div className="flex gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Live Sync
+            </span>
+          </div>
+        </div>
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <StatCard
             label="Total Members"
             value={stats.total}
@@ -207,6 +228,12 @@ export default function MembersPage() {
             value={stats.inactive}
             icon={Ban}
             color="red"
+          />
+          <StatCard
+            label="Pending Invites"
+            value={stats.pendingInvites}
+            icon={Mail}
+            color="orange"
           />
         </div>
 
@@ -262,8 +289,8 @@ export default function MembersPage() {
               className="w-20 sm:w-28 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-[10px] sm:text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
             >
               <option value="ALL">Role</option>
-              <option value="ORG MANAGER">Manager</option>
-              <option value="TEAM MEMBER">Member</option>
+              <option value={USER_ROLES.ORG_MANAGER}>Manager</option>
+              <option value={USER_ROLES.TEAM_MEMBER}>Member</option>
             </select>
 
             <select
@@ -306,16 +333,26 @@ export default function MembersPage() {
             ))}
           </div>
         ) : filteredMembers.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-xl border border-gray-100 border-dashed">
-            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-blue-500" />
+          <div className="text-center py-24 bg-white rounded-3xl border-2 border-gray-100 border-dashed animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="relative w-24 h-24 mx-auto mb-8">
+              <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-20" />
+              <div className="relative w-full h-full bg-blue-50 rounded-full flex items-center justify-center shadow-inner border border-blue-100">
+                <Users className="w-10 h-10 text-blue-600" />
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              No members found
+            <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">
+              Your Team Awaits
             </h3>
-            <p className="text-gray-500 text-sm">
-              Try adjusting your search or filters
+            <p className="text-gray-500 text-sm font-medium max-w-xs mx-auto mb-8 leading-relaxed">
+              No members match your criteria. Expand your workspace or try
+              adjusting your search filters.
             </p>
+            <button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="px-8 py-3 bg-blue-600 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+            >
+              + Invite Member
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
@@ -367,9 +404,11 @@ export default function MembersPage() {
                   }
                   footerLeft={
                     <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-black uppercase tracking-wider border border-blue-100">
-                      {member.role === "ORG MANAGER"
-                        ? "Manager"
-                        : "Team Member"}
+                      {member.role === USER_ROLES.SUPER_ADMIN
+                        ? "Super Admin"
+                        : member.role === USER_ROLES.ORG_MANAGER
+                          ? "Manager"
+                          : "Team Member"}
                     </span>
                   }
                 />

@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useGetAdminInvoicesQuery } from "@/store/api/adminApiSlice";
-import { ReceiptText, Calendar, Search } from "lucide-react";
+import { ReceiptText, Calendar, Search, Eye } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import InvoiceViewModal from "@/components/modals/InvoiceViewModal";
+import { Invoice } from "@/types/invoice";
 
 export default function AdminInvoicesPage() {
   const [page, setPage] = useState(1);
@@ -12,6 +14,8 @@ export default function AdminInvoicesPage() {
   const [planType, setPlanType] = useState("ALL");
   const [sort, setSort] = useState("latest");
   const debouncedSearch = useDebounce(search, 500);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data, isLoading } = useGetAdminInvoicesQuery({
     page,
@@ -117,6 +121,9 @@ export default function AdminInvoicesPage() {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Razorpay Ref
                 </th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -205,12 +212,30 @@ export default function AdminInvoicesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
                       {invoice.razorpayPaymentId || "-"}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => {
+                          setSelectedInvoice(invoice);
+                          setIsModalOpen(true);
+                        }}
+                        className="p-1 px-3 text-sm font-medium text-blue-600 bg-blue-50/50 hover:bg-blue-600 hover:text-white rounded-lg transition-all border border-blue-100/50 flex items-center gap-1.5 ml-auto group"
+                      >
+                        <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                        View
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+
+        <InvoiceViewModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          invoice={selectedInvoice}
+        />
 
         {/* Pagination */}
         {data && data.totalPages > 1 && (

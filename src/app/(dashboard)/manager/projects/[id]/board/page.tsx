@@ -16,8 +16,16 @@ import { Sprint as ProjectSprint } from "@/types/project";
 import { useSocket } from "@/context/SocketContext";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
-import { ArrowLeft, LayoutGrid } from "lucide-react";
+import {
+  ArrowLeft,
+  LayoutGrid,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Play,
+} from "lucide-react";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
+import { StatCard } from "@/components/ui/StatCard";
 
 export default function ProjectBoardPage() {
   const params = useParams();
@@ -122,17 +130,73 @@ export default function ProjectBoardPage() {
       String(t.sprintId) === String(activeSprint.id),
   );
 
+  // Header Stats
+  const sprintTasksCount = boardTasks.length;
+  const completedCount = boardTasks.filter(
+    (t: Task) => t.status === "DONE",
+  ).length;
+  const inProgressCount = boardTasks.filter(
+    (t: Task) => t.status === "IN_PROGRESS",
+  ).length;
+  const highPriorityCount = boardTasks.filter(
+    (t: Task) => t.priority === "HIGH" || t.priority === "CRITICAL",
+  ).length;
+
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-500">
       {/* Kanban Board Area */}
       <div className="flex-1 overflow-hidden px-4 py-4">
         {activeSprint ? (
           <div className="h-full flex flex-col">
-            <div className="mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
-                {activeSprint.name}
-              </h2>
-              <p className="text-sm text-gray-500">Active Sprint</p>
+            <div className="mb-8 space-y-6">
+              {/* Real-time Analytics Header */}
+              <div className="flex items-center justify-between px-1">
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <LayoutGrid className="w-8 h-8 text-blue-600" />
+                    Real-time Analytics
+                  </h2>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 border border-blue-100 rounded-full">
+                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+                      <span className="text-[10px] font-black text-blue-700 uppercase tracking-wider">
+                        Live Sync
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                      {activeSprint.name} - Active Board
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stat Cards Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <StatCard
+                  label="Sprint Tasks"
+                  value={sprintTasksCount}
+                  icon={LayoutGrid}
+                  color="blue"
+                />
+                <StatCard
+                  label="Completed"
+                  value={completedCount}
+                  icon={CheckCircle2}
+                  color="green"
+                />
+                <StatCard
+                  label="In Progress"
+                  value={inProgressCount}
+                  icon={Play}
+                  color="orange"
+                />
+                <StatCard
+                  label="High Priority"
+                  value={highPriorityCount}
+                  icon={AlertCircle}
+                  color="red"
+                />
+              </div>
             </div>
             <KanbanBoard
               tasks={boardTasks}

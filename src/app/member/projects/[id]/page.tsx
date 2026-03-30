@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
@@ -15,6 +15,7 @@ import TaskCalendar from "@/components/dashboard/TaskCalendar";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
 import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
+import SprintBurndownChart from "@/components/analytics/SprintBurndownChart";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import ProjectFilters from "@/components/project/ProjectFilters";
 import {
@@ -41,7 +42,10 @@ export default function MemberProjectDetailsPage() {
 
   // Get Current User
   const { user } = useSelector((state: RootState) => state.auth);
-  const isManager = user?.role === "ORG_MANAGER";
+  const isManager =
+    user?.role === "ORG_MANAGER" ||
+    user?.role === "SUPER_ADMIN" ||
+    user?.role === "ADMIN";
 
   // RTK Query hooks
   const {
@@ -59,8 +63,11 @@ export default function MemberProjectDetailsPage() {
   const { data: projectMembers = [], isLoading: membersLoading } =
     useGetProjectMembersQuery(projectId);
 
-  const { data: sprints = [], isLoading: sprintsLoading } =
-    useGetProjectSprintsQuery(projectId);
+  const {
+    data: sprints = [],
+    isLoading: sprintsLoading,
+    refetch: refetchSprints,
+  } = useGetProjectSprintsQuery(projectId);
 
   const [updateTask] = useUpdateTaskMutation();
 
@@ -85,7 +92,15 @@ export default function MemberProjectDetailsPage() {
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const { socket } = useSocket();
+  const { socket, syncTimestamp } = useSocket();
+
+  // Reconnection Sync
+  useEffect(() => {
+    if (syncTimestamp > 0) {
+      refetchTasks();
+      refetchSprints();
+    }
+  }, [syncTimestamp, refetchTasks, refetchSprints]);
 
   // Check if project exists and redirect if not
   if (projectError) {
@@ -122,6 +137,19 @@ export default function MemberProjectDetailsPage() {
   // Total stats
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t: Task) => t.status === "DONE").length;
+
+  const highPriorityTasks = tasks.filter(
+    (t: Task) =>
+      (t.priority === "HIGH" || t.priority === "CRITICAL") &&
+      t.status !== "DONE",
+  ).length;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingTasks = tasks.filter(
+    (t: Task) =>
+      t.dueDate && new Date(t.dueDate) >= today && t.status !== "DONE",
+  ).length;
 
   // Secure Sprint Logic for Team Members
   const activeSprint = sprints.find((s: Sprint) => s.status === "ACTIVE");
@@ -186,6 +214,9 @@ export default function MemberProjectDetailsPage() {
                     tasks={tasks}
                     activeSprintId={activeSprint?.id}
                   />
+                  {activeSprint && (
+                    <SprintBurndownChart sprint={activeSprint} tasks={tasks} />
+                  )}
                 </div>
                 <div className="mt-6">
                   <VelocityChart sprints={sprints} tasks={tasks} />
@@ -197,6 +228,8 @@ export default function MemberProjectDetailsPage() {
               <ProjectStatsCards
                 totalTasks={totalTasks}
                 completedTasks={completedTasks}
+                highPriorityTasks={highPriorityTasks}
+                upcomingTasks={upcomingTasks}
               />
 
               {/* Controls Bar */}
@@ -239,7 +272,7 @@ export default function MemberProjectDetailsPage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                       No Active Sprint
                     </h3>
-                    <p className="text-gray-500 text-center max-w-sm">
+                    <p className="text-gray-500 text-center max-w-sm font-sans font-medium">
                       There is no active sprint for this project right now.
                       Please wait for your manager to start one.
                     </p>

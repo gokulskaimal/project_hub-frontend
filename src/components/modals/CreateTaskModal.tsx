@@ -53,7 +53,10 @@ export default function CreateTaskModal({
 }: CreateTaskModalProps) {
   // Auth State for Locking Logic
   const role = useSelector((state: RootState) => state.auth.role);
-  const isManager = role === USER_ROLES.ORG_MANAGER;
+  const isManager =
+    role === USER_ROLES.ORG_MANAGER ||
+    role === USER_ROLES.SUPER_ADMIN ||
+    role === "ADMIN";
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

@@ -94,7 +94,11 @@ export default function KanbanBoard({
       destination.index === source.index
     )
       return;
-    if (destination.droppableId === "DONE" && userRole !== "ORG_MANAGER") {
+    if (
+      destination.droppableId === "DONE" &&
+      userRole !== "ORG_MANAGER" &&
+      userRole !== "SUPER_ADMIN"
+    ) {
       notifier.error(null, MESSAGES.GENERAL.FORBIDDEN);
       return;
     }
@@ -271,7 +275,8 @@ export default function KanbanBoard({
                                     {task.title}
                                   </h4>
                                 </div>
-                                {userRole === "ORG_MANAGER" && (
+                                {(userRole === "ORG_MANAGER" ||
+                                  userRole === "SUPER_ADMIN") && (
                                   <div className="flex gap-1 items-center">
                                     <button
                                       onClick={(e) => {

@@ -1,4 +1,5 @@
 import React from "react";
+import { USER_ROLES } from "@/utils/constants";
 
 type Props = {
   firstName: string;
@@ -120,9 +121,11 @@ export default function EditUserForm(props: Props) {
               className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               defaultValue={(role || "").toUpperCase()}
             >
-              <option value="ORG MANAGER">Organization Manager</option>
-              <option value="SUPER ADMIN">Super Admin</option>
-              <option value="TEAM MEMBER">Team Member</option>
+              <option value={USER_ROLES.ORG_MANAGER}>
+                Organization Manager
+              </option>
+              <option value={USER_ROLES.SUPER_ADMIN}>Super Admin</option>
+              <option value={USER_ROLES.TEAM_MEMBER}>Team Member</option>
             </select>
           </div>
         )}

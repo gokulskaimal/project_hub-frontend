@@ -85,15 +85,9 @@ export default function ManagerLayout({
     if (isReady) {
       if (!isLoggedIn) {
         router.push("/login");
-      } else if (role !== "ORG_MANAGER" && role !== "ADMIN") {
-        if (
-          role === "TEAM_MEMBER" ||
-          role === "MEMBER" ||
-          role === "PROJECT_MANAGER"
-        ) {
+      } else if (role !== "ORG_MANAGER" && role !== "SUPER_ADMIN") {
+        if (role === "TEAM_MEMBER") {
           router.push("/member/dashboard");
-        } else if (role === "SUPER_ADMIN") {
-          router.push("/admin/dashboard");
         }
       }
     }
@@ -126,7 +120,7 @@ export default function ManagerLayout({
     !isMounted ||
     !isReady ||
     !isLoggedIn ||
-    (role !== "ORG_MANAGER" && role !== "ADMIN")
+    (role !== "ORG_MANAGER" && role !== "SUPER_ADMIN")
   )
     return null;
 

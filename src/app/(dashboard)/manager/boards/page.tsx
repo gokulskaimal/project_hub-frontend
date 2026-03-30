@@ -12,8 +12,15 @@ import {
   Clock,
   AlertCircle,
   Users,
+  Layout,
+  Briefcase,
+  Rocket,
+  ShieldAlert,
+  Target,
 } from "lucide-react";
 import Link from "next/link";
+import { StatCard } from "@/components/ui/StatCard";
+import { EntityCard } from "@/components/ui/EntityCard";
 
 export default function GlobalBoardsPage() {
   const {
@@ -32,6 +39,27 @@ export default function GlobalBoardsPage() {
       (p.description &&
         p.description.toLowerCase().includes(searchQuery.toLowerCase())),
   );
+
+  // Stats Logic
+  const stats = {
+    total: projects.length,
+    highPriority: projects.filter(
+      (p: Project) => p.priority === "HIGH" || p.priority === "CRITICAL",
+    ).length,
+    totalMembers: projects.reduce(
+      (sum: number, p: Project) => sum + (p.teamMemberIds?.length || 0),
+      0,
+    ),
+    avgProgress:
+      projects.length > 0
+        ? Math.round(
+            projects.reduce(
+              (sum: number, p: Project) => sum + (p.progress || 0),
+              0,
+            ) / projects.length,
+          )
+        : 0,
+  };
 
   return (
     <DashboardLayout title="Your Boards">
@@ -56,6 +84,48 @@ export default function GlobalBoardsPage() {
               className="w-full px-4 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             />
           </div>
+        </div>
+
+        {/* Real-time Analytics Header */}
+        <div className="flex items-center justify-between mt-4 mb-2 px-1">
+          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <Layout className="w-6 h-6 text-blue-600" />
+            Real-time Analytics
+          </h2>
+          <div className="flex gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Live Sync
+            </span>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            label="Total Boards"
+            value={stats.total}
+            icon={Briefcase}
+            color="blue"
+          />
+          <StatCard
+            label="High Priority"
+            value={stats.highPriority}
+            icon={ShieldAlert}
+            color="red"
+          />
+          <StatCard
+            label="Team Coverage"
+            value={stats.totalMembers}
+            icon={Users}
+            color="purple"
+          />
+          <StatCard
+            label="Avg. Progress"
+            value={`${stats.avgProgress}%`}
+            icon={Target}
+            color="green"
+          />
         </div>
 
         {loading ? (
@@ -83,41 +153,27 @@ export default function GlobalBoardsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project: Project) => (
-              <Link
-                href={`/manager/projects/${project.id}/board`}
+              <EntityCard
                 key={project.id}
-                className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col overflow-hidden"
-              >
-                <div className="p-5 flex-1 flex flex-col border-b border-gray-100">
-                  <div className="flex justify-between items-start mb-3">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(project.status)}`}
-                    >
-                      {project.status || "PLANNING"}
-                    </span>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getPriorityColor(project.priority)}`}
-                    >
-                      {project.priority || "MEDIUM"}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-1">
-                    {project.name}
-                  </h3>
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">
-                    {project.description || "No description."}
-                  </p>
-                </div>
-                <div className="bg-gray-50/50 p-4 flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1 text-gray-600 font-medium">
+                id={project.id}
+                title={project.name}
+                description={project.description || "No description provided."}
+                icon={KanbanSquare}
+                href={`/manager/projects/${project.id}/board`}
+                status={project.status || "PLANNING"}
+                statusColor={getStatusColor(project.status)}
+                footerLeft={
+                  <div className="flex items-center gap-1 text-gray-600 font-medium text-[10px] sm:text-xs">
                     <Users className="w-4 h-4 text-gray-400" />
                     {project.teamMemberIds?.length || 0} Members
                   </div>
+                }
+                footerRight={
                   <span className="text-blue-600 font-medium flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                     Go to board <ArrowRight className="w-4 h-4" />
                   </span>
-                </div>
-              </Link>
+                }
+              />
             ))}
           </div>
         )}

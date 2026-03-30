@@ -21,6 +21,7 @@ export interface ManagerInvitation {
   email?: string;
   status?: string;
   role?: string;
+  assignedRole?: string;
   createdAt?: string;
 }
 

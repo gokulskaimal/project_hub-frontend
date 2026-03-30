@@ -39,14 +39,14 @@ export default function InviteModal({
 }: InviteModalProps) {
   const { user } = useSelector((state: RootState) => state.auth);
   const [invites, setInvites] = useState<InviteRow[]>([
-    { email: "", role: "Team Member", expiry: "7 Days" },
+    { email: "", role: USER_ROLES.TEAM_MEMBER, expiry: "7 Days" },
   ]);
   const [sendInvite, { isLoading }] = useSendInviteMutation();
 
   const addRow = () => {
     setInvites([
       ...invites,
-      { email: "", role: "Team Member", expiry: "7 Days" },
+      { email: "", role: USER_ROLES.TEAM_MEMBER, expiry: "7 Days" },
     ]);
   };
 
@@ -83,10 +83,7 @@ export default function InviteModal({
         validInvites.map((invite) =>
           sendInvite({
             email: invite.email,
-            role:
-              invite.role === "Manager"
-                ? USER_ROLES.ORG_MANAGER
-                : USER_ROLES.TEAM_MEMBER,
+            role: invite.role,
             orgId: user.orgId!,
             expiresIn: getDays(invite.expiry),
           }).unwrap(),
@@ -97,7 +94,9 @@ export default function InviteModal({
       );
       if (onSuccess) onSuccess();
       onClose();
-      setInvites([{ email: "", role: "Team Member", expiry: "7 Days" }]);
+      setInvites([
+        { email: "", role: USER_ROLES.TEAM_MEMBER, expiry: "7 Days" },
+      ]);
     } catch (err) {
       notifier.error(err, "Failed to send some invitations");
     }
@@ -165,8 +164,8 @@ export default function InviteModal({
                           key={index}
                           className="group flex gap-4 items-end animate-in fade-in slide-in-from-bottom-2 duration-200"
                         >
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-6 gap-4">
-                            <div className="md:col-span-3 space-y-2">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div className="md:col-span-6 space-y-2">
                               <label className="text-[10px] font-black uppercase tracking-tighter text-gray-400 flex items-center gap-1.5 ml-1">
                                 <Mail className="w-3 h-3" /> Email Address
                               </label>
@@ -181,7 +180,7 @@ export default function InviteModal({
                                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm font-bold text-gray-900"
                               />
                             </div>
-                            <div className="md:col-span-1.5 space-y-2">
+                            <div className="md:col-span-3 space-y-2">
                               <label className="text-[10px] font-black uppercase tracking-tighter text-gray-400 flex items-center gap-1.5 ml-1">
                                 <ShieldCheck className="w-3 h-3" /> Role
                               </label>
@@ -192,11 +191,15 @@ export default function InviteModal({
                                 }
                                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm font-black text-gray-900"
                               >
-                                <option value="Team Member">Team Member</option>
-                                <option value="Manager">Manager</option>
+                                <option value={USER_ROLES.TEAM_MEMBER}>
+                                  Team Member
+                                </option>
+                                <option value={USER_ROLES.ORG_MANAGER}>
+                                  Manager
+                                </option>
                               </select>
                             </div>
-                            <div className="md:col-span-1.5 space-y-2">
+                            <div className="md:col-span-3 space-y-2">
                               <label className="text-[10px] font-black uppercase tracking-tighter text-gray-400 flex items-center gap-1.5 ml-1">
                                 <Clock className="w-3 h-3" /> Expiry
                               </label>

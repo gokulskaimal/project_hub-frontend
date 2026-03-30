@@ -13,6 +13,7 @@ import {
   XCircle,
   Filter,
   Users,
+  Layout,
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import InviteModal from "@/components/modals/InviteModal";
@@ -21,8 +22,20 @@ import {
   useCancelManagerInvitationMutation,
 } from "@/store/api/managerApiSlice";
 import { Input } from "@/components/ui/Input";
+import { StatCard } from "@/components/ui/StatCard";
+import { EntityCard } from "@/components/ui/EntityCard";
+import { USER_ROLES } from "@/utils/constants";
 import { notifier } from "@/utils/notifier";
 import { confirmWithAlert } from "@/utils/confirm";
+
+interface Invitation {
+  id: string;
+  email: string;
+  assignedRole?: string;
+  role?: string;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED" | "CANCELLED";
+  createdAt?: string;
+}
 
 export default function InvitesPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -74,6 +87,21 @@ export default function InvitesPage() {
 
     return result;
   }, [invitations, searchTerm, filterStatus, sortBy, sortOrder]);
+
+  // Calculated Stats
+  const stats = useMemo(() => {
+    const total = invitations.length;
+    const pending = (invitations as Invitation[]).filter(
+      (i) => (i.status || "PENDING") === "PENDING",
+    ).length;
+    const accepted = (invitations as Invitation[]).filter(
+      (i) => i.status === "ACCEPTED",
+    ).length;
+    const expired = (invitations as Invitation[]).filter(
+      (i) => i.status === "EXPIRED",
+    ).length;
+    return { total, pending, accepted, expired };
+  }, [invitations]);
 
   const handleCancelInvite = async (id: string) => {
     const confirmed = await confirmWithAlert(
@@ -133,6 +161,48 @@ export default function InvitesPage() {
               Dispatch Invites
             </button>
           </div>
+        </div>
+
+        {/* Real-time Analytics Header */}
+        <div className="flex items-center justify-between mt-4 mb-2 px-1">
+          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <Layout className="w-6 h-6 text-blue-600" />
+            Real-time Analytics
+          </h2>
+          <div className="flex gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Live Sync
+            </span>
+          </div>
+        </div>
+
+        {/* Modular Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <StatCard
+            label="Total Invitations"
+            value={stats.total}
+            icon={Mail}
+            color="blue"
+          />
+          <StatCard
+            label="Pending"
+            value={stats.pending}
+            icon={Clock}
+            color="orange"
+          />
+          <StatCard
+            label="Accepted"
+            value={stats.accepted}
+            icon={CheckCircle}
+            color="green"
+          />
+          <StatCard
+            label="Expired"
+            value={stats.expired}
+            icon={XCircle}
+            color="red"
+          />
         </div>
 
         {/* Improved Filter Bar */}
@@ -213,65 +283,60 @@ export default function InvitesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredInvitations.map((invite) => (
-              <div
-                key={invite.id}
-                className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`p-2 rounded-xl ${
-                        invite.status === "ACCEPTED"
-                          ? "bg-green-50 text-green-600"
-                          : invite.status === "EXPIRED"
-                            ? "bg-red-50 text-red-600"
-                            : "bg-amber-50 text-amber-600"
-                      }`}
-                    >
-                      {getStatusIcon(invite.status)}
+            {filteredInvitations.map((invite) => {
+              const isPending = (invite.status || "PENDING") === "PENDING";
+              const isAccepted = invite.status === "ACCEPTED";
+              const isExpired = invite.status === "EXPIRED";
+
+              return (
+                <EntityCard
+                  key={invite.id}
+                  id={invite.id}
+                  title={invite.email || "No Email"}
+                  subtitle={`Role: ${(invite.assignedRole || invite.role || "TEAM_MEMBER").toLowerCase().replace("_", " ")}`}
+                  icon={Mail}
+                  status={invite.status || "PENDING"}
+                  statusColor={
+                    isAccepted
+                      ? "bg-green-50 text-green-700 border-green-100"
+                      : isExpired
+                        ? "bg-red-50 text-red-700 border-red-100"
+                        : "bg-amber-50 text-amber-700 border-amber-100"
+                  }
+                  actions={
+                    isPending && (
+                      <button
+                        onClick={() => handleCancelInvite(invite.id)}
+                        title="Cancel Invitation"
+                        className="p-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )
+                  }
+                  footerLeft={
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`p-1.5 rounded-lg ${
+                          isAccepted
+                            ? "bg-green-50 text-green-600"
+                            : isExpired
+                              ? "bg-red-50 text-red-600"
+                              : "bg-amber-50 text-amber-600"
+                        }`}
+                      >
+                        {getStatusIcon(invite.status)}
+                      </div>
                     </div>
-                    <span
-                      className={`text-[10px] font-black px-3 py-1 rounded-full border uppercase tracking-wider ${
-                        invite.status === "ACCEPTED"
-                          ? "bg-green-50 text-green-700 border-green-100"
-                          : invite.status === "EXPIRED"
-                            ? "bg-red-50 text-red-700 border-red-100"
-                            : "bg-amber-50 text-amber-700 border-amber-100"
-                      }`}
-                    >
-                      {invite.status || "PENDING"}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
-                    {invite.createdAt
+                  }
+                  footerRight={
+                    invite.createdAt
                       ? new Date(invite.createdAt).toLocaleDateString()
-                      : "N/A"}
-                  </span>
-                </div>
-
-                <div className="mb-6">
-                  <h3
-                    className="font-black text-gray-900 text-lg truncate group-hover:text-blue-600 transition-colors"
-                    title={invite.email}
-                  >
-                    {invite.email}
-                  </h3>
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
-                    Role: {invite.role?.toLowerCase().replace("_", " ")}
-                  </p>
-                </div>
-
-                {invite.status === "PENDING" && (
-                  <button
-                    onClick={() => handleCancelInvite(invite.id)}
-                    className="pt-6 border-t border-gray-50 w-full text-red-500 hover:text-red-700 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0"
-                  >
-                    <Trash2 size={14} /> Cancel Invitation
-                  </button>
-                )}
-              </div>
-            ))}
+                      : "N/A"
+                  }
+                />
+              );
+            })}
           </div>
         )}
       </div>
