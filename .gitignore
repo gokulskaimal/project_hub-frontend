@@ -42,3 +42,11 @@ yarn-error.log*
 next-env.d.ts
 
 /logs
+
+# Project Hub Temp/Debug Files
+temp_*.txt
+tmp_*.js
+lint*.txt
+lint*.json
+eslint-output.txt
+eslint8.txt
