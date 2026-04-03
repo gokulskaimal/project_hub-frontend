@@ -27,16 +27,31 @@ export default function SprintBurndownChart({ sprint, tasks }: Props) {
 
     const start = new Date(sprint.startDate);
     const end = new Date(sprint.endDate);
+
+    // Normalize start date to beginning of day for comparison
+    const startOfSprint = new Date(start);
+    startOfSprint.setHours(0, 0, 0, 0);
+
+    // Initial value is total points MINUS anything already done BEFORE the sprint officially started
+    const pointsDoneBeforeStart = sprintTasks
+      .filter(
+        (t) =>
+          t.status === "DONE" &&
+          t.completedAt &&
+          new Date(t.completedAt) < startOfSprint,
+      )
+      .reduce((acc, t) => acc + (t.storyPoints || 0), 0);
+
+    let remainingActual = totalPoints - pointsDoneBeforeStart;
+    const chartData = [];
+
     const days = Math.max(
       1,
       Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)),
     );
 
-    let remainingActual = totalPoints;
-    const chartData = [];
-
     for (let i = 0; i <= days; i++) {
-      const currentDay = new Date(start);
+      const currentDay = new Date(startOfSprint);
       currentDay.setDate(currentDay.getDate() + i);
 
       const idealRemaining = Math.max(
@@ -60,9 +75,9 @@ export default function SprintBurndownChart({ sprint, tasks }: Props) {
         day:
           days <= 7
             ? currentDay.toLocaleDateString([], { weekday: "short" })
-            : `Day ${i}`,
+            : `D${i}`,
         Ideal: Number(idealRemaining.toFixed(1)),
-        Actual: currentDay <= new Date() ? remainingActual : null,
+        Actual: currentDay <= new Date() ? Math.max(0, remainingActual) : null,
       });
     }
     return chartData;

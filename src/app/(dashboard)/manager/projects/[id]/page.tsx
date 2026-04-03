@@ -441,21 +441,23 @@ export default function ProjectDetailsPage() {
                   />
                 </div>
                 <div className="flex gap-3">
-                  <Button
-                    onClick={openCreateModal}
-                    className="bg-blue-600 h-10 px-6 flex items-center gap-2 shadow-sm"
-                  >
-                    <Plus size={18} />
-                    Create Task
-                  </Button>
                   {isManager && (
-                    <Button
-                      onClick={() => setIsSprintModalOpen(true)}
-                      className="bg-blue-600 h-10 px-6 flex items-center gap-2 shadow-sm"
-                    >
-                      <Plus size={18} />
-                      Create Sprint
-                    </Button>
+                    <>
+                      <Button
+                        onClick={openCreateModal}
+                        className="bg-blue-600 h-10 px-6 flex items-center gap-2 shadow-sm"
+                      >
+                        <Plus size={18} />
+                        Create Task
+                      </Button>
+                      <Button
+                        onClick={() => setIsSprintModalOpen(true)}
+                        className="bg-blue-600 h-10 px-6 flex items-center gap-2 shadow-sm"
+                      >
+                        <Plus size={18} />
+                        Create Sprint
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
@@ -506,14 +508,16 @@ export default function ProjectDetailsPage() {
                         {backlogTasks.length}
                       </span>
                     </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={openCreateModal}
-                      className="text-blue-600 hover:bg-blue-50 text-xs"
-                    >
-                      + Add Item
-                    </Button>
+                    {isManager && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={openCreateModal}
+                        className="text-blue-600 hover:bg-blue-50 text-xs"
+                      >
+                        + Add Item
+                      </Button>
+                    )}
                   </div>
                   <BacklogList
                     tasks={backlogTasks}

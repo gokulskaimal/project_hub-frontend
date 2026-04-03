@@ -7,6 +7,7 @@ import EditProjectModal from "@/components/modals/EditProjectModal";
 import {
   useDeleteManagerProjectMutation,
   useGetManagerProjectsQuery,
+  useUpdateManagerProjectMutation,
 } from "@/store/api/managerApiSlice";
 import {
   Plus,
@@ -20,6 +21,7 @@ import {
   Edit2,
   X,
   Layout,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { MESSAGES } from "@/constants/messages";
@@ -39,20 +41,57 @@ export default function ProjectsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   const {
-    data: projects = [],
+    data: projectsData,
     isLoading,
     isFetching,
     refetch,
-  } = useGetManagerProjectsQuery();
+  } = useGetManagerProjectsQuery({
+    page,
+    limit: 6,
+    search: searchQuery,
+    status: statusFilter,
+    priority: priorityFilter,
+  });
+
+  const [updateProject] = useUpdateManagerProjectMutation();
+
+  const handleMarkAsComplete = async (
+    projectId: string,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+    try {
+      await updateProject({
+        id: projectId,
+        data: { status: "COMPLETED" },
+      }).unwrap();
+
+      notifier.success(MESSAGES.PROJECTS.COMPLETE_SUCCESS);
+      setActiveActionId(null);
+    } catch (err) {
+      notifier.error(
+        extractErrorMessage(err),
+        MESSAGES.PROJECTS.COMPLETE_FAILED,
+      );
+    }
+  };
+
+  const projects = projectsData?.items || [];
   const [deleteProject] = useDeleteManagerProjectMutation();
 
   // Filters
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, priorityFilter]);
 
   // Actions
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
@@ -105,22 +144,9 @@ export default function ProjectsPage() {
     setActiveActionId(activeActionId === id ? null : id);
   };
 
-  const filteredProjects = projects.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.description &&
-        p.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesStatus = statusFilter === "ALL" || p.status === statusFilter;
-    const matchesPriority =
-      priorityFilter === "ALL" || p.priority === priorityFilter;
-
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
-
-  // Stats Logic
+  // Stats Logic - Note: These now reflect the current page or specific counts
   const stats = {
-    total: projects.length,
+    total: projectsData?.total || 0,
     active: projects.filter((p) => p.status === "ACTIVE").length,
     completed: projects.filter((p) => p.status === "COMPLETED").length,
     planning: projects.filter((p) => p.status === "PLANNING").length,
@@ -263,7 +289,7 @@ export default function ProjectsPage() {
               </div>
             ))}
           </div>
-        ) : filteredProjects.length === 0 ? (
+        ) : projects.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border border-gray-100 border-dashed">
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <Filter className="w-8 h-8 text-blue-500" />
@@ -283,7 +309,7 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
+            {projects.map((project) => (
               <EntityCard
                 key={project.id}
                 id={project.id}
@@ -319,39 +345,74 @@ export default function ProjectsPage() {
                     </div>
                   </div>
                 }
-                className="relative"
-              >
-                {/* Floating Action Menu Overlay - Only visible if activeActionId matches */}
-                <div className="absolute top-4 right-4 z-20">
-                  <button
-                    onClick={(e) => toggleActionMenu(project.id, e)}
-                    className="p-1.5 bg-white/80 backdrop-blur-sm border border-gray-100 rounded-lg text-gray-400 hover:text-blue-600 hover:border-blue-100 transition-all shadow-sm"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
-
-                  {activeActionId === project.id && (
-                    <div
-                      ref={actionMenuRef}
-                      className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-[30] animate-in fade-in zoom-in-95 duration-100"
+                actions={
+                  <div className="relative">
+                    <button
+                      onClick={(e) => toggleActionMenu(project.id, e)}
+                      className="p-1 sm:p-1.5 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-blue-600 hover:border-blue-100 transition-all shadow-sm"
+                      aria-label={`Actions for ${project.name}`}
                     >
-                      <button
-                        onClick={(e) => handleEdit(project, e)}
-                        className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+
+                    {activeActionId === project.id && (
+                      <div
+                        ref={actionMenuRef}
+                        className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
                       >
-                        <Edit2 className="w-3.5 h-3.5" /> Edit
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(project.id, e)}
-                        className="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </EntityCard>
+                        {project.status !== "COMPLETED" && (
+                          <button
+                            onClick={(e) => handleMarkAsComplete(project.id, e)}
+                            className="w-full text-left px-4 py-2.5 text-[13px] font-black text-green-600 hover:bg-green-50 flex items-center gap-2 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Mark as
+                            Complete
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => handleEdit(project, e)}
+                          className="w-full text-left px-4 py-2.5 text-[13px] font-black text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Edit Details
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(project.id, e)}
+                          className="w-full text-left px-4 py-2.5 text-[13px] font-black text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-50 mt-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete Project
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                }
+              ></EntityCard>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {projectsData && projectsData.totalPages > 1 && (
+          <div className="mt-8 px-6 py-4 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between">
+            <span className="text-xs text-gray-500 font-medium">
+              Showing Page {page} of {projectsData.totalPages} (
+              {projectsData.total} total items)
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page >= projectsData.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

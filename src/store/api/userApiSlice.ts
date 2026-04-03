@@ -67,6 +67,16 @@ export const userApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Notifications"],
     }),
+    getMemberAnalytics: builder.query<any, string | void>({
+      query: (filter) => ({
+        url: API_ROUTES.USER.ANALYTICS,
+        method: "GET",
+        params: { filter: filter || "YEAR" },
+        skipGlobalLoader: true,
+      }),
+      transformResponse: (response: { data: any }) => response.data,
+      providesTags: ["Notifications"], // Re-using or just keep it simple
+    }),
   }),
 });
 
@@ -78,4 +88,5 @@ export const {
   useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
+  useGetMemberAnalyticsQuery,
 } = userApiSlice;

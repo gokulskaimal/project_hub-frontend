@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import {
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
-  useGetOrganizationUsersQuery,
   useGetProjectSprintsQuery,
+  useGetProjectMembersQuery,
   useUpdateTaskMutation,
 } from "@/store/api/projectApiSlice";
 import { Task, Sprint } from "@/types/project";
@@ -35,10 +35,10 @@ export default function MemberProjectBoardPage() {
   } = useGetProjectTasksQuery(projectId);
 
   const {
-    data: orgUsers = [],
+    data: projectMembers = [],
     isLoading: usersLoading,
     isFetching: usersFetching,
-  } = useGetOrganizationUsersQuery();
+  } = useGetProjectMembersQuery(projectId);
 
   const {
     data: sprints = [],
@@ -120,7 +120,7 @@ export default function MemberProjectBoardPage() {
             </div>
             <KanbanBoard
               tasks={boardTasks}
-              users={orgUsers}
+              users={projectMembers}
               onStatusChange={handleStatusChange}
               onEditTask={() => {}}
               showProjectBadges={false}

@@ -58,6 +58,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  transpilePackages: [
+    "recharts",
+    "lucide-react",
+    "framer-motion",
+    "@hello-pangea/dnd",
+    "@headlessui/react",
+    "nextjs-toploader",
+    "@react-oauth/google",
+  ],
 };
 
 export default nextConfig;

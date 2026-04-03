@@ -202,9 +202,7 @@ export default function CreateSprintModal({
                         >
                           {isEdit ? "Refine Sprint" : "Inaugurate Sprint"}
                         </Dialog.Title>
-                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
-                          Chronos Engine
-                        </p>
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1"></p>
                       </div>
                     </div>
                     <button

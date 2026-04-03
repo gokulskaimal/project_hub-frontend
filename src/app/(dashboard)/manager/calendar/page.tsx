@@ -14,20 +14,24 @@ import { Layout, AlertCircle, Calendar, CheckCircle } from "lucide-react";
 
 export default function ManagerCalendarPage() {
   const {
-    data: tasks = [],
+    data: tasksData,
     isLoading: tasksLoading,
     refetch: refetchTasks,
-  } = useGetMyTasksQuery();
+  } = useGetMyTasksQuery({ page: 1, limit: 1000 });
+
+  const tasks = React.useMemo(() => tasksData?.items || [], [tasksData]);
   const {
     data: orgUsers = [],
     isLoading: usersLoading,
     refetch: refetchUsers,
   } = useGetOrganizationUsersQuery();
   const {
-    data: projects = [],
+    data: projectsData = { items: [], total: 0 },
     isLoading: projectsLoading,
     refetch: refetchProjects,
-  } = useGetManagerProjectsQuery();
+  } = useGetManagerProjectsQuery({ page: 1, limit: 1000 });
+
+  const projects = projectsData.items;
 
   const loading = tasksLoading || usersLoading || projectsLoading;
 

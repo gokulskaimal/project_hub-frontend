@@ -34,11 +34,13 @@ import { EntityCard } from "@/components/ui/EntityCard";
 export default function MemberTasksPage() {
   const { user } = useAuth();
   const {
-    data: tasks = [],
+    data: tasksData,
     isLoading,
     isFetching,
     refetch,
-  } = useGetMyTasksQuery(undefined, { skip: !user });
+  } = useGetMyTasksQuery({ page: 1, limit: 100 }, { skip: !user });
+
+  const tasks = tasksData?.items || [];
 
   const { data: orgUsers = [], isLoading: usersLoading } =
     useGetOrganizationUsersQuery(undefined, { skip: !user });
@@ -186,6 +188,7 @@ export default function MemberTasksPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter tasks by status"
               className="w-20 sm:w-32 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
             >
               <option value="ALL">Status</option>
@@ -198,6 +201,7 @@ export default function MemberTasksPage() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
+              aria-label="Filter tasks by priority"
               className="w-20 sm:w-32 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
             >
               <option value="ALL">Priority</option>

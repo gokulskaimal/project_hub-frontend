@@ -1,7 +1,7 @@
 import { apiSlice } from "./apiSlice";
 import { API_ROUTES } from "@/utils/api";
 import type { Plan } from "@/types/plan";
-import type { Project, Task, Sprint } from "@/types/project";
+import type { Project, Task, Sprint, PaginatedResponse } from "@/types/project";
 import type { Invoice } from "@/types/invoice";
 
 export interface ManagerMember {
@@ -71,14 +71,31 @@ export const managerApiSlice = apiSlice.injectEndpoints({
       },
       providesTags: ["ManagerOrganization"],
     }),
-    getManagerMembers: builder.query<ManagerMember[], void>({
-      query: () => ({
+    getManagerMembers: builder.query<
+      PaginatedResponse<ManagerMember>,
+      {
+        page: number;
+        limit: number;
+        search?: string;
+        role?: string;
+        status?: string;
+      }
+    >({
+      query: ({ page, limit, search, role, status }) => ({
         url: API_ROUTES.MANAGER.MEMBERS,
         method: "GET",
+        params: {
+          page,
+          limit,
+          search: search || "",
+          role: role || "ALL",
+          status: status || "ALL",
+        },
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: unknown) =>
-        extractList<ManagerMember>(response),
+      transformResponse: (response: {
+        data: PaginatedResponse<ManagerMember>;
+      }) => response.data,
       providesTags: [{ type: "ManagerMembers", id: "LIST" }],
     }),
     updateManagerMemberStatus: builder.mutation<
@@ -90,14 +107,20 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         method: "PUT",
         data: { status },
       }),
-      invalidatesTags: [{ type: "ManagerMembers", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ManagerMembers", id: "LIST" },
+        { type: "ManagerMembers", id: "STATS" },
+      ],
     }),
     deleteManagerMember: builder.mutation<void, string>({
       query: (id) => ({
         url: `${API_ROUTES.MANAGER.MEMBERS}/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "ManagerMembers", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ManagerMembers", id: "LIST" },
+        { type: "ManagerMembers", id: "STATS" },
+      ],
     }),
     sendInvite: builder.mutation<
       void,
@@ -108,7 +131,10 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         data,
       }),
-      invalidatesTags: [{ type: "ManagerInvites", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ManagerInvites", id: "LIST" },
+        { type: "ManagerInvites", id: "STATS" },
+      ],
     }),
     sendInvitations: builder.mutation<
       void,
@@ -119,16 +145,29 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         data,
       }),
-      invalidatesTags: [{ type: "ManagerInvites", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ManagerInvites", id: "LIST" },
+        { type: "ManagerInvites", id: "STATS" },
+      ],
     }),
-    getManagerInvitations: builder.query<ManagerInvitation[], void>({
-      query: () => ({
+    getManagerInvitations: builder.query<
+      PaginatedResponse<ManagerInvitation>,
+      { page: number; limit: number; search?: string; status?: string }
+    >({
+      query: ({ page, limit, search, status }) => ({
         url: API_ROUTES.MANAGER.INVITATIONS,
         method: "GET",
+        params: {
+          page,
+          limit,
+          search: search || "",
+          status: status || "ALL",
+        },
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: unknown) =>
-        extractList<ManagerInvitation>(response),
+      transformResponse: (response: {
+        data: PaginatedResponse<ManagerInvitation>;
+      }) => response.data,
       providesTags: [{ type: "ManagerInvites", id: "LIST" }],
     }),
     cancelManagerInvitation: builder.mutation<void, string>({
@@ -136,15 +175,35 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         url: `${API_ROUTES.MANAGER.INVITATIONS}/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "ManagerInvites", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ManagerInvites", id: "LIST" },
+        { type: "ManagerInvites", id: "STATS" },
+      ],
     }),
-    getManagerProjects: builder.query<Project[], void>({
-      query: () => ({
+    getManagerProjects: builder.query<
+      PaginatedResponse<Project>,
+      {
+        page: number;
+        limit: number;
+        search?: string;
+        status?: string;
+        priority?: string;
+      }
+    >({
+      query: ({ page, limit, search, status, priority }) => ({
         url: API_ROUTES.PROJECTS.ROOT,
         method: "GET",
+        params: {
+          page,
+          limit,
+          search: search || "",
+          status: status || "ALL",
+          priority: priority || "ALL",
+        },
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: unknown) => extractList<Project>(response),
+      transformResponse: (response: { data: PaginatedResponse<Project> }) =>
+        response.data,
       providesTags: [{ type: "ManagerProjects", id: "LIST" }],
     }),
     createProject: builder.mutation<Project, Partial<Project>>({
@@ -154,14 +213,22 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         data,
       }),
       transformResponse: (response: { data: Project }) => response.data,
-      invalidatesTags: [{ type: "ManagerProjects", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ManagerProjects", id: "LIST" },
+        { type: "ManagerProjects", id: "STATS" },
+        "ManagerAnalytics",
+      ],
     }),
     deleteManagerProject: builder.mutation<void, string>({
       query: (id) => ({
         url: `${API_ROUTES.PROJECTS.ROOT}/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "ManagerProjects", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ManagerProjects", id: "LIST" },
+        { type: "ManagerProjects", id: "STATS" },
+        "ManagerAnalytics",
+      ],
     }),
     updateManagerProject: builder.mutation<
       Project,
@@ -173,7 +240,11 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         data,
       }),
       transformResponse: (response: { data: Project }) => response.data,
-      invalidatesTags: [{ type: "ManagerProjects", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ManagerProjects", id: "LIST" },
+        { type: "ManagerProjects", id: "STATS" },
+        "ManagerAnalytics",
+      ],
     }),
     getManagerInvoices: builder.query<
       { items: Invoice[]; total: number; totalPages: number },
@@ -188,6 +259,129 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         data: { items: Invoice[]; total: number; totalPages: number };
       }) => response.data,
       providesTags: ["ManagerInvoices"],
+    }),
+    getManagerMemberStats: builder.query<
+      {
+        total: number;
+        active: number;
+        inactive: number;
+      },
+      void
+    >({
+      query: () => ({
+        url: API_ROUTES.MANAGER.MEMBERS_STATS,
+        method: "GET",
+      }),
+      transformResponse: (response: {
+        data: { total: number; active: number; inactive: number };
+      }) => response.data,
+      providesTags: [{ type: "ManagerMembers", id: "STATS" }],
+    }),
+    getManagerInvitationStats: builder.query<
+      {
+        total: number;
+        pending: number;
+        accepted: number;
+        expired: number;
+        cancelled: number;
+      },
+      void
+    >({
+      query: () => ({
+        url: API_ROUTES.MANAGER.INVITATIONS_STATS,
+        method: "GET",
+      }),
+      transformResponse: (response: {
+        data: {
+          total: number;
+          pending: number;
+          accepted: number;
+          expired: number;
+          cancelled: number;
+        };
+      }) => response.data,
+      providesTags: [{ type: "ManagerInvites", id: "STATS" }],
+    }),
+    getManagerDashboardStats: builder.query<
+      {
+        members: { total: number; active: number; inactive: number };
+        invites: {
+          total: number;
+          pending: number;
+          accepted: number;
+          expired: number;
+          cancelled: number;
+        };
+        projects: {
+          total: number;
+          active: number;
+          onHold: number;
+          completed: number;
+        };
+      },
+      void
+    >({
+      query: () => ({
+        url: API_ROUTES.MANAGER.DASHBOARD_STATS,
+        method: "GET",
+      }),
+      transformResponse: (response: {
+        data: {
+          members: { total: number; active: number; inactive: number };
+          invites: {
+            total: number;
+            pending: number;
+            accepted: number;
+            expired: number;
+            cancelled: number;
+          };
+          projects: {
+            total: number;
+            active: number;
+            onHold: number;
+            completed: number;
+          };
+        };
+      }) => response.data,
+      providesTags: [
+        { type: "ManagerMembers", id: "STATS" },
+        { type: "ManagerInvites", id: "STATS" },
+        { type: "ManagerProjects", id: "STATS" },
+      ],
+    }),
+    getManagerAnalytics: builder.query<
+      {
+        performance: Array<{
+          userId: string;
+          name: string;
+          storyPoints: number;
+          taskCount: number;
+        }>;
+        tasks: Array<{ status: string; count: number }>;
+        projects: Array<{ status: string; count: number }>;
+        velocity: Array<{ label: string; points: number }>;
+      },
+      string | void
+    >({
+      query: (timeframe = "YEAR") => ({
+        url: API_ROUTES.MANAGER.ANALYTICS,
+        method: "GET",
+        params: { filter: timeframe },
+      }),
+      transformResponse: (response: {
+        data: {
+          performance: Array<{
+            userId: string;
+            name: string;
+            storyPoints: number;
+            taskCount: number;
+          }>;
+          tasks: Array<{ status: string; count: number }>;
+          projects: Array<{ status: string; count: number }>;
+          velocity: Array<{ label: string; points: number }>;
+        };
+      }) => response.data,
+      providesTags: ["ManagerAnalytics"],
     }),
   }),
 });
@@ -207,4 +401,8 @@ export const {
   useDeleteManagerProjectMutation,
   useUpdateManagerProjectMutation,
   useGetManagerInvoicesQuery,
+  useGetManagerMemberStatsQuery,
+  useGetManagerInvitationStatsQuery,
+  useGetManagerDashboardStatsQuery,
+  useGetManagerAnalyticsQuery,
 } = managerApiSlice;

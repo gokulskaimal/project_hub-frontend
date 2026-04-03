@@ -1,6 +1,6 @@
 import React from "react";
 import { LucideIcon } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface EntityCardProps {
   id: string;
@@ -36,6 +36,8 @@ export const EntityCard: React.FC<EntityCardProps> = ({
   className = "",
   children,
 }) => {
+  const router = useRouter();
+
   const CardWrapper = ({
     children: wrapperChildren,
   }: {
@@ -43,21 +45,31 @@ export const EntityCard: React.FC<EntityCardProps> = ({
   }) => {
     const wrapperClasses = `group relative bg-white border border-gray-50 p-2.5 sm:p-6 rounded-xl shadow-sm transition-all duration-300 ${className}`;
 
-    if (href) {
-      return (
-        <Link
-          href={href}
-          className={`${wrapperClasses} hover:shadow-xl hover:-translate-y-1 block`}
-        >
-          {wrapperChildren}
-        </Link>
+    const handleCardClick = (e: React.MouseEvent) => {
+      // If the click is on an interactive element (button, link, or their descendants), don't navigate
+      const isInteractive = (e.target as HTMLElement).closest(
+        'button, a, [role="button"]',
       );
-    }
+      if (isInteractive) return;
+
+      if (href) {
+        router.push(href);
+      } else if (onClick) {
+        onClick();
+      }
+    };
 
     return (
       <div
-        className={`${wrapperClasses} hover:shadow-md ${onClick ? "cursor-pointer" : ""}`}
-        onClick={onClick} // Applied onClick here
+        className={`${wrapperClasses} ${href || onClick ? "cursor-pointer hover:shadow-xl hover:-translate-y-1" : ""}`}
+        onClick={handleCardClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            handleCardClick(e as any);
+          }
+        }}
+        role={href || onClick ? "link" : "article"}
+        tabIndex={href || onClick ? 0 : undefined}
       >
         {wrapperChildren}
       </div>
@@ -100,7 +112,7 @@ export const EntityCard: React.FC<EntityCardProps> = ({
             <h3 className="text-[13px] sm:text-lg font-black text-gray-900 group-hover:text-blue-600 transition-colors truncate">
               {title}
             </h3>
-            <div className="flex items-center gap-1 shrink-0 overflow-hidden">
+            <div className="flex items-center gap-1 shrink-0">
               {status && (
                 <span
                   className={`text-[8px] sm:text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border whitespace-nowrap ${statusColor}`}
@@ -109,7 +121,10 @@ export const EntityCard: React.FC<EntityCardProps> = ({
                 </span>
               )}
               {actions && (
-                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                  className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {actions}
                 </div>
               )}
@@ -131,7 +146,11 @@ export const EntityCard: React.FC<EntityCardProps> = ({
         )}
       </div>
 
-      {children && <div className="mt-4">{children}</div>}
+      {children && (
+        <div className="mt-4" onClick={(e) => e.stopPropagation()}>
+          {children}
+        </div>
+      )}
 
       {(footerLeft || footerRight) && (
         <div className="mt-3 sm:mt-6 pt-3 border-t border-gray-50 flex items-center justify-between gap-2">

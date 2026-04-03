@@ -45,7 +45,7 @@ export default function ProjectFilters({
             placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 w-full"
+            className="pl-9 h-10 w-full font-bold text-gray-900"
           />
         </div>
 
@@ -56,7 +56,7 @@ export default function ProjectFilters({
             <select
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">All Assignees</option>
               <option value="UNASSIGNED">Unassigned</option>
@@ -82,7 +82,7 @@ export default function ProjectFilters({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">All Status</option>
               <option value="TODO">To Do</option>
@@ -106,7 +106,7 @@ export default function ProjectFilters({
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">All Priorities</option>
               <option value="LOW">Low</option>
@@ -130,7 +130,7 @@ export default function ProjectFilters({
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">All Types</option>
               <option value="BUG">Bug</option>
@@ -153,7 +153,7 @@ export default function ProjectFilters({
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="ALL">Any Date</option>
               <option value="OVERDUE">Overdue</option>

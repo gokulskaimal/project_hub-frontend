@@ -22,38 +22,47 @@ import {
   useGetMyTasksQuery,
   useGetMyVelocityQuery,
 } from "@/store/api/projectApiSlice";
+import { useGetMemberAnalyticsQuery } from "@/store/api/userApiSlice";
 import { getPriorityColor, getStatusColor } from "@/utils/projectUtils";
 import { StatCard } from "@/components/ui/StatCard";
 import { EntityCard } from "@/components/ui/EntityCard";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
+import {
+  AnalyticsFilter,
+  TimeFrame,
+} from "@/components/analytics/AnalyticsFilter";
+import {
+  AnalyticsBarChart,
+  StatusDistribution,
+} from "@/components/analytics/AnalyticsCharts";
+import { mapRevenueData, mapStatusDistribution } from "@/utils/analyticsUtils";
+
+import { RoleBanner } from "@/components/ui/RoleBanner";
 
 export default function MemberDashboard() {
   const { user } = useAuth();
+  const [timeframe, setTimeframe] = React.useState<TimeFrame>("YEAR");
   const {
-    data: projects = [],
+    data: projectsData,
     isLoading: projectsLoading,
-    isFetching: projectsFetching,
     refetch: refetchProjects,
-  } = useGetMyProjectsQuery(undefined, { skip: !user }) as {
-    data: Project[];
-    isLoading: boolean;
-    isFetching: boolean;
-    refetch: () => void;
-  };
-  const {
-    data: tasks = [],
-    isLoading: tasksLoading,
-    isFetching: tasksFetching,
-  } = useGetMyTasksQuery(undefined, { skip: !user }) as {
-    data: Task[];
-    isLoading: boolean;
-    isFetching: boolean;
-  };
-  const { data: velocityData, isError: velocityError } = useGetMyVelocityQuery(
-    7,
+  } = useGetMyProjectsQuery({ page: 1, limit: 100 }, { skip: !user });
+
+  const projects = projectsData?.items || [];
+
+  const { data: tasksData, isLoading: tasksLoading } = useGetMyTasksQuery(
+    { page: 1, limit: 100 },
     { skip: !user },
   );
+
+  const tasks = tasksData?.items || [];
+
+  const {
+    data: analyticsData,
+    isLoading: analyticsLoading,
+    isError: analyticsError,
+  } = useGetMemberAnalyticsQuery(timeframe, { skip: !user });
 
   // Real-time Updates
   const { socket, isConnected } = useSocket();
@@ -81,66 +90,53 @@ export default function MemberDashboard() {
     };
   }, [socket, isConnected, refetchProjects]);
 
-  const weeklyVelocity = useMemo(() => {
-    if (velocityData && !velocityError) {
-      return velocityData.totalPoints || 0;
-    }
-    if (!tasks.length) return 0;
-    const weekStart = new Date();
-    weekStart.setHours(0, 0, 0, 0);
-    weekStart.setDate(weekStart.getDate() - 6);
-    return tasks
-      .filter(
-        (t) =>
-          t.status === "DONE" &&
-          t.completedAt &&
-          new Date(t.completedAt) >= weekStart,
-      )
-      .reduce((sum, t) => sum + (t.storyPoints || 0), 0);
-  }, [velocityData, velocityError, tasks]);
+  const velocityPoints = mapRevenueData(analyticsData?.velocity);
+  const taskStats = mapStatusDistribution(analyticsData?.taskDistribution);
 
-  const loading =
-    projectsLoading || tasksLoading || projectsFetching || tasksFetching;
+  const loading = projectsLoading || tasksLoading || analyticsLoading;
 
   if (loading) {
     return (
-      <div className="flex h-full w-full items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-500 font-medium">Loading your dashboard...</p>
+      <DashboardLayout title="Member Hub">
+        <div className="p-6 space-y-10">
+          <div className="h-48 bg-gray-50 rounded-2xl animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-32 bg-gray-50 rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
-  const completedTasks = tasks.filter((t) => t.status === "DONE").length;
+  const completedTasks = tasks.filter((t: any) => t.status === "DONE").length;
   const pendingTasks = tasks.filter(
-    (t) => t.status === "TODO" || t.status === "IN_PROGRESS",
+    (t: any) => t.status === "TODO" || t.status === "IN_PROGRESS",
   ).length;
   const criticalTasks = tasks.filter(
-    (t) => t.priority === "CRITICAL" && t.status !== "DONE",
+    (t: any) => t.priority === "CRITICAL" && t.status !== "DONE",
   ).length;
   return (
     <DashboardLayout title="Member Hub">
       <div className="space-y-8 pb-12">
         {/* Premium Welcome Banner */}
-        <div className="relative overflow-hidden rounded-xl bg-gray-900 px-6 py-10 sm:px-10 sm:py-16 text-white shadow-2xl">
-          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl" />
-          <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl" />
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[10px] font-black uppercase tracking-widest">
-                Mission Control
-              </span>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
+        <RoleBanner
+          roleName="Member"
+          badgeText="Mission Control"
+          welcomeMessage={
+            <>
               Welcome,{" "}
               <span className="text-blue-400">
                 {user?.firstName || "Member"}
               </span>
-            </h1>
-            <p className="text-gray-400 text-sm sm:text-lg font-medium max-w-2xl leading-relaxed">
+            </>
+          }
+          description={
+            <>
               You have{" "}
               <span className="text-white font-bold">
                 {pendingTasks} pending tasks
@@ -150,9 +146,9 @@ export default function MemberDashboard() {
                 {criticalTasks} critical issues
               </span>{" "}
               requiring your attention today.
-            </p>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* Stats Grid */}
         <PremiumStatGrid
@@ -184,6 +180,88 @@ export default function MemberDashboard() {
           ]}
         />
 
+        {/* Performance & Analytics */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-blue-600" />
+              Performance Insight
+            </h2>
+            <AnalyticsFilter value={timeframe} onChange={setTimeframe} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+                    Velocity Trajectory
+                  </h3>
+                  <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+                    Points delivered across {timeframe.toLowerCase()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Active Tracking
+                  </span>
+                </div>
+              </div>
+              <div className="h-[300px]">
+                {analyticsLoading ? (
+                  <div className="h-full flex items-center justify-center bg-gray-50/50 animate-pulse rounded-xl border border-dashed border-gray-100">
+                    <TrendingUp className="w-8 h-8 text-blue-200" />
+                  </div>
+                ) : analyticsError ? (
+                  <div className="h-full flex items-center justify-center p-12 text-center border-2 border-dashed border-red-50 rounded-xl">
+                    <p className="text-xs font-bold text-red-400 uppercase tracking-widest">
+                      Analytics Unavailable
+                    </p>
+                  </div>
+                ) : (
+                  <AnalyticsBarChart
+                    data={velocityPoints}
+                    color="#3b82f6"
+                    label="Points"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+                  Task Ecosystem
+                </h3>
+                <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+                  Distribution by lifecycle stage
+                </p>
+              </div>
+              <div className="h-[250px]">
+                {analyticsLoading ? (
+                  <div className="h-full flex items-center justify-center bg-gray-50/50 animate-pulse rounded-xl border border-dashed border-gray-100">
+                    <CheckSquare className="w-8 h-8 text-blue-200" />
+                  </div>
+                ) : (
+                  <StatusDistribution data={taskStats} />
+                )}
+              </div>
+              <div className="mt-6 space-y-2">
+                {taskStats.map((item: { name: string; value: number }) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest"
+                  >
+                    <span className="text-gray-400">{item.name}</span>
+                    <span className="text-gray-900">{item.value} Tasks</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Recent Tasks */}
           <div className="lg:col-span-2 space-y-3 sm:space-y-4">
@@ -211,7 +289,7 @@ export default function MemberDashboard() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {tasks.slice(0, 5).map((task) => (
+                  {tasks.slice(0, 5).map((task: any) => (
                     <Link
                       key={task.id}
                       href={`/member/projects/${task.projectId}`}
@@ -278,7 +356,7 @@ export default function MemberDashboard() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-5">
-              {projects.slice(0, 4).map((project) => (
+              {projects.slice(0, 4).map((project: any) => (
                 <EntityCard
                   key={project.id}
                   id={project.id}
@@ -300,6 +378,7 @@ export default function MemberDashboard() {
                       <div
                         className="bg-blue-500 h-full rounded-full transition-all duration-500"
                         style={{ width: `${Number(project.progress) || 0}%` }}
+                        // webint:ignore inline styles necessary for dynamic progress rendering
                       />
                     </div>
                   }

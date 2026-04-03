@@ -25,10 +25,12 @@ export default function MemberTasksBoardPage() {
   const [projectFilter, setProjectFilter] = useState("ALL");
 
   const {
-    data: tasks = [],
+    data: tasksData,
     isLoading: tasksLoading,
     refetch,
-  } = useGetMyTasksQuery(undefined, { skip: !user });
+  } = useGetMyTasksQuery({ page: 1, limit: 1000 }, { skip: !user });
+
+  const tasks = (tasksData?.items || []) as Task[];
 
   const { data: orgUsers = [], isLoading: usersLoading } =
     useGetOrganizationUsersQuery(undefined, { skip: !user });
@@ -39,7 +41,7 @@ export default function MemberTasksBoardPage() {
 
   const { socket, isConnected } = useSocket();
 
-  // Socket Listeners (Keep existing logic)
+  // Socket Listeners
   useEffect(() => {
     if (!socket || !isConnected || !user) return;
     const handleRevalidate = () => refetch();
@@ -148,7 +150,7 @@ export default function MemberTasksBoardPage() {
               >
                 <option value="ALL">All Projects</option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id as string} value={p.id as string}>
                     {p.name}
                   </option>
                 ))}

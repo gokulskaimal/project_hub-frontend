@@ -28,6 +28,7 @@ export const API_ROUTES = {
     PROFILE: "/user/profile",
     CHANGE_PASSWORD: "/user/change-password",
     VELOCITY: "/user/velocity",
+    ANALYTICS: "/user/analytics",
   },
   ADMIN: {
     ORGANIZATIONS: "/admin/organizations",
@@ -35,15 +36,20 @@ export const API_ROUTES = {
     PLANS: "/admin/plans",
     REPORTS: "/admin/reports",
     INVOICES: "/admin/invoices",
+    ANALYTICS: "/admin/analytics",
   },
   MANAGER: {
     MEMBERS: "/manager/members",
     PLANS: "/plans",
     INVITATIONS: "/manager/invitations",
+    MEMBERS_STATS: "/manager/members/stats",
+    INVITATIONS_STATS: "/manager/invitations/stats",
     ORGANIZATION: "/manager/organization",
     INVITE: "/manager/invite-member",
     BULK_INVITE: "/manager/bulk-invite",
     INVOICES: "/manager/invoices",
+    DASHBOARD_STATS: "/manager/dashboard/stats",
+    ANALYTICS: "/manager/analytics",
   },
   PLANS: {
     GET_ALL: "/plans",

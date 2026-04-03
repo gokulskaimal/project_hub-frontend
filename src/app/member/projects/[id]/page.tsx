@@ -94,6 +94,28 @@ export default function MemberProjectDetailsPage() {
 
   const { socket, syncTimestamp } = useSocket();
 
+  // Real-time Sprint Updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleSprintUpdate = () => {
+      refetchSprints();
+      refetchTasks();
+    };
+
+    socket.on("sprint:created", handleSprintUpdate);
+    socket.on("sprint:active", handleSprintUpdate);
+    socket.on("sprint:completed", handleSprintUpdate);
+    socket.on("sprint:deleted", handleSprintUpdate);
+
+    return () => {
+      socket.off("sprint:created", handleSprintUpdate);
+      socket.off("sprint:active", handleSprintUpdate);
+      socket.off("sprint:completed", handleSprintUpdate);
+      socket.off("sprint:deleted", handleSprintUpdate);
+    };
+  }, [socket, refetchSprints, refetchTasks]);
+
   // Reconnection Sync
   useEffect(() => {
     if (syncTimestamp > 0) {

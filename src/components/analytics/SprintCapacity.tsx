@@ -1,6 +1,6 @@
 import React from "react";
 import { Sprint, Task } from "@/types/project";
-import { getTime } from "date-fns";
+import { Zap, AlertTriangle } from "lucide-react";
 
 interface SprintCapacityProps {
   sprints: Sprint[];
@@ -13,6 +13,7 @@ export default function SprintCapacity({
   tasks,
   activeSprintId,
 }: SprintCapacityProps) {
+  // 1. Calculate Average Capacity (Last 3 Sprints)
   const completedSprints = sprints
     .filter((s) => s.status === "COMPLETED")
     .sort(
@@ -21,80 +22,101 @@ export default function SprintCapacity({
     .slice(0, 3);
 
   let averageCapacity = 0;
-
   if (completedSprints.length > 0) {
-    const totalCompeletePoints = completedSprints.reduce((total, sprint) => {
-      const sprintTasks = tasks.filter((t) => t.sprintId === sprint.id);
-
-      const points = sprintTasks
-        .filter((t) => t.status === "DONE")
-        .reduce((sum, t) => sum + (t.storyPoints || 0), 0);
-
-      return total + points;
+    const totalPoints = completedSprints.reduce((total, sprint) => {
+      return (
+        total +
+        tasks
+          .filter((t) => t.sprintId === sprint.id && t.status === "DONE")
+          .reduce((sum, t) => sum + (t.storyPoints || 0), 0)
+      );
     }, 0);
-
-    averageCapacity = Math.round(
-      totalCompeletePoints / completedSprints.length,
-    );
-  } else {
-    averageCapacity = 0;
+    averageCapacity = Math.round(totalPoints / completedSprints.length);
   }
 
-  const activeTask = tasks.filter((t) => t.sprintId === activeSprintId);
+  // 2. Calculate Current Load
+  const currentLoad = tasks
+    .filter((t) => t.sprintId === activeSprintId)
+    .reduce((sum, t) => sum + (t.storyPoints || 0), 0);
 
-  const currentLoad = activeTask.reduce(
-    (sum, t) => sum + (t.storyPoints || 0),
-    0,
-  );
+  // 3. Styling Logic
+  const percentage =
+    averageCapacity > 0 ? (currentLoad / averageCapacity) * 100 : 0;
+  const isOverloaded = percentage > 100;
 
-  let statusColor = "bg-green-500";
-  let textColor = "text-green-500";
+  const getStatusConfig = () => {
+    if (percentage > 100)
+      return { color: "bg-red-500", text: "text-red-600", light: "bg-red-50" };
+    if (percentage > 85)
+      return {
+        color: "bg-amber-500",
+        text: "text-amber-600",
+        light: "bg-amber-50",
+      };
+    return {
+      color: "bg-emerald-500",
+      text: "text-emerald-600",
+      light: "bg-emerald-50",
+    };
+  };
 
-  if (averageCapacity > 0) {
-    const percentage = (currentLoad / averageCapacity) * 100;
-
-    if (percentage > 100) {
-      statusColor = "bg-red-500";
-      textColor = "text-red-500";
-    } else if (percentage > 85) {
-      statusColor = "bg-orange-500";
-      textColor = "text-orange-500";
-    }
-  }
-
-  const widthPercent =
-    averageCapacity > 0
-      ? Math.min((currentLoad / averageCapacity) * 100, 100)
-      : 0;
+  const config = getStatusConfig();
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-3 mb-4 flex items-center gap-4 shadow-sm">
-      <div className="flex-1">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs font-bold text-gray-900 uppercase">
-            Team Capacity
-          </span>
-          <span className={`text-xs font-bold ${textColor}`}>
-            {currentLoad} / {averageCapacity || "N/A"} pts
-          </span>
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <div className={`p-2 rounded-xl ${config.light}`}>
+            <Zap className={`w-4 h-4 ${config.text}`} />
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+              Sprint Capacity
+            </h3>
+            <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+              Workload vs Historical Average
+            </p>
+          </div>
         </div>
-
-        {/* Progress Bar Container */}
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          {/* Filled Bar */}
-          <div
-            className={`h-full ${statusColor} transition-all duration-500`}
-            style={{ width: averageCapacity > 0 ? `${widthPercent}%` : "0%" }}
-          />
+        <div className="text-right">
+          <span className={`text-lg font-black ${config.text} tabular-nums`}>
+            {currentLoad}{" "}
+            <span className="text-[10px] text-gray-400 font-bold uppercase">
+              / {averageCapacity || "??"} pts
+            </span>
+          </span>
         </div>
       </div>
 
-      {/* Warning Message if Overloaded */}
-      {averageCapacity > 0 && currentLoad > averageCapacity && (
-        <div className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100 animate-pulse">
-          ⚠️ Overloaded!
+      <div className="space-y-3">
+        {/* Progress Bar */}
+        <div className="relative h-3 w-full bg-gray-50 rounded-full overflow-hidden border border-gray-100">
+          <div
+            className={`h-full ${config.color} transition-all duration-1000 ease-out shadow-sm`}
+            style={{ width: `${Math.min(percentage, 100)}%` }}
+          />
         </div>
-      )}
+
+        {/* Footer Labels */}
+        <div className="flex justify-between items-center px-1">
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-[10px] font-black uppercase tracking-widest ${config.text}`}
+            >
+              {Math.round(percentage)}% Load
+            </span>
+          </div>
+
+          {isOverloaded && (
+            <div className="flex items-center gap-1.5 animate-pulse">
+              <AlertTriangle className="w-3 h-3 text-red-500" />
+              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">
+                Resource Critically High
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

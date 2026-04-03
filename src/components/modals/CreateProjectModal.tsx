@@ -51,9 +51,15 @@ export default function CreateProjectModal({
   });
 
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
-  const { data: members = [] } = useGetManagerMembersQuery(undefined, {
-    skip: !isOpen,
-  });
+  const { data: membersData = { items: [], total: 0 } } =
+    useGetManagerMembersQuery(
+      { page: 1, limit: 1000 },
+      {
+        skip: !isOpen,
+      },
+    );
+
+  const members = membersData.items;
 
   useEffect(() => {
     if (isOpen) {
@@ -194,6 +200,7 @@ export default function CreateProjectModal({
                     <button
                       onClick={onClose}
                       className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                      aria-label="Close modal"
                     >
                       <X className="w-6 h-6" />
                     </button>
@@ -300,6 +307,7 @@ export default function CreateProjectModal({
                                 priority: e.target.value,
                               })
                             }
+                            aria-label="Project priority level"
                           >
                             <option value="LOW">Low</option>
                             <option value="MEDIUM">Medium</option>
@@ -320,6 +328,7 @@ export default function CreateProjectModal({
                                 status: e.target.value,
                               })
                             }
+                            aria-label="Project initial status"
                           >
                             <option value="PLANNING">Planning</option>
                             <option value="ACTIVE">Active</option>
@@ -342,6 +351,7 @@ export default function CreateProjectModal({
                               <button
                                 onClick={() => removeTag(tag)}
                                 className="hover:text-red-500 transition-colors"
+                                aria-label={`Remove ${tag} tag`}
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>

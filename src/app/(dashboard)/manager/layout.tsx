@@ -31,18 +31,27 @@ import ChatNotificationListener from "@/components/chat/ChatNotificationListener
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useSidebar } from "@/hooks/useSidebar";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import {
+  ManagerModalProvider,
+  useManagerModals,
+} from "@/context/ManagerModalContext";
 
-export default function ManagerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isLoggedIn, role, accessToken } = useSelector(
     (state: RootState) => state.auth,
   );
+
+  const {
+    openInviteModal,
+    isInviteModalOpen,
+    closeInviteModal,
+    openCreateProjectModal,
+    isCreateProjectModalOpen,
+    closeCreateProjectModal,
+  } = useManagerModals();
 
   const {
     isCollapsed,
@@ -55,27 +64,10 @@ export default function ManagerLayout({
   const [userModalMode, setUserModalMode] = useState<"view" | "edit">("view");
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
-  // Modal states for Dashboard Quick Actions
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
-    useState(false);
-
   useEffect(() => {
     dispatch(hydrateFromStorage());
     setIsReady(true);
   }, [dispatch]);
-
-  // Expose modal opening functions to the window object so Dashboard buttons can trigger them
-  useEffect(() => {
-    (window as any).openInviteModal = () => setIsInviteModalOpen(true);
-    (window as any).openCreateProjectModal = () =>
-      setIsCreateProjectModalOpen(true);
-
-    return () => {
-      delete (window as any).openInviteModal;
-      delete (window as any).openCreateProjectModal;
-    };
-  }, []);
 
   const { isLoading: profileLoading } = useGetProfileQuery(undefined, {
     skip: !isLoggedIn || !!user,
@@ -190,19 +182,28 @@ export default function ManagerLayout({
         profile={profileHook}
       />
 
-      {/* Global Dashboard Modals */}
-      <InviteModal
-        isOpen={isInviteModalOpen}
-        onClose={() => setIsInviteModalOpen(false)}
-      />
+      {/* Global Dashboard Modals provided by context */}
+      <InviteModal isOpen={isInviteModalOpen} onClose={closeInviteModal} />
 
       <CreateProjectModal
         isOpen={isCreateProjectModalOpen}
-        onClose={() => setIsCreateProjectModalOpen(false)}
+        onClose={closeCreateProjectModal}
         onSuccess={() => {
           // Optional: refresh logic
         }}
       />
     </div>
+  );
+}
+
+export default function ManagerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <ManagerModalProvider>
+      <ManagerLayoutContent>{children}</ManagerLayoutContent>
+    </ManagerModalProvider>
   );
 }

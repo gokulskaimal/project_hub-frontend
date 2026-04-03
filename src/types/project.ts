@@ -97,6 +97,7 @@ export interface AdminUser {
   role?: string;
   status?: string;
   orgId?: string;
+  organizationName?: string;
 }
 
 export interface VelocityResponse {
@@ -113,7 +114,7 @@ export interface Sprint {
   description?: string;
   startDate: string;
   endDate: string;
-  status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED" | "PLANNING";
   goal?: string;
   createdAt?: string;
   updatedAt?: string;

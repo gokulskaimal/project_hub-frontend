@@ -11,6 +11,7 @@ import {
   Calendar,
   ListTodo,
   Rocket,
+  TrendingUp,
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
@@ -18,32 +19,80 @@ import {
   useGetManagerProjectsQuery,
   useGetManagerInvitationsQuery,
   useGetManagerOrganizationQuery,
+  useGetManagerDashboardStatsQuery,
+  useGetManagerAnalyticsQuery,
 } from "@/store/api/managerApiSlice";
 import { useSocket } from "@/context/SocketContext";
 import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
 import Link from "next/link";
 import { EntityCard } from "@/components/ui/EntityCard";
 import { getStatusColor } from "@/utils/projectUtils";
-import { User } from "@/types/auth";
-import { DashboardStats } from "@/types/stats";
+import { RoleBanner } from "@/components/ui/RoleBanner";
+import { useManagerModals } from "@/context/ManagerModalContext";
+import {
+  AnalyticsFilter,
+  TimeFrame,
+} from "@/components/analytics/AnalyticsFilter";
+import {
+  AnalyticsBarChart,
+  StatusDistribution,
+} from "@/components/analytics/AnalyticsCharts";
+import {
+  mapPerformanceData,
+  mapStatusDistribution,
+  mapRevenueData,
+} from "@/utils/analyticsUtils";
 
 export default function ManagerDashboardPage() {
+  const { openInviteModal, openCreateProjectModal } = useManagerModals();
+  const [timeframe, setTimeframe] = React.useState<TimeFrame>("YEAR");
   const { data: organization } = useGetManagerOrganizationQuery();
-  const { data: projects = [], refetch: refetchProjects } =
-    useGetManagerProjectsQuery();
-  const { data: members = [], refetch: refetchMembers } =
-    useGetManagerMembersQuery();
-  const { data: invites = [], refetch: refetchInvites } =
-    useGetManagerInvitationsQuery();
+
+  // Real-time Dashboard Stats
+  const { data: stats, refetch: refetchStats } =
+    useGetManagerDashboardStatsQuery();
+
+  // Analytics Data
+  const {
+    data: analyticsData,
+    isLoading: analyticsLoading,
+    isError: analyticsError,
+  } = useGetManagerAnalyticsQuery(timeframe);
+
+  const performanceData = mapPerformanceData(analyticsData?.performance);
+  const taskDistributionData = mapStatusDistribution(analyticsData?.tasks);
+  const velocityData = mapRevenueData(analyticsData?.velocity);
+
+  const { data: projectsData, refetch: refetchProjects } =
+    useGetManagerProjectsQuery({ page: 1, limit: 10 });
+  const projects = projectsData?.items || [];
+
+  const { refetch: refetchMembers } = useGetManagerMembersQuery({
+    page: 1,
+    limit: 10,
+  });
+
+  const { refetch: refetchInvites } = useGetManagerInvitationsQuery({
+    page: 1,
+    limit: 10,
+  });
+
   const { socket } = useSocket();
 
   useEffect(() => {
     if (socket) {
-      socket.on("project:created", refetchProjects);
-      socket.on("project:updated", refetchProjects);
+      socket.on("project:created", () => {
+        refetchProjects();
+        refetchStats();
+      });
+      socket.on("project:updated", () => {
+        refetchProjects();
+        refetchStats();
+      });
       socket.on("member:joined", () => {
         refetchMembers();
         refetchInvites();
+        refetchStats();
       });
       return () => {
         socket.off("project:created");
@@ -51,69 +100,162 @@ export default function ManagerDashboardPage() {
         socket.off("member:joined");
       };
     }
-  }, [socket, refetchProjects, refetchMembers, refetchInvites]);
-
-  const activeProjects = projects.filter((p) => p.status === "ACTIVE").length;
-  const onHoldProjects = projects.filter((p) => p.status === "ON_HOLD").length;
-  const pendingInvites = invites.filter((i) => i.status === "PENDING").length;
-
-  const dashboardStats: DashboardStats = {
-    total: members.length + pendingInvites,
-    active: activeProjects,
-    suspended: onHoldProjects,
-    engagement:
-      projects.length > 0 ? (activeProjects / projects.length) * 100 : 0,
-  };
+  }, [socket, refetchProjects, refetchMembers, refetchInvites, refetchStats]);
 
   return (
     <DashboardLayout title="Manager Hub">
       <div className="space-y-10 pb-12">
         {/* Welcome Banner */}
-        <div className="relative overflow-hidden rounded-xl bg-gray-900 px-10 py-12 text-white shadow-2xl">
-          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl" />
-          <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl" />
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-black uppercase tracking-widest">
-                Executive Control
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
+        <RoleBanner
+          roleName="Manager"
+          badgeText="Executive Control"
+          welcomeMessage={
+            <>
               Welcome back to{" "}
               <span className="text-blue-400">
                 {organization?.name || "the Hub"}
               </span>
-            </h1>
-            <p className="text-gray-400 text-lg font-medium max-w-2xl leading-relaxed">
+            </>
+          }
+          description={
+            <>
               Your organization is currently managing{" "}
               <span className="text-white font-bold">
-                {projects.length} projects
+                {stats?.projects?.total || 0} projects
               </span>{" "}
               with{" "}
               <span className="text-white font-bold">
-                {members.length} team members
+                {stats?.members?.total || 0} team members
               </span>
               .
-            </p>
-          </div>
-        </div>
+            </>
+          }
+        />
 
-        {/* Stats Grid */}
         <div>
           <div className="flex items-center justify-between mb-6 px-4">
             <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
               <Layout className="w-6 h-6 text-blue-600" />
-              Real-time Analytics
+              Organization Analytics
             </h2>
-            <div className="flex gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                Live Sync
-              </span>
+          </div>
+          <PremiumStatGrid
+            items={[
+              {
+                label: "Total Force",
+                value:
+                  (stats?.members?.total || 0) + (stats?.invites?.pending || 0),
+                icon: Users,
+                color: "blue",
+              },
+              {
+                label: "Active Projects",
+                value: stats?.projects?.active || 0,
+                icon: Rocket,
+                color: "indigo",
+              },
+              {
+                label: "On Hold",
+                value: stats?.projects?.onHold || 0,
+                icon: Briefcase,
+                color: "amber",
+              },
+              {
+                label: "Efficiency",
+                value: `${stats?.projects?.total && stats.projects.total > 0 ? Math.round((stats.projects.active / stats.projects.total) * 100) : 0}%`,
+                icon: ListTodo,
+                color: "purple",
+              },
+            ]}
+          />
+        </div>
+
+        {/* Performance Analytics Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-4">
+            <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-purple-600" />
+              Performance Analytics
+            </h2>
+            <AnalyticsFilter value={timeframe} onChange={setTimeframe} />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+                    Top Performers
+                  </h3>
+                  <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+                    Team member productivity
+                  </p>
+                </div>
+              </div>
+              <div className="h-[250px]">
+                {analyticsLoading ? (
+                  <div className="h-full flex items-center justify-center bg-gray-50/50 animate-pulse rounded-xl border border-dashed border-gray-100">
+                    <TrendingUp className="w-8 h-8 text-purple-200" />
+                  </div>
+                ) : analyticsError ? (
+                  <div className="h-full flex items-center justify-center p-12 text-center border-2 border-dashed border-red-50 rounded-xl">
+                    <p className="text-xs font-bold text-red-400 uppercase tracking-widest">
+                      Analytics Unavailable
+                    </p>
+                  </div>
+                ) : (
+                  <AnalyticsBarChart
+                    data={performanceData}
+                    color="#8b5cf6"
+                    label="Points"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+                  Global Velocity
+                </h3>
+                <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+                  Points delivered across the org
+                </p>
+              </div>
+              <div className="h-[250px]">
+                {analyticsLoading ? (
+                  <div className="h-full flex items-center justify-center bg-gray-50/50 animate-pulse rounded-xl border border-dashed border-gray-100">
+                    <TrendingUp className="w-8 h-8 text-blue-200" />
+                  </div>
+                ) : (
+                  <AnalyticsBarChart
+                    data={velocityData}
+                    color="#3b82f6"
+                    label="Total Points"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+                  Task Distribution
+                </h3>
+                <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+                  By status
+                </p>
+              </div>
+              <div className="h-[250px]">
+                {analyticsLoading ? (
+                  <div className="h-full flex items-center justify-center bg-gray-50/50 animate-pulse rounded-xl border border-dashed border-gray-100">
+                    <ListTodo className="w-8 h-8 text-blue-200" />
+                  </div>
+                ) : (
+                  <StatusDistribution data={taskDistributionData} />
+                )}
+              </div>
             </div>
           </div>
-          <PremiumStatGrid stats={dashboardStats} />
         </div>
 
         {/* Main Content Areas */}
@@ -134,7 +276,7 @@ export default function ManagerDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {projects.slice(0, 4).map((project) => (
+              {projects.slice(0, 4).map((project: any) => (
                 <EntityCard
                   key={project.id}
                   id={project.id}
@@ -153,25 +295,23 @@ export default function ManagerDashboardPage() {
                         ? "bg-amber-500"
                         : "bg-blue-500"
                   }
-                  footerLeft={project.members
-                    ?.slice(0, 3)
-                    .map(
-                      (
-                        m: {
-                          firstName?: string;
-                          lastName?: string;
-                          email?: string;
-                        },
-                        i: number,
-                      ) => (
-                        <div
-                          key={i}
-                          className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-bold ring-2 ring-gray-50"
-                        >
-                          {m.firstName?.[0] || "U"}
-                        </div>
-                      ),
-                    )}
+                  footerLeft={project.members?.slice(0, 3).map(
+                    (
+                      m: {
+                        firstName?: string;
+                        lastName?: string;
+                        email?: string;
+                      },
+                      i: number,
+                    ) => (
+                      <div
+                        key={i}
+                        className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-bold ring-2 ring-gray-50"
+                      >
+                        {m.firstName?.[0] || "U"}
+                      </div>
+                    ),
+                  )}
                   footerRight={`${project.members?.length || project.teamMemberIds?.length || 0} Members`}
                 />
               ))}
@@ -198,7 +338,7 @@ export default function ManagerDashboardPage() {
             </h2>
             <div className="bg-white border border-gray-100 rounded-xl p-8 shadow-sm space-y-4">
               <button
-                onClick={() => (window as any).openInviteModal?.()}
+                onClick={openInviteModal}
                 className="w-full flex items-center justify-between p-5 bg-blue-50 hover:bg-blue-600 rounded-xl group transition-all duration-300"
               >
                 <div className="flex items-center gap-4">
@@ -213,7 +353,7 @@ export default function ManagerDashboardPage() {
               </button>
 
               <button
-                onClick={() => (window as any).openCreateProjectModal?.()}
+                onClick={openCreateProjectModal}
                 className="w-full flex items-center justify-between p-5 bg-indigo-50 hover:bg-indigo-600 rounded-xl group transition-all duration-300"
               >
                 <div className="flex items-center gap-4">

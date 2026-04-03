@@ -385,7 +385,7 @@ export default function AdminPlansPage() {
                           </label>
                           <input
                             {...register("name")}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                             placeholder="e.g. Pro Plan"
                           />
                           {errors.name && (
@@ -401,7 +401,7 @@ export default function AdminPlansPage() {
                           <textarea
                             {...register("description")}
                             rows={2}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none resize-none"
                             placeholder="What's included in this plan?"
                           />
                           {errors.description && (
@@ -417,7 +417,7 @@ export default function AdminPlansPage() {
                           <input
                             type="number"
                             {...register("price", { valueAsNumber: true })}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                           />
                         </div>
                         <div>
@@ -426,7 +426,7 @@ export default function AdminPlansPage() {
                           </label>
                           <select
                             {...register("type")}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                           >
                             <option value="STARTER">Starter</option>
                             <option value="PRO">Professional</option>
@@ -450,7 +450,7 @@ export default function AdminPlansPage() {
                             {...register("limits.projects", {
                               valueAsNumber: true,
                             })}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm"
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-900"
                           />
                         </div>
                         <div>
@@ -462,7 +462,7 @@ export default function AdminPlansPage() {
                             {...register("limits.members", {
                               valueAsNumber: true,
                             })}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm"
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-900"
                           />
                         </div>
                       </div>
@@ -484,7 +484,7 @@ export default function AdminPlansPage() {
                             <div key={f.id} className="flex gap-2">
                               <input
                                 {...register(`features.${i}` as const)}
-                                className="flex-1 px-4 py-1.5 bg-gray-50 border border-gray-100 rounded-xl text-sm"
+                                className="flex-1 px-4 py-1.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-900"
                               />
                               {fields.length > 1 && (
                                 <button

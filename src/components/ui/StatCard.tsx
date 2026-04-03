@@ -67,45 +67,74 @@ export const StatCard: React.FC<StatCardProps> = ({
   const colors = colorMap[color] || colorMap.blue;
 
   return (
-    <div className="relative group bg-white overflow-hidden rounded-xl border border-gray-50 p-2.5 sm:p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-      {/* Decorative Glow - Reduced on mobile */}
+    <div className="relative group bg-white overflow-hidden rounded-2xl border border-gray-100 p-4 sm:p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-500 ease-out cursor-default">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity duration-500">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern
+              id="grid"
+              width="20"
+              height="20"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 20 0 L 0 0 0 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+              />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+      </div>
+
+      {/* Decorative Glow */}
       <div
-        className={`absolute -right-8 -top-8 sm:-right-6 sm:-top-6 w-20 h-20 sm:w-32 sm:h-32 rounded-full ${colors.bg} opacity-20 sm:opacity-50 group-hover:opacity-100 transition-all duration-500 scale-100 group-hover:scale-150 blur-2xl`}
+        className={`absolute -right-12 -top-12 w-32 h-32 sm:w-48 sm:h-48 rounded-full ${colors.bg} opacity-20 group-hover:opacity-60 transition-all duration-700 blur-3xl group-hover:scale-150`}
       />
 
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-2 sm:mb-6">
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4 sm:mb-8">
           <div
-            className={`p-1.5 sm:p-3 ${colors.bg} ${colors.text} rounded-lg sm:rounded-xl group-hover:${colors.iconBg} group-hover:text-white transition-all duration-300 shadow-sm`}
+            className={`p-2.5 sm:p-4 rounded-2xl ${colors.bg} ${colors.text} shadow-inner group-hover:scale-110 transition-transform duration-500`}
           >
-            <Icon size={14} className="sm:w-6 sm:h-6" />
+            <Icon size={18} className="sm:w-6 sm:h-6" />
           </div>
-          <span
-            className={`text-[8px] sm:text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border ${colors.bg} ${colors.text} border-opacity-30 whitespace-nowrap`}
-          >
-            {label}
-          </span>
+          <div className="text-right">
+            <span
+              className={`text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-lg border-2 ${colors.bg} ${colors.text} border-opacity-30 whitespace-nowrap shadow-sm`}
+            >
+              {label}
+            </span>
+          </div>
         </div>
 
-        <div>
-          <h3 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">
+        <div className="mt-auto">
+          <h3 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter mb-1 select-all">
             {loading ? (
-              <div className="h-6 sm:h-9 w-16 sm:w-24 bg-gray-100 animate-pulse rounded-lg" />
+              <div className="h-8 sm:h-12 w-20 sm:w-32 bg-gray-100 animate-pulse rounded-xl" />
             ) : (
               value
             )}
           </h3>
-          <div className="flex items-center justify-between mt-0.5 sm:mt-2">
-            <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">
-              Stat
-            </p>
+          <div className="flex items-center justify-between">
+            <div
+              className={`h-1 w-8 sm:w-12 rounded-full ${colors.iconBg} opacity-30 group-hover:w-full transition-all duration-700`}
+            />
             {trend && (
-              <span
-                className={`text-[9px] sm:text-[10px] font-black ${trend.isPositive ? "text-green-600" : "text-red-600"}`}
+              <div
+                className={`flex items-center gap-1.5 ml-2 ${trend.isPositive ? "text-emerald-600" : "text-red-600"}`}
               >
-                {trend.isPositive ? "+" : ""}
-                {trend.value}%
-              </span>
+                <span className="text-[10px] font-black tracking-widest tabular-nums font-mono">
+                  {trend.isPositive ? "+" : ""}
+                  {trend.value}%
+                </span>
+                <div
+                  className={`w-1.5 h-1.5 rounded-full ${trend.isPositive ? "bg-emerald-500" : "bg-red-500"} animate-pulse`}
+                />
+              </div>
             )}
           </div>
         </div>

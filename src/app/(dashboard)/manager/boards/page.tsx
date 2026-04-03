@@ -24,14 +24,16 @@ import { EntityCard } from "@/components/ui/EntityCard";
 
 export default function GlobalBoardsPage() {
   const {
-    data: projects = [],
+    data: projectsData = { items: [], total: 0 },
     isLoading,
     isFetching,
     refetch,
-  } = useGetManagerProjectsQuery();
+  } = useGetManagerProjectsQuery({ page: 1, limit: 1000 });
   const [searchQuery, setSearchQuery] = useState("");
 
   const loading = isLoading || isFetching;
+
+  const projects = projectsData.items;
 
   const filteredProjects = projects.filter(
     (p: Project) =>

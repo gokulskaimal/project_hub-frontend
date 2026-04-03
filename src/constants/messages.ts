@@ -30,6 +30,8 @@ export const MESSAGES = {
     CREATE_SUCCESS: "Project created successfully",
     CREATE_FAILED: "Failed to create project",
     UPDATE_SUCCESS: "Project updated successfully",
+    COMPLETE_SUCCESS: "Project completed successfully",
+    COMPLETE_FAILED: "Failed to complete project",
     UPDATE_FAILED: "Failed to update project",
     SAVE_FAILED: "Failed to save project changes",
     DELETE_SUCCESS: "Project deleted successfully",

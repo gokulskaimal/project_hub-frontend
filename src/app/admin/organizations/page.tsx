@@ -36,6 +36,7 @@ export default function AdminOrganizationsPage() {
     page,
     limit,
     search,
+    status: statusFilter,
   });
   const { data: reportsData, isLoading: reportsLoading } =
     useGetAdminReportsQuery();
@@ -50,16 +51,8 @@ export default function AdminOrganizationsPage() {
 
   const filteredOrgs = useMemo(() => {
     let result = [...orgs];
-    if (search) {
-      result = result.filter(
-        (o) =>
-          o.name?.toLowerCase().includes(search.toLowerCase()) ||
-          o.email?.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-    if (statusFilter !== "ALL") {
-      result = result.filter((o) => o.status === statusFilter);
-    }
+    // Backend now handles search and statusFilter
+
     result.sort((a, b) => {
       const valA = (a[sortBy as keyof typeof a] as string)?.toLowerCase() || "";
       const valB = (b[sortBy as keyof typeof b] as string)?.toLowerCase() || "";
@@ -68,7 +61,7 @@ export default function AdminOrganizationsPage() {
       return 0;
     });
     return result;
-  }, [orgs, search, statusFilter, sortBy, sortOrder]);
+  }, [orgs, sortBy, sortOrder]);
 
   const toggleSort = (field: string) => {
     setSortOrder(sortBy === field && sortOrder === "asc" ? "desc" : "asc");
@@ -201,7 +194,7 @@ export default function AdminOrganizationsPage() {
                 key={org.id}
                 id={org.id}
                 title={org.name}
-                subtitle={org.email || "No email provided"}
+                subtitle={org.email}
                 icon={Building2}
                 status={org.status}
                 statusColor={

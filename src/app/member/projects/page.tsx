@@ -29,10 +29,12 @@ import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
 export default function MemberProjectsPage() {
   const { user } = useAuth();
   const {
-    data: projects = [],
+    data: projectsData,
     isLoading,
     isFetching,
-  } = useGetMyProjectsQuery(undefined, { skip: !user });
+  } = useGetMyProjectsQuery({ page: 1, limit: 100 }, { skip: !user });
+
+  const projects = projectsData?.items || [];
 
   // Controls State
   const [searchQuery, setSearchQuery] = useState("");
@@ -168,6 +170,7 @@ export default function MemberProjectsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter projects by status"
               className="w-16 sm:w-28 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-[9px] sm:text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
             >
               <option value="ALL">Status</option>
@@ -179,6 +182,7 @@ export default function MemberProjectsPage() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
+              aria-label="Filter projects by priority"
               className="w-16 sm:w-28 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-[9px] sm:text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
             >
               <option value="ALL">Priority</option>
@@ -193,6 +197,7 @@ export default function MemberProjectsPage() {
               onChange={(e) =>
                 setSortOrder(e.target.value as "name" | "newest" | "oldest")
               }
+              aria-label="Sort projects by"
               className="w-16 sm:w-28 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-[9px] sm:text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
             >
               <option value="newest">New</option>
@@ -250,6 +255,7 @@ export default function MemberProjectsPage() {
                       <div
                         className="h-full bg-blue-600 rounded-full transition-all duration-500"
                         style={{ width: `${project.progress || 0}%` }}
+                        // webint:ignore inline styles necessary for dynamic progress rendering
                       />
                     </div>
                   </div>

@@ -241,7 +241,7 @@ export default function CreateTaskModal({
                             type="text"
                             required
                             disabled={isLocked}
-                            className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all text-base px-4 py-3 font-medium text-gray-800 disabled:opacity-50"
+                            className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all text-base px-4 py-3 font-bold text-gray-900 disabled:opacity-50"
                             placeholder="what needs to be done?"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
@@ -273,7 +273,7 @@ export default function CreateTaskModal({
                         <textarea
                           rows={4}
                           disabled={isLocked}
-                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-indigo-500 focus:bg-white transition-all text-sm p-4 text-gray-600 leading-relaxed disabled:opacity-50"
+                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-indigo-500 focus:bg-white transition-all text-sm p-4 text-gray-900 font-bold leading-relaxed disabled:opacity-50"
                           placeholder="add context, details, or steps..."
                           value={description}
                           onChange={(e) => setDescription(e.target.value)}
@@ -288,7 +288,7 @@ export default function CreateTaskModal({
                         </label>
                         <select
                           disabled={isLocked}
-                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-blue-500 transition-all text-xs font-bold py-2 px-3"
+                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-blue-500 transition-all text-xs font-black text-gray-900 py-2 px-3"
                           value={status}
                           onChange={(e) => setStatus(e.target.value as any)}
                         >
@@ -306,7 +306,7 @@ export default function CreateTaskModal({
                         <select
                           disabled={isLocked}
                           className={`block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-orange-500 transition-all text-xs font-black py-2 px-3
-                            ${priority === "CRITICAL" ? "text-red-600" : priority === "HIGH" ? "text-orange-600" : "text-gray-600"}
+                            ${priority === "CRITICAL" ? "text-red-600" : priority === "HIGH" ? "text-orange-600" : "text-gray-900"}
                           `}
                           value={priority}
                           onChange={(e) => setPriority(e.target.value as any)}
@@ -325,7 +325,7 @@ export default function CreateTaskModal({
                         </label>
                         <select
                           disabled={isLocked}
-                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-green-500 transition-all text-xs font-bold py-2 px-3"
+                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-green-500 transition-all text-xs font-black text-gray-900 py-2 px-3"
                           value={storyPoints}
                           onChange={(e) =>
                             setStoryPoints(Number(e.target.value))
@@ -348,7 +348,7 @@ export default function CreateTaskModal({
                           disabled={isLocked}
                           min={projectStart}
                           max={projectEnd}
-                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-purple-500 transition-all text-xs font-bold py-2 px-3 disabled:opacity-50"
+                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-purple-500 transition-all text-xs font-black text-gray-900 py-2 px-3 disabled:opacity-50"
                           value={dueDate}
                           onChange={(e) => setDueDate(e.target.value)}
                         />
@@ -364,7 +364,7 @@ export default function CreateTaskModal({
                         <div className="grid grid-cols-1 gap-2">
                           <select
                             disabled={isLocked}
-                            className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-medium py-2.5 disabled:opacity-50"
+                            className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-bold text-gray-900 py-2.5 disabled:opacity-50"
                             value={assignedTo}
                             onChange={(e) => setAssignedTo(e.target.value)}
                           >
@@ -385,7 +385,7 @@ export default function CreateTaskModal({
                         </label>
                         <select
                           disabled={isLocked}
-                          className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-medium py-2.5 disabled:opacity-50"
+                          className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-bold text-gray-900 py-2.5 disabled:opacity-50"
                           value={sprintId}
                           onChange={(e) => setSprintId(e.target.value)}
                         >

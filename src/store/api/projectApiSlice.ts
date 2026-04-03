@@ -10,6 +10,7 @@ import type {
   UpdateTaskPayload,
   VelocityResponse,
   TaskHistory,
+  PaginatedResponse,
 } from "@/types/project";
 import type { User } from "@/types/auth";
 
@@ -24,22 +25,32 @@ const extractList = <T>(response: unknown): T[] => {
 
 export const projectApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getMyProjects: builder.query<Project[], void>({
-      query: () => ({
+    getMyProjects: builder.query<
+      PaginatedResponse<Project>,
+      { page?: number; limit?: number } | void
+    >({
+      query: (args) => ({
         url: API_ROUTES.PROJECTS.MY_PROJECTS,
         method: "GET",
+        params: { page: args?.page || 1, limit: args?.limit || 1000 },
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: unknown) => extractList<Project>(response),
+      transformResponse: (response: { data: PaginatedResponse<Project> }) =>
+        response.data,
       providesTags: [{ type: "MemberProjects", id: "LIST" }],
     }),
-    getMyTasks: builder.query<Task[], void>({
-      query: () => ({
+    getMyTasks: builder.query<
+      PaginatedResponse<Task>,
+      { page?: number; limit?: number } | void
+    >({
+      query: (args) => ({
         url: API_ROUTES.PROJECTS.MY_TASKS,
         method: "GET",
+        params: { page: args?.page || 1, limit: args?.limit || 1000 },
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: unknown) => extractList<Task>(response),
+      transformResponse: (response: { data: PaginatedResponse<Task> }) =>
+        response.data,
       providesTags: [{ type: "MemberTasks", id: "LIST" }],
     }),
     getMyVelocity: builder.query<VelocityResponse, number | void>({
@@ -247,10 +258,14 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         { type: "MemberTasks", id: "LIST" },
       ],
     }),
-    getOrganizationUsers: builder.query<User[], void>({
-      query: () => ({
+    getOrganizationUsers: builder.query<
+      User[],
+      { page?: number; limit?: number } | void
+    >({
+      query: (args) => ({
         url: API_ROUTES.MANAGER.MEMBERS,
         method: "GET",
+        params: { page: args?.page || 1, limit: args?.limit || 1000 },
         skipGlobalLoader: true,
       }),
       transformResponse: (response: unknown) => extractList<User>(response),

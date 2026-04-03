@@ -300,7 +300,7 @@ export default function TaskDetailsModal({
                         <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
                           Description
                         </h4>
-                        <p className="text-base text-gray-600 leading-relaxed font-medium">
+                        <p className="text-base text-gray-900 leading-relaxed font-bold">
                           {currentTask.description ||
                             "No description provided."}
                         </p>
@@ -420,7 +420,7 @@ export default function TaskDetailsModal({
                                       ago
                                     </span>
                                   </div>
-                                  <p className="text-sm text-gray-600 font-medium leading-relaxed">
+                                  <p className="text-sm text-gray-900 font-bold leading-relaxed">
                                     {comment.text}
                                   </p>
                                 </div>
@@ -437,7 +437,7 @@ export default function TaskDetailsModal({
                       >
                         <input
                           type="text"
-                          className="w-full bg-white border-2 border-gray-100 rounded-xl px-5 py-4 pr-16 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all font-bold text-gray-900 shadow-sm"
+                          className="w-full bg-white border-2 border-gray-100 rounded-xl px-5 py-4 pr-16 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all font-black text-gray-900 shadow-sm"
                           placeholder="Write a comment..."
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
@@ -593,7 +593,7 @@ export default function TaskDetailsModal({
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
                           Due Date
                         </p>
-                        <p className="text-sm font-bold text-gray-900">
+                        <p className="text-sm font-black text-gray-900">
                           {currentTask.dueDate
                             ? new Date(currentTask.dueDate).toLocaleDateString()
                             : "No deadline"}
@@ -609,7 +609,7 @@ export default function TaskDetailsModal({
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
                           Story Points
                         </p>
-                        <p className="text-sm font-bold text-gray-900">
+                        <p className="text-sm font-black text-gray-900">
                           {currentTask.storyPoints || 0} pts
                         </p>
                       </div>

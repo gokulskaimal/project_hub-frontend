@@ -72,6 +72,20 @@ export const authApiSlice = apiSlice.injectEndpoints({
       }),
       transformResponse: (response: { data: AuthResponse }) => response.data,
     }),
+    requestPasswordReset: builder.mutation<void, { email: string }>({
+      query: (data) => ({
+        url: API_ROUTES.AUTH.RESET_PASSWORD_REQUEST,
+        method: "POST",
+        data,
+      }),
+    }),
+    resetPassword: builder.mutation<void, { token: string; password: string }>({
+      query: (data) => ({
+        url: API_ROUTES.AUTH.RESET_PASSWORD,
+        method: "POST",
+        data,
+      }),
+    }),
   }),
 });
 
@@ -83,4 +97,6 @@ export const {
   useSendOtpMutation,
   useCompleteSignupMutation,
   useAcceptInviteMutation,
+  useRequestPasswordResetMutation,
+  useResetPasswordMutation,
 } = authApiSlice;

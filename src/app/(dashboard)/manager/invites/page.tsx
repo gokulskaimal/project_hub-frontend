@@ -20,6 +20,7 @@ import InviteModal from "@/components/modals/InviteModal";
 import {
   useGetManagerInvitationsQuery,
   useCancelManagerInvitationMutation,
+  useGetManagerInvitationStatsQuery,
 } from "@/store/api/managerApiSlice";
 import { Input } from "@/components/ui/Input";
 import { StatCard } from "@/components/ui/StatCard";
@@ -39,34 +40,44 @@ interface Invitation {
 
 export default function InvitesPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+
   const {
-    data: invitations = [],
+    data: invitationsData,
     isLoading,
     isFetching,
     refetch,
-  } = useGetManagerInvitationsQuery();
+  } = useGetManagerInvitationsQuery({
+    page,
+    limit: 12,
+    search: searchTerm,
+    status: filterStatus,
+  });
+
+  const { data: inviteStats } = useGetManagerInvitationStatsQuery();
+
   const [cancelInvite] = useCancelManagerInvitationMutation();
 
-  // Search, Filter, Sort State
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
+  // Sort State
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  const invitations = invitationsData?.items || [];
   const loading = isLoading || isFetching;
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterStatus]);
 
   // Derived Data
   const filteredInvitations = useMemo(() => {
     let result = [...invitations];
 
-    if (searchTerm) {
-      const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter((i) => i.email?.toLowerCase().includes(lowerTerm));
-    }
-
-    if (filterStatus !== "ALL") {
-      result = result.filter((i) => (i.status || "PENDING") === filterStatus);
-    }
+    // We avoid client-side filtering for search/status now as it's server-driven.
+    // However, if we need local sorting, we keep this useMemo.
 
     result.sort((a, b) => {
       let valA: string | number = "";
@@ -86,22 +97,23 @@ export default function InvitesPage() {
     });
 
     return result;
-  }, [invitations, searchTerm, filterStatus, sortBy, sortOrder]);
+  }, [invitations, sortBy, sortOrder]);
 
   // Calculated Stats
-  const stats = useMemo(() => {
-    const total = invitations.length;
-    const pending = (invitations as Invitation[]).filter(
-      (i) => (i.status || "PENDING") === "PENDING",
-    ).length;
-    const accepted = (invitations as Invitation[]).filter(
-      (i) => i.status === "ACCEPTED",
-    ).length;
-    const expired = (invitations as Invitation[]).filter(
-      (i) => i.status === "EXPIRED",
-    ).length;
-    return { total, pending, accepted, expired };
-  }, [invitations]);
+  // const stats = useMemo(() => {
+  //   const total = invitationsData?.total || 0;
+
+  //   const pending = (invitations as Invitation[]).filter(
+  //     (i) => (i.status || "PENDING") === "PENDING",
+  //   ).length;
+  //   const accepted = (invitations as Invitation[]).filter(
+  //     (i) => i.status === "ACCEPTED",
+  //   ).length;
+  //   const expired = (invitations as Invitation[]).filter(
+  //     (i) => i.status === "EXPIRED",
+  //   ).length;
+  //   return { total, pending, accepted, expired };
+  // }, [invitations, invitationsData?.total]);
 
   const handleCancelInvite = async (id: string) => {
     const confirmed = await confirmWithAlert(
@@ -163,43 +175,36 @@ export default function InvitesPage() {
           </div>
         </div>
 
-        {/* Real-time Analytics Header */}
         <div className="flex items-center justify-between mt-4 mb-2 px-1">
           <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
             <Layout className="w-6 h-6 text-blue-600" />
-            Real-time Analytics
+            Invitation Analytics
           </h2>
-          <div className="flex gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Live Sync
-            </span>
-          </div>
         </div>
 
         {/* Modular Stat Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <StatCard
             label="Total Invitations"
-            value={stats.total}
+            value={inviteStats?.total || 0}
             icon={Mail}
             color="blue"
           />
           <StatCard
             label="Pending"
-            value={stats.pending}
+            value={inviteStats?.pending || 0}
             icon={Clock}
             color="orange"
           />
           <StatCard
             label="Accepted"
-            value={stats.accepted}
+            value={inviteStats?.accepted || 0}
             icon={CheckCircle}
             color="green"
           />
           <StatCard
             label="Expired"
-            value={stats.expired}
+            value={inviteStats?.expired || 0}
             icon={XCircle}
             color="red"
           />
@@ -337,6 +342,32 @@ export default function InvitesPage() {
                 />
               );
             })}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {invitationsData && invitationsData.totalPages > 1 && (
+          <div className="px-6 py-4 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between">
+            <span className="text-xs text-gray-500 font-medium">
+              Showing Page {page} of {invitationsData.totalPages} (
+              {invitationsData.total} total items)
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page >= invitationsData.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -27,6 +27,8 @@ import {
   useGetManagerMembersQuery,
   useUpdateManagerMemberStatusMutation,
   useGetManagerInvitationsQuery,
+  useGetManagerInvitationStatsQuery,
+  useGetManagerMemberStatsQuery,
 } from "@/store/api/managerApiSlice";
 import { extractErrorMessage } from "@/utils/api";
 import { StatCard } from "@/components/ui/StatCard";
@@ -34,47 +36,59 @@ import { EntityCard } from "@/components/ui/EntityCard";
 
 export default function MembersPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const {
-    data: members = [],
-    isLoading,
-    isFetching,
-    refetch,
-  } = useGetManagerMembersQuery();
-  const { data: invitations = [] } = useGetManagerInvitationsQuery();
-  const [deleteMember] = useDeleteManagerMemberMutation();
-  const [updateMemberStatus] = useUpdateManagerMemberStatusMutation();
-
-  // Search, Filter, Sort State
+  const [page, setPage] = useState(1);
+  const [limit] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [sortBy, setSortBy] = useState("email");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
+  const {
+    data: membersData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetManagerMembersQuery({
+    page,
+    limit,
+    search: searchTerm,
+    role: filterRole,
+    status: filterStatus,
+  });
+
+  const { data: memberStats } = useGetManagerMemberStatsQuery();
+  const { data: invitationStats } = useGetManagerInvitationStatsQuery();
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterRole, filterStatus]);
+
+  const members = useMemo(() => {
+    const list = membersData?.items || [];
+    // If the manager is in the list, we filter them out locally as well for extra safety,
+    // although the backend already avoids returning the manager.
+    return list;
+  }, [membersData]);
+
+  const { data: invitationsData } = useGetManagerInvitationsQuery({
+    page: 1,
+    limit: 100,
+  });
+  const invitations = useMemo(
+    () => invitationsData?.items || [],
+    [invitationsData],
+  );
+
+  const [deleteMember] = useDeleteManagerMemberMutation();
+  const [updateMemberStatus] = useUpdateManagerMemberStatusMutation();
+
   const loading = isLoading || isFetching;
 
-  // Derived Data
+  // Sorting remains local for the current page
   const filteredMembers = useMemo(() => {
     let result = [...members];
-
-    // Search
-    if (searchTerm) {
-      const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter(
-        (m) =>
-          m.email.toLowerCase().includes(lowerTerm) ||
-          (m.firstName && m.firstName.toLowerCase().includes(lowerTerm)) ||
-          (m.lastName && m.lastName.toLowerCase().includes(lowerTerm)),
-      );
-    }
-
-    // Filter
-    if (filterRole !== "ALL") {
-      result = result.filter((m) => m.role === filterRole);
-    }
-    if (filterStatus !== "ALL") {
-      result = result.filter((m) => (m.status || "ACTIVE") === filterStatus);
-    }
 
     // Sort
     result.sort((a, b) => {
@@ -101,7 +115,7 @@ export default function MembersPage() {
     });
 
     return result;
-  }, [members, searchTerm, filterRole, filterStatus, sortBy, sortOrder]);
+  }, [members, sortBy, sortOrder]);
 
   const toggleSort = (field: string) => {
     if (sortBy === field) {
@@ -113,19 +127,19 @@ export default function MembersPage() {
   };
 
   // Stats
-  const stats = useMemo(() => {
-    const total = members.length;
-    const active = members.filter(
-      (m) => (m.status || "ACTIVE") === "ACTIVE",
-    ).length;
-    const inactive = members.filter(
-      (m) => (m.status || "ACTIVE") !== "ACTIVE",
-    ).length;
-    const pendingInvites = invitations.filter(
-      (i) => (i.status || "PENDING") === "PENDING",
-    ).length;
-    return { total, active, inactive, pendingInvites };
-  }, [members, invitations]);
+  // const stats = useMemo(() => {
+  //   const total = members.length;
+  //   const active = members.filter(
+  //     (m) => (m.status || "ACTIVE") === "ACTIVE",
+  //   ).length;
+  //   const inactive = members.filter(
+  //     (m) => (m.status || "ACTIVE") !== "ACTIVE",
+  //   ).length;
+  //   const pendingInvites = invitations.filter(
+  //     (i) => (i.status || "PENDING") === "PENDING",
+  //   ).length;
+  //   return { total, active, inactive, pendingInvites };
+  // }, [members, invitations]);
 
   const handleRemoveMember = async (id: string) => {
     const confirmed = await confirmWithAlert(
@@ -195,43 +209,36 @@ export default function MembersPage() {
           onSuccess={refetch}
         />
 
-        {/* Real-time Analytics Header */}
         <div className="flex items-center justify-between mt-4 mb-2 px-1">
           <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
             <Layout className="w-6 h-6 text-blue-600" />
-            Real-time Analytics
+            Organization Analytics
           </h2>
-          <div className="flex gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Live Sync
-            </span>
-          </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <StatCard
             label="Total Members"
-            value={stats.total}
+            value={memberStats?.total || 0}
             icon={Users}
             color="blue"
           />
           <StatCard
             label="Active Members"
-            value={stats.active}
+            value={memberStats?.active || 0}
             icon={CheckCircle}
             color="green"
           />
           <StatCard
             label="Inactive Members"
-            value={stats.inactive}
+            value={memberStats?.inactive || 0}
             icon={Ban}
             color="red"
           />
           <StatCard
             label="Pending Invites"
-            value={stats.pendingInvites}
+            value={invitationStats?.pending || 0}
             icon={Mail}
             color="orange"
           />
@@ -414,6 +421,30 @@ export default function MembersPage() {
                 />
               );
             })}
+          </div>
+        )}
+
+        {membersData && membersData.totalPages > 1 && (
+          <div className="px-6 py-4 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between">
+            <span className="text-xs text-gray-500 font-medium font-sans">
+              Page {page} of {membersData.totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p: number) => p - 1)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors font-sans"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page >= membersData.totalPages}
+                onClick={() => setPage((p: number) => p + 1)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors font-sans"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

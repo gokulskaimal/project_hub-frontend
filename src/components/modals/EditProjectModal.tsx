@@ -10,8 +10,12 @@ import {
   Loader2,
   Save,
   Sparkles,
+  Users,
 } from "lucide-react";
-import { useUpdateManagerProjectMutation } from "@/store/api/managerApiSlice";
+import {
+  useUpdateManagerProjectMutation,
+  useGetManagerMembersQuery,
+} from "@/store/api/managerApiSlice";
 import { Project } from "@/types/project";
 import { notifier } from "@/utils/notifier";
 import { MESSAGES } from "@/constants/messages";
@@ -34,6 +38,12 @@ export default function EditProjectModal({
   const [key, setKey] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
+
+  const { data: membersData } = useGetManagerMembersQuery(
+    { page: 1, limit: 100 },
+    { skip: !isOpen },
+  );
 
   const [updateProject, { isLoading }] = useUpdateManagerProjectMutation();
 
@@ -52,6 +62,7 @@ export default function EditProjectModal({
           ? new Date(project.endDate).toISOString().split("T")[0]
           : "",
       );
+      setTeamMemberIds(project.teamMemberIds || []);
     }
   }, [project, isOpen]);
 
@@ -68,6 +79,7 @@ export default function EditProjectModal({
           key,
           startDate: startDate ? new Date(startDate).toISOString() : undefined,
           endDate: endDate ? new Date(endDate).toISOString() : undefined,
+          teamMemberIds,
         },
       }).unwrap();
       notifier.success(MESSAGES.PROJECTS.UPDATE_SUCCESS);
@@ -158,6 +170,52 @@ export default function EditProjectModal({
                           value={key}
                           onChange={(e) => setKey(e.target.value.toUpperCase())}
                         />
+                        <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">
+                          * Prefix for Task IDs (e.g. {key || "PRJ"}-1)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-500" />
+                        Project Members
+                      </label>
+                      <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-gray-200">
+                        {membersData?.items.map((member) => (
+                          <label
+                            key={member.id}
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer group ${
+                              teamMemberIds.includes(member.id)
+                                ? "border-blue-500 bg-blue-50/50"
+                                : "border-gray-50 bg-white hover:border-gray-200"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="hidden"
+                              checked={teamMemberIds.includes(member.id)}
+                              onChange={() => {
+                                setTeamMemberIds((prev) =>
+                                  prev.includes(member.id)
+                                    ? prev.filter((id) => id !== member.id)
+                                    : [...prev, member.id],
+                                );
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-black text-gray-900 truncate">
+                                {member.firstName} {member.lastName}
+                              </p>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate">
+                                {member.role}
+                              </p>
+                            </div>
+                            {teamMemberIds.includes(member.id) && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                            )}
+                          </label>
+                        ))}
                       </div>
                     </div>
 

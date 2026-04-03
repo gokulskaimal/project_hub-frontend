@@ -5,10 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import {
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
-  useGetOrganizationUsersQuery,
+  useGetProjectMembersQuery,
   useGetProjectSprintsQuery,
   useUpdateTaskMutation,
 } from "@/store/api/projectApiSlice";
+import { useUpdateManagerProjectMutation } from "@/store/api/managerApiSlice";
 import { Sprint, Task } from "@/types/project";
 import { User } from "@/types/auth";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
@@ -46,10 +47,10 @@ export default function ProjectBoardPage() {
   } = useGetProjectTasksQuery(projectId);
 
   const {
-    data: orgUsers = [],
+    data: projectMembers = [],
     isLoading: usersLoading,
     isFetching: usersFetching,
-  } = useGetOrganizationUsersQuery();
+  } = useGetProjectMembersQuery(projectId);
 
   const {
     data: sprints = [],
@@ -58,6 +59,21 @@ export default function ProjectBoardPage() {
   } = useGetProjectSprintsQuery(projectId);
 
   const [updateTask] = useUpdateTaskMutation();
+  const [updateManagerProject] = useUpdateManagerProjectMutation();
+
+  const handleCompleteProject = async () => {
+    if (confirm("Are you sure you want to mark this project as complete?")) {
+      try {
+        await updateManagerProject({
+          id: projectId,
+          data: { status: "COMPLETED" },
+        }).unwrap();
+        notifier.success(MESSAGES.PROJECTS.COMPLETE_SUCCESS);
+      } catch (err) {
+        notifier.error(err, MESSAGES.PROJECTS.COMPLETE_FAILED);
+      }
+    }
+  };
 
   const loading =
     projectLoading ||
@@ -168,6 +184,19 @@ export default function ProjectBoardPage() {
                     </p>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleCompleteProject}
+                    disabled={project?.status === "COMPLETED"}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-[13px] font-black shadow-lg shadow-green-100 hover:bg-green-700 hover:shadow-green-200 transition-all disabled:opacity-50 disabled:shadow-none"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {project?.status === "COMPLETED"
+                      ? "Project Completed"
+                      : "Mark as Complete"}
+                  </button>
+                </div>
               </div>
 
               {/* Stat Cards Grid */}
@@ -200,7 +229,7 @@ export default function ProjectBoardPage() {
             </div>
             <KanbanBoard
               tasks={boardTasks}
-              users={orgUsers}
+              users={projectMembers}
               onStatusChange={handleStatusChange}
               onEditTask={openEditModal}
               showProjectBadges={false}
@@ -228,9 +257,7 @@ export default function ProjectBoardPage() {
         onSuccess={handleModalSuccess}
         projectId={projectId}
         task={editingTask}
-        projectMembers={orgUsers.filter((u: User) =>
-          project?.teamMemberIds?.includes(u.id),
-        )}
+        projectMembers={projectMembers}
       />
     </div>
   );

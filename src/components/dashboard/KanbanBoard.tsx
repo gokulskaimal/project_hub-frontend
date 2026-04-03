@@ -15,6 +15,9 @@ import {
   Flag,
   Calendar as CalendarIcon,
   CornerDownRight,
+  Filter,
+  Users,
+  User as UserIcon,
 } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useSelector } from "react-redux";
@@ -39,34 +42,34 @@ const COLUMNS = [
   {
     id: "TODO",
     title: "To Do",
-    color: "bg-gray-50/50",
+    color: "bg-gray-100/30",
     border: "border-gray-200",
-    borderStyle: "border-dashed",
+    accent: "bg-gray-400",
     titleColor: "text-gray-900",
   },
   {
     id: "IN_PROGRESS",
     title: "In Progress",
-    color: "bg-blue-50/50",
-    border: "border-blue-200",
-    borderStyle: "border-dashed",
+    color: "bg-blue-50/20",
+    border: "border-blue-100",
+    accent: "bg-blue-500",
     titleColor: "text-blue-900",
   },
   {
     id: "REVIEW",
-    title: "Review",
-    color: "bg-yellow-50/50",
-    border: "border-yellow-200",
-    borderStyle: "border-dashed",
-    titleColor: "text-yellow-900",
+    title: "In Review",
+    color: "bg-amber-50/20",
+    border: "border-amber-100",
+    accent: "bg-amber-500",
+    titleColor: "text-amber-900",
   },
   {
     id: "DONE",
     title: "Done",
-    color: "bg-green-50/50",
-    border: "border-green-200",
-    borderStyle: "border-dashed",
-    titleColor: "text-green-900",
+    color: "bg-emerald-50/20",
+    border: "border-emerald-100",
+    accent: "bg-emerald-500",
+    titleColor: "text-emerald-900",
   },
 ];
 
@@ -85,6 +88,9 @@ export default function KanbanBoard({
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [showOnlyMyTasks, setShowOnlyMyTasks] = useState(
+    userRole === "TEAM_MEMBER",
+  );
 
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -106,53 +112,16 @@ export default function KanbanBoard({
     // Optimistic Update
     if (destination.droppableId !== source.droppableId) {
       onStatusChange(draggableId, destination.droppableId);
-
-      // Automatic Time Tracking Logic
-      const task = tasks.find((t) => t.id === draggableId);
-      if (task && task.assignedTo === user?.id) {
-        // If moving TO In Progress -> Start Timer
-        if (
-          destination.droppableId === "IN_PROGRESS" &&
-          source.droppableId !== "IN_PROGRESS"
-        ) {
-          try {
-            await toggleTimer({
-              id: task.id,
-              action: "start",
-              projectId: task.projectId,
-            }).unwrap();
-            notifier.success(MESSAGES.TASKS.TIMER_STARTED);
-          } catch (error) {
-            console.error("Auto-start timer failed", error);
-          }
-        }
-        // If moving FROM In Progress -> Stop Timer
-        else if (
-          source.droppableId === "IN_PROGRESS" &&
-          destination.droppableId !== "IN_PROGRESS"
-        ) {
-          const activeLog = task.timeLogs?.find(
-            (l: TimeLog) => l.userId === user?.id && !l.endTime,
-          );
-          if (activeLog) {
-            try {
-              await toggleTimer({
-                id: task.id,
-                action: "stop",
-                projectId: task.projectId,
-              }).unwrap();
-              notifier.success(MESSAGES.TASKS.TIMER_STOPPED);
-            } catch (error) {
-              console.error("Auto-stop timer failed", error);
-            }
-          }
-        }
-      }
     }
   };
 
-  const getTasksByStatus = (status: string) =>
-    tasks.filter((task) => task.status === status);
+  const getTasksByStatus = (status: string) => {
+    let filtered = tasks.filter((task) => task.status === status);
+    if (showOnlyMyTasks && user?.id) {
+      filtered = filtered.filter((task) => task.assignedTo === user.id);
+    }
+    return filtered;
+  };
   const getUser = (userId?: string) => users.find((u) => u.id === userId);
 
   const getTypeIcon = (type?: string) => {
@@ -204,19 +173,73 @@ export default function KanbanBoard({
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
+      {/* Kanban Controls Bar */}
+      <div className="flex items-center justify-between mb-6 px-2">
+        {userRole === "TEAM_MEMBER" && (
+          <div className="flex items-center gap-4">
+            <div className="bg-white/80 backdrop-blur-md p-1 rounded-xl border border-gray-100 flex gap-1 shadow-sm">
+              <button
+                onClick={() => setShowOnlyMyTasks(true)}
+                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  showOnlyMyTasks
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                <UserIcon
+                  size={12}
+                  className={showOnlyMyTasks ? "animate-pulse" : ""}
+                />
+                My Tasks
+              </button>
+              <button
+                onClick={() => setShowOnlyMyTasks(false)}
+                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  !showOnlyMyTasks
+                    ? "bg-gray-900 text-white shadow-md shadow-gray-200"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                <Users size={12} />
+                Full Team
+              </button>
+            </div>
+
+            {showOnlyMyTasks && (
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-1.5"
+              >
+                <Filter size={10} />
+                Focused View active
+              </motion.span>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          {tasks.length} Sync&apos;d
+        </div>
+      </div>
+
       <div className="flex h-full gap-6 overflow-x-auto pb-4 items-start min-h-[500px] px-2">
         {COLUMNS.map((col) => (
           <div
             key={col.id}
-            className={`flex flex-col h-full min-w-[280px] flex-1 rounded-xl border-2 ${col.border} ${col.borderStyle} ${col.color} p-0`}
+            className={`flex flex-col h-full min-w-[300px] flex-1 rounded-2xl border ${col.border} ${col.color} p-0 shadow-sm transition-all duration-300`}
           >
-            <div className="flex items-center justify-between p-4 pb-2">
-              <h3
-                className={`font-bold text-sm bg-transparent ${col.titleColor}`}
-              >
-                {col.title}
-              </h3>
-              <span className="text-xs font-semibold bg-white text-gray-500 px-2 py-0.5 rounded-full border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between p-5 pb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-1.5 h-6 rounded-full ${col.accent}`} />
+                <h3
+                  className={`font-black text-xs uppercase tracking-widest ${col.titleColor}`}
+                >
+                  {col.title}
+                </h3>
+              </div>
+              <span className="text-[10px] font-black bg-white text-gray-500 px-2.5 py-1 rounded-lg border border-gray-100 shadow-sm">
                 {getTasksByStatus(col.id).length}
               </span>
             </div>
@@ -226,7 +249,7 @@ export default function KanbanBoard({
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`flex-1 px-3 pb-3 space-y-3 transition-colors rounded-b-xl min-h-[100px] overflow-y-auto ${snapshot.isDraggingOver ? "bg-white/40" : ""}`}
+                  className={`flex-1 px-4 pb-4 space-y-4 transition-colors rounded-b-2xl min-h-[150px] overflow-y-auto ${snapshot.isDraggingOver ? "bg-white/40" : ""}`}
                 >
                   {getTasksByStatus(col.id).map((task, index) => {
                     const activeLog = task.timeLogs?.find(
@@ -246,6 +269,7 @@ export default function KanbanBoard({
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             style={provided.draggableProps.style}
+                            className="group"
                           >
                             <motion.div
                               whileHover={{ scale: 1.02 }}
@@ -254,8 +278,20 @@ export default function KanbanBoard({
                                 setSelectedTask(task);
                                 setIsDetailsModalOpen(true);
                               }}
-                              className={`bg-white p-4 rounded-xl border border-gray-100 group cursor-grab active:cursor-grabbing transition-shadow duration-200 ease-in-out ${snapshot.isDragging ? "shadow-2xl ring-2 ring-blue-100" : "shadow-sm hover:shadow-md"}`}
+                              className={`relative bg-white p-4 rounded-2xl border border-gray-100 cursor-grab active:cursor-grabbing transition-all duration-300 ${snapshot.isDragging ? "shadow-2xl ring-2 ring-blue-500/20 z-50 scale-105" : "shadow-sm hover:shadow-xl hover:border-blue-200"}`}
                             >
+                              {/* Priority Indicator Dot */}
+                              <div
+                                className={`absolute top-4 right-4 w-2 h-2 rounded-full ${
+                                  task.priority === "CRITICAL"
+                                    ? "bg-red-500 animate-pulse"
+                                    : task.priority === "HIGH"
+                                      ? "bg-orange-500"
+                                      : task.priority === "MEDIUM"
+                                        ? "bg-blue-500"
+                                        : "bg-emerald-500"
+                                }`}
+                              />
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex flex-col gap-1 pr-2">
                                   {task.parentTaskId && (
@@ -375,11 +411,13 @@ export default function KanbanBoard({
                                   )}
 
                                   {task.assignedTo && (
-                                    <UserAvatar
-                                      user={getUser(task.assignedTo)}
-                                      size="sm"
-                                      className="w-6 h-6 text-[10px]"
-                                    />
+                                    <div className="flex items-center gap-2 group/assignee">
+                                      <UserAvatar
+                                        user={getUser(task.assignedTo)}
+                                        size="sm"
+                                        className="w-6 h-6 text-[10px] ring-2 ring-white shadow-sm"
+                                      />
+                                    </div>
                                   )}
                                 </div>
                               </div>

@@ -30,7 +30,7 @@ import { MoreHorizontal, Edit2 } from "lucide-react";
 
 export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(12);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -39,6 +39,8 @@ export default function AdminUsersPage() {
     page,
     limit,
     search,
+    role: roleFilter,
+    status: statusFilter,
   });
   const { data: reportsData, isLoading: reportsLoading } =
     useGetAdminReportsQuery();
@@ -53,19 +55,8 @@ export default function AdminUsersPage() {
 
   const filteredUsers = useMemo(() => {
     let result = [...users];
-    if (search) {
-      result = result.filter(
-        (u) =>
-          u.name?.toLowerCase().includes(search.toLowerCase()) ||
-          u.email?.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-    if (roleFilter !== "ALL") {
-      result = result.filter((u) => u.role === roleFilter);
-    }
-    if (statusFilter !== "ALL") {
-      result = result.filter((u) => u.status === statusFilter);
-    }
+    // Backend now handles search, roleFilter, and statusFilter
+
     result.sort((a, b) => {
       const valA = (a[sortBy as keyof typeof a] as string)?.toLowerCase() || "";
       const valB = (b[sortBy as keyof typeof b] as string)?.toLowerCase() || "";
@@ -74,7 +65,7 @@ export default function AdminUsersPage() {
       return 0;
     });
     return result;
-  }, [users, search, roleFilter, statusFilter, sortBy, sortOrder]);
+  }, [users, sortBy, sortOrder]);
 
   const toggleSort = (field: string) => {
     if (sortBy === field) {
@@ -263,6 +254,7 @@ export default function AdminUsersPage() {
                     {user.role?.replace("_", " ")}
                   </span>
                 }
+                footerRight={user.organizationName || "No Organization"}
               />
             ))
           )}
