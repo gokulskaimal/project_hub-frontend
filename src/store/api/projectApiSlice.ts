@@ -95,14 +95,26 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         { type: "MemberTasks", id: taskId },
       ],
     }),
-    getProjectTasks: builder.query<Task[], string>({
-      query: (projectId) => ({
+    getProjectTasks: builder.query<
+      Task[],
+      { projectId: string; epicId?: string; parentTaskId?: string }
+    >({
+      query: ({ projectId, epicId, parentTaskId }) => ({
         url: `${API_ROUTES.PROJECTS.TASKS_BY_PROJECT(projectId)}`,
         method: "GET",
+        params: { epicId, parentTaskId },
         skipGlobalLoader: true,
       }),
       transformResponse: (response: unknown) => extractList<Task>(response),
       providesTags: [{ type: "MemberTasks", id: "LIST" }],
+    }),
+    getEpicAnalytics: builder.query<any[], string>({
+      query: (projectId) => ({
+        url: API_ROUTES.PROJECTS.EPIC_ANALYTICS(projectId),
+        method: "GET",
+        skipGlobalLoader: true,
+      }),
+      transformResponse: (response: { data: any[] }) => response.data || [],
     }),
     getProjectSprints: builder.query<Sprint[], string>({
       query: (projectId) => ({
@@ -292,6 +304,7 @@ export const {
   useGetTaskByIdQuery,
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
+  useGetEpicAnalyticsQuery,
   useGetProjectSprintsQuery,
   useCreateSprintMutation,
   useUpdateSprintMutation,

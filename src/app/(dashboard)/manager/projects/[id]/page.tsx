@@ -43,6 +43,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
 import SprintBurndownChart from "@/components/analytics/SprintBurndownChart";
+import EpicProgressTracker from "@/components/analytics/EpicProgressTracker";
 import StartSprintModal from "@/components/modals/StartSprintModal";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import ProjectFilters from "@/components/project/ProjectFilters";
@@ -84,7 +85,7 @@ export default function ProjectDetailsPage() {
     data: tasks = [],
     isLoading: tasksLoading,
     refetch: refetchTasks,
-  } = useGetProjectTasksQuery(projectId);
+  } = useGetProjectTasksQuery({ projectId });
   const {
     data: sprints = [],
     isLoading: sprintsLoading,
@@ -375,16 +376,19 @@ export default function ProjectDetailsPage() {
           ) : activeTab === "ANALYTICS" ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase mb-2">
-                    Weekly Velocity
-                  </h3>
-                  <div className="text-3xl font-bold text-gray-900">
-                    {projectVelocity ?? 0}{" "}
-                    <span className="text-sm font-normal text-gray-400">
-                      pts
-                    </span>
+                <div className="space-y-6">
+                  <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase mb-2">
+                      Weekly Velocity
+                    </h3>
+                    <div className="text-3xl font-bold text-gray-900">
+                      {projectVelocity ?? 0}{" "}
+                      <span className="text-sm font-normal text-gray-400">
+                        pts
+                      </span>
+                    </div>
                   </div>
+                  <EpicProgressTracker projectId={projectId} />
                 </div>
                 <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                   {activeSprint ? (

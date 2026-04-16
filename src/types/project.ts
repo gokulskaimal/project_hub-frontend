@@ -26,7 +26,8 @@ export interface Task {
   description: string;
   status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE" | "BACKLOG";
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  type?: "STORY" | "BUG" | "TASK";
+  type?: "STORY" | "BUG" | "TASK" | "EPIC";
+  epicId?: string;
   assignedTo?: string;
   assignedUser?: {
     firstName: string;
@@ -151,11 +152,12 @@ export interface CreateTaskPayload {
   title: string;
   description?: string;
   priority: Task["priority"];
-  type: Task["type"];
+  type: "STORY" | "BUG" | "TASK" | "EPIC";
+  epicId?: string;
+  parentTaskId?: string;
   dueDate?: string | Date;
   assignedTo?: string;
   storyPoints?: number;
-  parentTaskId?: string;
   dependencies?: TaskDependency[];
 }
 
@@ -165,6 +167,7 @@ export interface UpdateTaskPayload {
   status?: Task["status"];
   priority?: Task["priority"];
   type?: Task["type"];
+  epicId?: string;
   dueDate?: string | Date;
   assignedTo?: string;
   storyPoints?: number;

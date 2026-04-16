@@ -65,8 +65,7 @@ export default function AdminDashboardPage() {
           badgeText="System Authority"
           welcomeMessage={
             <>
-              Welcome,{" "}
-              <span className="text-blue-400">Master Administrator</span>
+              Welcome, <span className="text-blue-400">Admin</span>
             </>
           }
           description={

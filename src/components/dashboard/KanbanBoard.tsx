@@ -18,6 +18,7 @@ import {
   Filter,
   Users,
   User as UserIcon,
+  Layers,
 } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useSelector } from "react-redux";
@@ -138,6 +139,12 @@ export default function KanbanBoard({
             📘
           </span>
         );
+      case "EPIC":
+        return (
+          <span className="text-purple-600" title="Epic">
+            🏆
+          </span>
+        );
       default:
         return (
           <span className="text-gray-500" title="Task">
@@ -145,6 +152,11 @@ export default function KanbanBoard({
           </span>
         );
     }
+  };
+
+  const getEpicTitle = (epicId?: string) => {
+    if (!epicId) return null;
+    return tasks.find((t) => t.id === epicId)?.title;
   };
 
   const handleToggleTimer = async (e: React.MouseEvent, task: Task) => {
@@ -294,6 +306,15 @@ export default function KanbanBoard({
                               />
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex flex-col gap-1 pr-2">
+                                  {task.epicId && (
+                                    <div className="flex items-center gap-1 w-fit bg-purple-50 border border-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest mb-1 shadow-sm">
+                                      <Layers
+                                        size={10}
+                                        className="text-purple-400"
+                                      />
+                                      {getEpicTitle(task.epicId)}
+                                    </div>
+                                  )}
                                   {task.parentTaskId && (
                                     <div className="flex items-center gap-1 w-fit bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-tight">
                                       <CornerDownRight

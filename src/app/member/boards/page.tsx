@@ -54,7 +54,11 @@ export default function MemberBoardsPage() {
     }
   };
 
-  const filteredProjects = projects.filter(
+  const projectList = Array.isArray(projects)
+    ? projects
+    : projects?.items || [];
+
+  const filteredProjects = projectList.filter(
     (p: Project) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.description &&

@@ -73,6 +73,8 @@ export const API_ROUTES = {
     SPRINT_DELETE: (sprintId: string) => `/projects/sprints/${sprintId}`,
     VELOCITY: (projectId: string) => `/projects/${projectId}/velocity`,
     MEMBERS: (projectId: string) => `/projects/${projectId}/members`,
+    EPIC_ANALYTICS: (projectId: string) =>
+      `/projects/${projectId}/epic-analytics`,
   },
   ORGANIZATION: {
     USERS: "/organization/users",

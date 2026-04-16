@@ -37,7 +37,7 @@ import PremiumStatGrid from "@/components/admin/PremiumStatGrid";
 
 const planSchema = z.object({
   name: z.string().min(1, MESSAGES.VALIDATION.REQUIRED),
-  description: z.string().min(1, MESSAGES.VALIDATION.REQUIRED),
+  description: z.string().optional(),
   price: z.number().min(0),
   currency: z.string().min(1, MESSAGES.VALIDATION.REQUIRED),
   type: z.enum(["STARTER", "PRO", "ENTERPRISE"]),
@@ -53,7 +53,7 @@ const planSchema = z.object({
 
 type PlanFormData = {
   name: string;
-  description: string;
+  description?: string;
   price: number;
   currency: string;
   type: "STARTER" | "PRO" | "ENTERPRISE";

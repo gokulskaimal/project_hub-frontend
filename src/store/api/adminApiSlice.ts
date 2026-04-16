@@ -16,7 +16,7 @@ const extractList = <T>(response: unknown): T[] => {
 
 type PlanPayload = {
   name: string;
-  description: string;
+  description?: string;
   price: number;
   currency: string;
   type: "STARTER" | "PRO" | "ENTERPRISE";

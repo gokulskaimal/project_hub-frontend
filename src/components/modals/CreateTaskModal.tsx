@@ -20,6 +20,7 @@ import {
   useUpdateTaskMutation,
   useGetProjectSprintsQuery,
   useGetProjectByIdQuery,
+  useGetProjectTasksQuery,
 } from "@/store/api/projectApiSlice";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
@@ -40,7 +41,7 @@ interface CreateTaskModalProps {
 }
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const TYPES = ["TASK", "BUG", "STORY"];
+const TYPES = ["TASK", "BUG", "STORY", "EPIC"];
 const VALID_STORY_POINTS = [0, 1, 2, 3, 5, 8, 13];
 
 export default function CreateTaskModal({
@@ -67,6 +68,8 @@ export default function CreateTaskModal({
   const [assignedTo, setAssignedTo] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [sprintId, setSprintId] = useState("");
+  const [epicId, setEpicId] = useState("");
+  const [parentTaskId, setParentTaskId] = useState("");
 
   const [createTask, { isLoading: isCreating }] = useCreateTaskMutation();
   const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
@@ -77,6 +80,19 @@ export default function CreateTaskModal({
     skip: !projectId || !isOpen,
   });
 
+  const { data: allTasks = [] } = useGetProjectTasksQuery(
+    { projectId },
+    { skip: !projectId || !isOpen },
+  );
+
+  const epic = useMemo(
+    () => allTasks.filter((t) => t.type == "EPIC"),
+    [allTasks],
+  );
+  const potentialParents = useMemo(
+    () => allTasks.filter((t) => t.type !== "EPIC"),
+    [allTasks],
+  );
   const isEdit = !!task;
   const isLoading = isCreating || isUpdating;
 
@@ -134,10 +150,15 @@ export default function CreateTaskModal({
           status,
           priority,
           type,
+          epicId: type === "STORY" ? epicId || undefined : undefined,
+          parentTaskId:
+            type === "TASK" || type === "BUG"
+              ? parentTaskId || undefined
+              : undefined,
+          sprintId: type === "EPIC" ? undefined : sprintId || undefined,
           storyPoints: Number(storyPoints),
           assignedTo: assignedTo || undefined,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-          sprintId: sprintId || undefined,
+          dueDate: dueDate ? new Date(dueDate) : undefined,
         };
         await updateTask({ id: task.id, data: updateData, projectId }).unwrap();
         notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
@@ -147,10 +168,15 @@ export default function CreateTaskModal({
           title,
           description: description || undefined,
           priority,
-          type,
+          type: type as "STORY" | "BUG" | "TASK" | "EPIC",
+          epicId: type === "STORY" ? epicId || undefined : undefined,
+          parentTaskId:
+            type === "TASK" || type === "BUG"
+              ? parentTaskId || undefined
+              : undefined,
           storyPoints: Number(storyPoints),
           assignedTo: assignedTo || undefined,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          dueDate: dueDate ? new Date(dueDate) : undefined,
         };
         await createTask({ projectId, data: createData }).unwrap();
         notifier.success(MESSAGES.TASKS.CREATE_SUCCESS);
@@ -261,9 +287,56 @@ export default function CreateTaskModal({
                             <option value="STORY">Story 📘</option>
                             <option value="BUG">Bug 🐞</option>
                             <option value="TASK">Task 📋</option>
+                            <option value="EPIC">Epic 🏆</option>
                           </select>
                         </div>
                       </div>
+
+                      {/* Link to Epic (Only for Stories) */}
+                      {type === "STORY" && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <Layout className="w-4 h-4 text-blue-500" />
+                            Link to Epic
+                          </label>
+                          <select
+                            disabled={isLocked}
+                            className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all text-sm px-4 py-3 font-bold text-gray-900"
+                            value={epicId}
+                            onChange={(e) => setEpicId(e.target.value)}
+                          >
+                            <option value="">No Epic (Backlog Story)</option>
+                            {epic.map((e) => (
+                              <option key={e.id} value={e.id}>
+                                {e.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Parent Task (Only for Tasks/Bugs) */}
+                      {(type === "TASK" || type === "BUG") && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <AlignLeft className="w-4 h-4 text-indigo-500" />
+                            Parent Story/Task
+                          </label>
+                          <select
+                            disabled={isLocked}
+                            className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-indigo-500 focus:bg-white transition-all text-sm px-4 py-3 font-bold text-gray-900"
+                            value={parentTaskId}
+                            onChange={(e) => setParentTaskId(e.target.value)}
+                          >
+                            <option value="">No Parent (Root Task)</option>
+                            {potentialParents.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.title} ({t.type})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
@@ -378,26 +451,28 @@ export default function CreateTaskModal({
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          Sprint
-                        </label>
-                        <select
-                          disabled={isLocked}
-                          className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-bold text-gray-900 py-2.5 disabled:opacity-50"
-                          value={sprintId}
-                          onChange={(e) => setSprintId(e.target.value)}
-                        >
-                          <option value="">Backlog (No Sprint)</option>
-                          {sprints.map((sprint) => (
-                            <option key={sprint.id} value={sprint.id}>
-                              {sprint.name}{" "}
-                              {sprint.status === "ACTIVE" ? "(Current)" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {type !== "EPIC" && (
+                        <div className="space-y-3">
+                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            Sprint
+                          </label>
+                          <select
+                            disabled={isLocked}
+                            className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-bold text-gray-900 py-2.5 disabled:opacity-50"
+                            value={sprintId}
+                            onChange={(e) => setSprintId(e.target.value)}
+                          >
+                            <option value="">Backlog (No Sprint)</option>
+                            {sprints.map((sprint) => (
+                              <option key={sprint.id} value={sprint.id}>
+                                {sprint.name}{" "}
+                                {sprint.status === "ACTIVE" ? "(Current)" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     <div className="bg-gray-50 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4">
