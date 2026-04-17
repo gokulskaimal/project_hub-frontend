@@ -185,10 +185,21 @@ export interface TaskHistory {
     | "STATUS_CHANGED"
     | "ASSIGNEE_CHANGED"
     | "SPRINT_CHANGED"
-    | "UPDATED";
+    | "UPDATED"
+    | "DELETED";
   details?: string;
   previousValue?: string;
   newValue?: string;
   createdAt: string;
   timestamp?: string;
+}
+
+export interface EpicAnalytics {
+  id: string;
+  title: string;
+  description?: string;
+  progress: number;
+  totalStories: number;
+  completedStories: number;
+  status?: string;
 }

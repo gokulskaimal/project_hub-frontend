@@ -11,6 +11,7 @@ import type {
   VelocityResponse,
   TaskHistory,
   PaginatedResponse,
+  EpicAnalytics,
 } from "@/types/project";
 import type { User } from "@/types/auth";
 
@@ -108,13 +109,14 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       transformResponse: (response: unknown) => extractList<Task>(response),
       providesTags: [{ type: "MemberTasks", id: "LIST" }],
     }),
-    getEpicAnalytics: builder.query<any[], string>({
+    getEpicAnalytics: builder.query<EpicAnalytics[], string>({
       query: (projectId) => ({
         url: API_ROUTES.PROJECTS.EPIC_ANALYTICS(projectId),
         method: "GET",
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: { data: any[] }) => response.data || [],
+      transformResponse: (response: { data: EpicAnalytics[] }) =>
+        response.data || [],
     }),
     getProjectSprints: builder.query<Sprint[], string>({
       query: (projectId) => ({

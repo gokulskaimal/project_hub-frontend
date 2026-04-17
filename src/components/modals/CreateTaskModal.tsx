@@ -282,7 +282,9 @@ export default function CreateTaskModal({
                             disabled={isLocked}
                             className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-purple-500 focus:bg-white transition-all text-sm px-4 py-3 font-bold text-gray-900"
                             value={type}
-                            onChange={(e) => setType(e.target.value as any)}
+                            onChange={(e) =>
+                              setType(e.target.value as Task["type"])
+                            }
                           >
                             <option value="STORY">Story 📘</option>
                             <option value="BUG">Bug 🐞</option>
@@ -363,7 +365,9 @@ export default function CreateTaskModal({
                           disabled={isLocked}
                           className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-blue-500 transition-all text-xs font-black text-gray-900 py-2 px-3"
                           value={status}
-                          onChange={(e) => setStatus(e.target.value as any)}
+                          onChange={(e) =>
+                            setStatus(e.target.value as Task["status"])
+                          }
                         >
                           <option value="TODO">Backlog</option>
                           <option value="IN_PROGRESS">Active</option>
@@ -382,7 +386,9 @@ export default function CreateTaskModal({
                             ${priority === "CRITICAL" ? "text-red-600" : priority === "HIGH" ? "text-orange-600" : "text-gray-900"}
                           `}
                           value={priority}
-                          onChange={(e) => setPriority(e.target.value as any)}
+                          onChange={(e) =>
+                            setPriority(e.target.value as Task["priority"])
+                          }
                         >
                           {PRIORITIES.map((p) => (
                             <option key={p} value={p}>
