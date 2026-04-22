@@ -35,38 +35,42 @@ export default function ProjectFilters({
   teamMembers,
 }: ProjectFiltersProps) {
   return (
-    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6 flex flex-col gap-5">
+    <div className="bg-card p-5 rounded-2xl border border-border shadow-sm mb-6 flex flex-col gap-5">
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="relative flex-1 shrink-0">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             type="text"
             placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 w-full font-bold text-gray-900"
+            className="pl-9 h-10 w-full font-bold text-foreground bg-secondary/30 border-border/50 focus:ring-primary/20"
           />
         </div>
 
         {/* Filters Wrapper */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory lg:flex-wrap items-center gap-3 pb-1 lg:pb-0 shrink-0 max-w-full">
           {/* Assignee Filter */}
-          <div className="relative">
+          <div className="relative shrink-0 snap-start">
             <select
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-secondary/30 border border-border rounded-xl text-[10px] sm:text-xs text-foreground font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-secondary/50 transition-colors"
             >
-              <option value="ALL">All Assignees</option>
-              <option value="UNASSIGNED">Unassigned</option>
+              <option value="ALL" className="bg-card">
+                All Assignees
+              </option>
+              <option value="UNASSIGNED" className="bg-card">
+                Unassigned
+              </option>
               {teamMembers.map((user) => (
-                <option key={user.id} value={user.id}>
+                <option key={user.id} value={user.id} className="bg-card">
                   {user.firstName} {user.lastName}
                 </option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
               <svg
                 className="fill-current h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
@@ -78,19 +82,29 @@ export default function ProjectFilters({
           </div>
 
           {/* Status Filter */}
-          <div className="relative">
+          <div className="relative shrink-0 snap-start">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-secondary/30 border border-border rounded-xl text-[10px] sm:text-xs text-foreground font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-secondary/50 transition-colors"
             >
-              <option value="ALL">All Status</option>
-              <option value="TODO">To Do</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="REVIEW">Review</option>
-              <option value="DONE">Done</option>
+              <option value="ALL" className="bg-card">
+                All Status
+              </option>
+              <option value="TODO" className="bg-card">
+                To Do
+              </option>
+              <option value="IN_PROGRESS" className="bg-card">
+                In Progress
+              </option>
+              <option value="REVIEW" className="bg-card">
+                Review
+              </option>
+              <option value="DONE" className="bg-card">
+                Done
+              </option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
               <svg
                 className="fill-current h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
@@ -102,19 +116,29 @@ export default function ProjectFilters({
           </div>
 
           {/* Priority Filter */}
-          <div className="relative">
+          <div className="relative shrink-0 snap-start">
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-secondary/30 border border-border rounded-xl text-[10px] sm:text-xs text-foreground font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-secondary/50 transition-colors"
             >
-              <option value="ALL">All Priorities</option>
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
+              <option value="ALL" className="bg-card">
+                All Priorities
+              </option>
+              <option value="LOW" className="bg-card">
+                Low
+              </option>
+              <option value="MEDIUM" className="bg-card">
+                Medium
+              </option>
+              <option value="HIGH" className="bg-card">
+                High
+              </option>
+              <option value="CRITICAL" className="bg-card">
+                Critical
+              </option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
               <svg
                 className="fill-current h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
@@ -126,18 +150,26 @@ export default function ProjectFilters({
           </div>
 
           {/* Type Filter */}
-          <div className="relative">
+          <div className="relative shrink-0 snap-start">
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-secondary/30 border border-border rounded-xl text-[10px] sm:text-xs text-foreground font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-secondary/50 transition-colors"
             >
-              <option value="ALL">All Types</option>
-              <option value="BUG">Bug</option>
-              <option value="STORY">Story</option>
-              <option value="TASK">Task</option>
+              <option value="ALL" className="bg-card">
+                All Types
+              </option>
+              <option value="BUG" className="bg-card">
+                Bug
+              </option>
+              <option value="STORY" className="bg-card">
+                Story
+              </option>
+              <option value="TASK" className="bg-card">
+                Task
+              </option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
               <svg
                 className="fill-current h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
@@ -149,18 +181,26 @@ export default function ProjectFilters({
           </div>
 
           {/* Date Filter */}
-          <div className="relative">
+          <div className="relative shrink-0 snap-start">
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="appearance-none pl-4 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="appearance-none pl-4 pr-8 py-2 bg-secondary/30 border border-border rounded-xl text-[10px] sm:text-xs text-foreground font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-secondary/50 transition-colors"
             >
-              <option value="ALL">Any Date</option>
-              <option value="OVERDUE">Overdue</option>
-              <option value="TODAY">Due Today</option>
-              <option value="THIS_WEEK">Due This Week</option>
+              <option value="ALL" className="bg-card">
+                Any Date
+              </option>
+              <option value="OVERDUE" className="bg-card">
+                Overdue
+              </option>
+              <option value="TODAY" className="bg-card">
+                Due Today
+              </option>
+              <option value="THIS_WEEK" className="bg-card">
+                Due This Week
+              </option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
               <svg
                 className="fill-current h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"

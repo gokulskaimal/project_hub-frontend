@@ -7,6 +7,7 @@ import { injectStore } from "@/utils/api";
 import { userApiSlice } from "@/store/api/userApiSlice";
 import { hydrateFromStorage } from "@/features/auth/authSlice";
 import { SocketProvider } from "@/context/SocketContext";
+import { ThemeProvider } from "@/components/ui/ThemeProvider";
 
 injectStore(store);
 
@@ -35,7 +36,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <GoogleOAuthProvider clientId={clientId} nonce="project-hub-nonce">
       <Provider store={store}>
-        <SocketProvider>{children}</SocketProvider>
+        <ThemeProvider>
+          <SocketProvider>{children}</SocketProvider>
+        </ThemeProvider>
       </Provider>
     </GoogleOAuthProvider>
   );

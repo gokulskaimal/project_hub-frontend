@@ -40,11 +40,13 @@ export default function ProjectBoardPage() {
   } = useGetProjectByIdQuery(projectId);
 
   const {
-    data: tasks = [],
+    data: tasksData,
     isLoading: tasksLoading,
     isFetching: tasksFetching,
     refetch: refetchTasks,
-  } = useGetProjectTasksQuery(projectId);
+  } = useGetProjectTasksQuery({ projectId });
+
+  const tasks = Array.isArray(tasksData) ? tasksData : tasksData?.items || [];
 
   const {
     data: projectMembers = [],
@@ -234,6 +236,7 @@ export default function ProjectBoardPage() {
               onEditTask={openEditModal}
               showProjectBadges={false}
               projectId={projectId}
+              isReadOnly={activeSprint.status === "COMPLETED"}
             />
           </div>
         ) : (

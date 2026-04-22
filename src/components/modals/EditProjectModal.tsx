@@ -11,7 +11,11 @@ import {
   Save,
   Sparkles,
   Users,
+  Search,
+  Target,
+  Check,
 } from "lucide-react";
+import { Input } from "@/components/ui/Input";
 import {
   useUpdateManagerProjectMutation,
   useGetManagerMembersQuery,
@@ -39,11 +43,59 @@ export default function EditProjectModal({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkEmails, setBulkEmails] = useState("");
 
-  const { data: membersData } = useGetManagerMembersQuery(
-    { page: 1, limit: 100 },
-    { skip: !isOpen },
+  const { data: membersData = { items: [], total: 0 } } =
+    useGetManagerMembersQuery(
+      { page: 1, limit: 1000 },
+      {
+        skip: !isOpen,
+      },
+    );
+
+  const members = membersData.items;
+
+  const filteredMembers = members.filter(
+    (m) =>
+      (m.firstName || "").toLowerCase().includes(memberSearch.toLowerCase()) ||
+      (m.email || "").toLowerCase().includes(memberSearch.toLowerCase()),
   );
+
+  const handleSelectAll = () => {
+    const currentFilteredIds = filteredMembers.map((m) => m.id);
+    setTeamMemberIds((prev) =>
+      Array.from(new Set([...prev, ...currentFilteredIds])),
+    );
+  };
+
+  const handleDeselectAll = () => {
+    const currentFilteredIds = filteredMembers.map((m) => m.id);
+    setTeamMemberIds((prev) =>
+      prev.filter((id) => !currentFilteredIds.includes(id)),
+    );
+  };
+
+  const handleBulkAddEmails = () => {
+    const emails = bulkEmails
+      .split(/[\n,;]/)
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e);
+
+    const matchedIds = members
+      .filter((m) => emails.includes(m.email.toLowerCase()))
+      .map((m) => m.id);
+
+    if (matchedIds.length > 0) {
+      setTeamMemberIds((prev) => Array.from(new Set([...prev, ...matchedIds])));
+      notifier.success(`Selected ${matchedIds.length} members from list`);
+      setBulkEmails("");
+      setShowBulkAdd(false);
+    } else {
+      notifier.error(null, "No matching members found for those emails");
+    }
+  };
 
   const [updateProject, { isLoading }] = useUpdateManagerProjectMutation();
 
@@ -102,7 +154,7 @@ export default function EditProjectModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" />
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -116,28 +168,28 @@ export default function EditProjectModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl">
-                <div className="bg-white px-8 pt-8 pb-4">
+              <Dialog.Panel className="relative transform overflow-hidden modal-surface transition-all sm:my-8 sm:w-full sm:max-w-xl">
+                <div className="px-8 pt-8 pb-4">
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-50 rounded-xl">
-                        <Layout className="w-6 h-6 text-blue-600" />
+                      <div className="p-3 bg-primary/10 rounded-xl">
+                        <Layout className="w-6 h-6 text-primary" />
                       </div>
                       <div>
                         <Dialog.Title
                           as="h3"
-                          className="text-2xl font-black text-gray-900 tracking-tight leading-none"
+                          className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
-                          Update Project
+                          Modify Node
                         </Dialog.Title>
-                        <p className="text-sm font-medium text-gray-400 mt-1">
-                          Refining the vision
+                        <p className="text-[10px] font-black text-muted-foreground mt-1 uppercase tracking-widest opacity-60">
+                          Refining the operational architecture
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={onClose}
-                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
@@ -146,87 +198,166 @@ export default function EditProjectModal({
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                       <div className="md:col-span-3 space-y-2">
-                        <label className="text-sm font-bold text-gray-700">
-                          Project Name
-                        </label>
+                        <label className="form-label">Node Identifier</label>
                         <input
                           type="text"
                           required
-                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all px-4 py-3 font-medium text-gray-800"
+                          className="form-input"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                          <Sparkles className="w-3 h-3 text-purple-500" />
-                          Key
+                        <label className="form-label flex items-center gap-2">
+                          <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                          Tag
                         </label>
                         <input
                           type="text"
                           required
                           maxLength={5}
-                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-purple-500 focus:bg-white transition-all px-4 py-3 font-black text-center text-blue-600 uppercase"
+                          className="form-input text-center !font-black !text-primary uppercase tracking-widest"
                           value={key}
                           onChange={(e) => setKey(e.target.value.toUpperCase())}
                         />
-                        <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">
+                        <p className="text-[9px] text-muted-foreground mt-1 italic tracking-widest uppercase opacity-40">
                           * Prefix for Task IDs (e.g. {key || "PRJ"}-1)
                         </p>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-blue-500" />
-                        Project Members
-                      </label>
-                      <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-gray-200">
-                        {membersData?.items.map((member) => (
-                          <label
-                            key={member.id}
-                            className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer group ${
-                              teamMemberIds.includes(member.id)
-                                ? "border-blue-500 bg-blue-50/50"
-                                : "border-gray-50 bg-white hover:border-gray-200"
-                            }`}
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="text"
+                            placeholder="SCAN FOR OPERATIVES..."
+                            className="form-input !py-3 flex-1 text-xs font-black uppercase tracking-tight"
+                            value={memberSearch}
+                            onChange={(e) => setMemberSearch(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowBulkAdd(!showBulkAdd)}
+                            className={`p-3 rounded-xl border transition-all ${showBulkAdd ? "bg-primary/20 border-primary text-primary" : "bg-secondary/10 border-border/30 text-muted-foreground hover:text-primary"}`}
+                            title="Bulk Add via Email List"
                           >
-                            <input
-                              type="checkbox"
-                              className="hidden"
-                              checked={teamMemberIds.includes(member.id)}
-                              onChange={() => {
+                            <Target className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        {showBulkAdd && (
+                          <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                            <label className="text-[10px] font-black text-primary uppercase tracking-widest">
+                              Signal Bulk List
+                            </label>
+                            <textarea
+                              rows={3}
+                              className="form-input !text-[10px] !bg-card"
+                              placeholder="PASTE EMAILS SEPARATED BY COMMAS..."
+                              value={bulkEmails}
+                              onChange={(e) => setBulkEmails(e.target.value)}
+                            />
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={handleBulkAddEmails}
+                                className="bg-primary text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
+                              >
+                                Match & Authorize
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between px-1">
+                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
+                            {teamMemberIds.length} AUTHORIZED
+                          </p>
+                          <div className="flex gap-4">
+                            <button
+                              type="button"
+                              onClick={handleSelectAll}
+                              className="text-[9px] font-black text-primary hover:text-primary/80 uppercase tracking-widest transition-colors"
+                            >
+                              Authorize All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleDeselectAll}
+                              className="text-[9px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest transition-colors"
+                            >
+                              Prune Viewport
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        {filteredMembers.map((member) => {
+                          const isSelected = teamMemberIds.includes(member.id);
+                          return (
+                            <div
+                              key={member.id}
+                              onClick={() => {
                                 setTeamMemberIds((prev) =>
-                                  prev.includes(member.id)
+                                  isSelected
                                     ? prev.filter((id) => id !== member.id)
                                     : [...prev, member.id],
                                 );
                               }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-black text-gray-900 truncate">
-                                {member.firstName} {member.lastName}
-                              </p>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate">
-                                {member.role}
-                              </p>
+                              className={`group flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 shadow-lg shadow-primary/5"
+                                  : "border-border/30 bg-secondary/10 hover:border-border/60 hover:bg-secondary/20"
+                              }`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div
+                                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-black transition-all uppercase ${
+                                    isSelected
+                                      ? "bg-primary text-white shadow-md shadow-primary/20"
+                                      : "bg-secondary text-muted-foreground border border-border/30"
+                                  }`}
+                                >
+                                  {(member.firstName || "U").charAt(0)}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4
+                                    className={`text-[13px] font-black truncate uppercase tracking-tight ${isSelected ? "text-primary" : "text-foreground"}`}
+                                  >
+                                    {member.firstName} {member.lastName}
+                                  </h4>
+                                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate opacity-40">
+                                    {member.email}
+                                  </p>
+                                </div>
+                              </div>
+                              <div
+                                className={`w-6 h-6 rounded-xl border-2 flex items-center justify-center transition-all ${
+                                  isSelected
+                                    ? "bg-primary border-primary shadow-md shadow-primary/20"
+                                    : "border-border/50 group-hover:border-primary/50"
+                                }`}
+                              >
+                                {isSelected && (
+                                  <Check className="w-4 h-4 text-white" />
+                                )}
+                              </div>
                             </div>
-                            {teamMemberIds.includes(member.id) && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                            )}
-                          </label>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                        <AlignLeft className="w-4 h-4 text-blue-500" />
-                        Description
+                      <label className="form-label flex items-center gap-2">
+                        <AlignLeft className="w-3.5 h-3.5 text-primary" />
+                        Operational Briefing
                       </label>
                       <textarea
                         rows={3}
-                        className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all p-4 text-sm text-gray-600 leading-relaxed"
+                        className="form-input min-h-[100px]"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                       />
@@ -234,53 +365,53 @@ export default function EditProjectModal({
 
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-400" />
-                          Start Date
+                        <label className="form-label flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-primary" />
+                          Start Node
                         </label>
                         <input
                           type="date"
-                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all px-4 py-2.5 text-sm"
+                          className="form-input"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-400" />
-                          End Date
+                        <label className="form-label flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-primary" />
+                          Target End
                         </label>
                         <input
                           type="date"
-                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all px-4 py-2.5 text-sm"
+                          className="form-input"
                           value={endDate}
                           onChange={(e) => setEndDate(e.target.value)}
                         />
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4">
+                    <div className="bg-secondary/10 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4 border-t border-border/50">
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="inline-flex justify-center items-center rounded-xl bg-blue-600 px-8 py-3.5 text-sm font-black text-white shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all disabled:opacity-50 min-w-[140px]"
+                        className="px-8 py-3.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50 min-w-[140px]"
                       >
                         {isLoading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                         ) : (
                           <>
                             <Save className="w-4 h-4 mr-2" />
-                            Save Changes
+                            Commit Node
                           </>
                         )}
                       </button>
                       <button
                         type="button"
-                        className="inline-flex justify-center rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all"
+                        className="px-8 py-3.5 border border-border text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary transition-all"
                         onClick={onClose}
                         disabled={isLoading}
                       >
-                        Cancel
+                        Abort
                       </button>
                     </div>
                   </form>

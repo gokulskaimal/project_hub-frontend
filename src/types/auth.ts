@@ -71,6 +71,7 @@ export interface CompleteSignupPayload {
 export interface AcceptInvitePayload {
   token: string;
   password?: string;
+  confirmPassword?: string;
   firstName: string;
   lastName: string;
 }

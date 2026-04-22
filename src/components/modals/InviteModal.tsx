@@ -13,7 +13,10 @@ import {
   ShieldCheck,
   Clock,
 } from "lucide-react";
-import { useSendInviteMutation } from "@/store/api/managerApiSlice";
+import {
+  useSendInviteMutation,
+  useSendInvitationsMutation,
+} from "@/store/api/managerApiSlice";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { notifier } from "@/utils/notifier";
@@ -41,7 +44,15 @@ export default function InviteModal({
   const [invites, setInvites] = useState<InviteRow[]>([
     { email: "", role: USER_ROLES.TEAM_MEMBER, expiry: "7 Days" },
   ]);
-  const [sendInvite, { isLoading }] = useSendInviteMutation();
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [bulkEmails, setBulkEmails] = useState("");
+  const [bulkRole, setBulkRole] = useState<string>(USER_ROLES.TEAM_MEMBER);
+
+  const [sendInvite, { isLoading: singleLoading }] = useSendInviteMutation();
+  const [sendInvitations, { isLoading: bulkLoading }] =
+    useSendInvitationsMutation();
+
+  const isLoading = singleLoading || bulkLoading;
 
   const addRow = () => {
     setInvites([
@@ -79,19 +90,41 @@ export default function InviteModal({
     }
 
     try {
-      await Promise.all(
-        validInvites.map((invite) =>
-          sendInvite({
-            email: invite.email,
-            role: invite.role,
-            orgId: user.orgId!,
-            expiresIn: getDays(invite.expiry),
-          }).unwrap(),
-        ),
-      );
-      notifier.success(
-        `Successfully sent ${validInvites.length} invitation(s)`,
-      );
+      if (isBulkMode) {
+        const emails = bulkEmails
+          .split(/[\n,]/)
+          .map((e) => e.trim())
+          .filter((e) => e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+
+        if (emails.length === 0) {
+          notifier.error(null, "No valid email addresses found");
+          return;
+        }
+
+        await sendInvitations({
+          emails,
+          role: bulkRole,
+          expiresIn: 7, // Default for bulk for simplicity, can be expanded
+        }).unwrap();
+
+        notifier.success(
+          `Successfully dispatched ${emails.length} invitations`,
+        );
+      } else {
+        await Promise.all(
+          validInvites.map((invite) =>
+            sendInvite({
+              email: invite.email,
+              role: invite.role,
+              orgId: user.orgId!,
+              expiresIn: getDays(invite.expiry),
+            }).unwrap(),
+          ),
+        );
+        notifier.success(
+          `Successfully sent ${validInvites.length} invitation(s)`,
+        );
+      }
       if (onSuccess) onSuccess();
       onClose();
       setInvites([
@@ -128,138 +161,207 @@ export default function InviteModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-4xl">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+              <Dialog.Panel className="relative transform overflow-hidden modal-surface transition-all sm:my-8 sm:w-full sm:max-w-4xl">
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-indigo-500 to-purple-500" />
 
                 <div className="px-10 pt-10 pb-6">
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-50 rounded-xl shadow-inner">
-                        <UserPlus className="w-6 h-6 text-blue-600" />
+                      <div className="p-3 bg-primary/10 rounded-xl">
+                        <UserPlus className="w-6 h-6 text-primary" />
                       </div>
                       <div>
                         <Dialog.Title
                           as="h3"
-                          className="text-2xl font-black text-gray-900 tracking-tight leading-none"
+                          className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
                           Assemble Your Team
                         </Dialog.Title>
-                        <p className="text-sm font-medium text-gray-400 mt-1 uppercase tracking-widest">
-                          Expansion Protocol
+                        <p className="text-[10px] font-black text-muted-foreground mt-1 uppercase tracking-widest opacity-60">
+                          Expansion Protocol • Initializing Node Access
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={onClose}
-                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {invites.map((invite, index) => (
-                        <div
-                          key={index}
-                          className="group flex gap-4 items-end animate-in fade-in slide-in-from-bottom-2 duration-200"
-                        >
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
-                            <div className="md:col-span-6 space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-tighter text-gray-400 flex items-center gap-1.5 ml-1">
-                                <Mail className="w-3 h-3" /> Email Address
-                              </label>
-                              <input
-                                type="email"
-                                required
-                                value={invite.email}
-                                onChange={(e) =>
-                                  updateRow(index, "email", e.target.value)
-                                }
-                                placeholder="pioneer@company.com"
-                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm font-bold text-gray-900"
-                              />
-                            </div>
-                            <div className="md:col-span-3 space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-tighter text-gray-400 flex items-center gap-1.5 ml-1">
-                                <ShieldCheck className="w-3 h-3" /> Role
-                              </label>
-                              <select
-                                value={invite.role}
-                                onChange={(e) =>
-                                  updateRow(index, "role", e.target.value)
-                                }
-                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm font-black text-gray-900"
-                              >
-                                <option value={USER_ROLES.TEAM_MEMBER}>
-                                  Team Member
-                                </option>
-                                <option value={USER_ROLES.ORG_MANAGER}>
-                                  Manager
-                                </option>
-                              </select>
-                            </div>
-                            <div className="md:col-span-3 space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-tighter text-gray-400 flex items-center gap-1.5 ml-1">
-                                <Clock className="w-3 h-3" /> Expiry
-                              </label>
-                              <select
-                                value={invite.expiry}
-                                onChange={(e) =>
-                                  updateRow(index, "expiry", e.target.value)
-                                }
-                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm font-black text-gray-900"
-                              >
-                                <option value="7 Days">7 Days</option>
-                                <option value="14 Days">14 Days</option>
-                                <option value="30 Days">30 Days</option>
-                              </select>
-                            </div>
-                          </div>
-                          {invites.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeRow(index)}
-                              className="mb-1 p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
+                  <div className="flex p-1 bg-secondary/30 rounded-xl mb-8 w-fit border border-border/50">
                     <button
-                      type="button"
-                      onClick={addRow}
-                      className="inline-flex items-center gap-2 text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2.5 rounded-xl transition-all"
+                      onClick={() => setIsBulkMode(false)}
+                      className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                        !isBulkMode
+                          ? "bg-primary text-white shadow-lg shadow-primary/20"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      <Plus className="w-4 h-4" />
-                      Add Another Field
+                      Individual
                     </button>
+                    <button
+                      onClick={() => setIsBulkMode(true)}
+                      className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                        isBulkMode
+                          ? "bg-primary text-white shadow-lg shadow-primary/20"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Bulk Entry
+                    </button>
+                  </div>
 
-                    <div className="bg-gray-50 -mx-10 -mb-6 px-10 py-8 mt-10 flex flex-row-reverse gap-4">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {isBulkMode ? (
+                      <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                        <div className="space-y-2">
+                          <label className="form-label flex items-center gap-2">
+                            <Mail className="w-3.5 h-3.5 text-primary" />
+                            Email Signature List
+                          </label>
+                          <textarea
+                            value={bulkEmails}
+                            onChange={(e) => setBulkEmails(e.target.value)}
+                            placeholder="OPERATOR1@SYSTEM.IO, OPERATOR2@SYSTEM.IO..."
+                            rows={8}
+                            className="form-input !text-xs !font-black uppercase tracking-widest placeholder:opacity-40"
+                          />
+                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 italic">
+                            * Comma or Line separated addresses
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="form-label flex items-center gap-2">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                              Assigned Clearance
+                            </label>
+                            <select
+                              value={bulkRole}
+                              onChange={(e) => setBulkRole(e.target.value)}
+                              className="form-select"
+                            >
+                              <option value={USER_ROLES.TEAM_MEMBER}>
+                                TEAM MEMBER
+                              </option>
+                              <option value={USER_ROLES.ORG_MANAGER}>
+                                ORG MANAGER
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                          {invites.map((invite, index) => (
+                            <div
+                              key={index}
+                              className="group flex gap-4 items-start animate-in fade-in slide-in-from-bottom-2 duration-200"
+                            >
+                              <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div className="md:col-span-6 space-y-2">
+                                  <label className="form-label flex items-center gap-2">
+                                    <Mail className="w-3.5 h-3.5 text-primary" />
+                                    Operative Node
+                                  </label>
+                                  <input
+                                    type="email"
+                                    required
+                                    value={invite.email}
+                                    onChange={(e) =>
+                                      updateRow(index, "email", e.target.value)
+                                    }
+                                    placeholder="OPERATOR@SYSTEM.IO"
+                                    className="form-input"
+                                  />
+                                </div>
+                                <div className="md:col-span-3 space-y-2">
+                                  <label className="form-label flex items-center gap-2">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                    Clearance
+                                  </label>
+                                  <select
+                                    value={invite.role}
+                                    onChange={(e) =>
+                                      updateRow(index, "role", e.target.value)
+                                    }
+                                    className="form-select"
+                                  >
+                                    <option value={USER_ROLES.TEAM_MEMBER}>
+                                      MEMBER
+                                    </option>
+                                    <option value={USER_ROLES.ORG_MANAGER}>
+                                      MANAGER
+                                    </option>
+                                  </select>
+                                </div>
+                                <div className="md:col-span-3 space-y-2">
+                                  <label className="form-label flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 text-purple-500" />
+                                    TTL
+                                  </label>
+                                  <select
+                                    value={invite.expiry}
+                                    onChange={(e) =>
+                                      updateRow(index, "expiry", e.target.value)
+                                    }
+                                    className="form-select"
+                                  >
+                                    <option value="7 Days">7 DAYS</option>
+                                    <option value="14 Days">14 DAYS</option>
+                                    <option value="30 Days">30 DAYS</option>
+                                  </select>
+                                </div>
+                              </div>
+                              {invites.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeRow(index)}
+                                  className="mt-8 p-3 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={addRow}
+                          className="inline-flex items-center gap-2 text-[10px] font-black text-primary hover:text-primary/80 bg-primary/10 px-6 py-2.5 rounded-xl transition-all uppercase tracking-widest"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Field Node
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="bg-secondary/10 -mx-10 -mb-6 px-10 py-8 mt-10 flex flex-row-reverse gap-4 border-t border-border/50">
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="inline-flex justify-center items-center gap-2 rounded-xl bg-gray-900 px-10 py-3.5 text-sm font-black text-white shadow-2xl shadow-gray-200 hover:bg-black transition-all disabled:opacity-50 min-w-[180px]"
+                        className="px-10 py-3.5 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50 min-w-[200px]"
                       >
                         {isLoading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                         ) : (
                           <>
-                            <Send className="w-4 h-4" />
-                            Dispatch Invites
+                            <Send className="w-4 h-4 mr-2" />
+                            Dispatch Signal
                           </>
                         )}
                       </button>
                       <button
                         type="button"
-                        className="inline-flex justify-center rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all"
+                        className="px-10 py-3.5 border border-border text-foreground rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-secondary transition-all"
                         onClick={onClose}
                         disabled={isLoading}
                       >
-                        Discard
+                        Abort
                       </button>
                     </div>
                   </form>

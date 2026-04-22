@@ -213,7 +213,7 @@ export default function TaskDetailsModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity" />
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -227,18 +227,18 @@ export default function TaskDetailsModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-4xl min-h-[600px] flex flex-col md:flex-row">
+              <Dialog.Panel className="relative transform overflow-hidden modal-surface transition-all sm:my-8 sm:w-full sm:max-w-4xl min-h-[600px] flex flex-col md:flex-row">
                 {/* Left Side: Main Content */}
                 <div className="flex-1 p-8 sm:p-10">
                   <div className="flex items-start justify-between mb-8">
                     <div className="flex-1 mr-4">
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black tracking-widest rounded-full uppercase">
+                        <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black tracking-widest rounded-full uppercase">
                           {currentTask.type}
                         </span>
                         <span
                           className={`px-3 py-1 text-[10px] font-black tracking-widest rounded-full uppercase
-                                ${currentTask.priority === "CRITICAL" ? "bg-red-50 text-red-600" : "bg-orange-50 text-orange-600"}
+                                ${currentTask.priority === "CRITICAL" ? "bg-rose-500/10 text-rose-500" : "bg-amber-500/10 text-amber-500"}
                             `}
                         >
                           {currentTask.priority}
@@ -246,41 +246,41 @@ export default function TaskDetailsModal({
                       </div>
                       <Dialog.Title
                         as="h3"
-                        className="text-3xl font-black text-gray-900 leading-tight"
+                        className="text-3xl font-black text-foreground leading-tight uppercase tracking-tighter"
                       >
                         {currentTask.title}
                       </Dialog.Title>
                     </div>
                     <button
                       onClick={onClose}
-                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
                   </div>
 
                   {/* Tabs */}
-                  <div className="flex items-center gap-6 border-b border-gray-100 mb-8">
+                  <div className="flex items-center gap-6 border-b border-border/50 mb-8">
                     {[
-                      { id: "details", label: "Details", icon: Info },
+                      { id: "details", label: "DETAILS", icon: Info },
                       {
                         id: "comments",
-                        label: "Comments",
+                        label: "COMMENTS",
                         icon: MessageSquare,
                       },
-                      { id: "history", label: "History", icon: History },
+                      { id: "history", label: "HISTORY", icon: History },
                     ].map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-1 py-4 text-sm font-bold transition-all relative
-                            ${activeTab === tab.id ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}
+                        className={`flex items-center gap-2 px-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all relative
+                            ${activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground"}
                           `}
                       >
                         <tab.icon className="w-4 h-4" />
                         {tab.label}
                         {activeTab === tab.id && (
-                          <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600 rounded-full" />
+                          <div className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
                         )}
                       </button>
                     ))}
@@ -289,27 +289,25 @@ export default function TaskDetailsModal({
                   {activeTab === "details" && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       {isTaskFetching && !fullTaskData && (
-                        <div className="flex items-center gap-2 text-blue-600 py-2">
+                        <div className="flex items-center gap-2 text-primary py-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-xs font-bold">
-                            Refreshing details...
+                          <span className="text-[10px] font-black uppercase tracking-widest">
+                            Synching Grid...
                           </span>
                         </div>
                       )}
                       <div className="space-y-3">
-                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                          Description
-                        </h4>
-                        <p className="text-base text-gray-900 leading-relaxed font-bold">
+                        <h4 className="form-label">Objective Briefing</h4>
+                        <p className="text-base text-foreground leading-relaxed font-bold">
                           {currentTask.description ||
-                            "No description provided."}
+                            "No operational data available."}
                         </p>
                       </div>
 
                       {/* Attachments Placeholder */}
                       <div className="space-y-4">
-                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                          Attachments{" "}
+                        <h4 className="form-label">
+                          Evidence Repositories{" "}
                           {currentTask.attachments?.length
                             ? `(${currentTask.attachments.length})`
                             : ""}
@@ -321,18 +319,17 @@ export default function TaskDetailsModal({
                             (attachment, idx) => (
                               <div
                                 key={idx}
-                                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md"
+                                className="flex items-center justify-between p-4 bg-secondary/10 rounded-xl border border-border/50 group transition-all hover:bg-secondary/20"
                               >
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                  <div className="p-2 bg-white rounded-xl border border-gray-100 text-blue-600">
+                                  <div className="p-2 bg-card rounded-xl border border-border/50 text-primary">
                                     <FileIcon className="w-4 h-4" />
                                   </div>
                                   <div className="overflow-hidden">
-                                    <p className="text-xs font-bold text-gray-900 truncate">
-                                      {attachment.name ||
-                                        `Attachment ${idx + 1}`}
+                                    <p className="text-xs font-black text-foreground truncate uppercase tracking-tight">
+                                      {attachment.name || `RESOURCE ${idx + 1}`}
                                     </p>
-                                    <p className="text-[10px] text-gray-400 font-medium tracking-tight">
+                                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
                                       {attachment.size
                                         ? `${(attachment.size / 1024).toFixed(1)} KB`
                                         : "Original file"}
@@ -344,7 +341,7 @@ export default function TaskDetailsModal({
                                     href={attachment.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                    className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
                                     title="Download"
                                   >
                                     <Download className="w-4 h-4" />
@@ -364,7 +361,7 @@ export default function TaskDetailsModal({
                           <button
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isUploading}
-                            className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-100 rounded-xl text-gray-400 hover:border-blue-200 hover:text-blue-500 hover:bg-blue-50/50 transition-all font-bold text-sm"
+                            className="flex items-center gap-3 p-4 border-2 border-dashed border-border/50 rounded-xl text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all font-black text-[10px] uppercase tracking-widest"
                           >
                             {isUploading ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -381,14 +378,14 @@ export default function TaskDetailsModal({
                   {activeTab === "comments" && (
                     <div className="flex flex-col h-[500px]">
                       {/* Messages List - Scrollable */}
-                      <div className="flex-1 overflow-y-auto pr-2 mb-4 scrollbar-thin scrollbar-thumb-gray-200">
+                      <div className="flex-1 overflow-y-auto pr-2 mb-4 custom-scrollbar">
                         {(currentTask.comments || []).length === 0 ? (
-                          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-10 opacity-60">
-                            <div className="p-4 bg-gray-50 rounded-full">
-                              <MessageSquare className="w-8 h-8 text-gray-300" />
+                          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-10 opacity-40">
+                            <div className="p-4 bg-secondary/20 rounded-full">
+                              <MessageSquare className="w-8 h-8 text-muted-foreground" />
                             </div>
-                            <p className="text-sm font-bold text-gray-400">
-                              No discussions yet. Be the first to chime in!
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                              SILENCE IN THE ARCHIVES. COMMENCE COMMS...
                             </p>
                           </div>
                         ) : (
@@ -404,23 +401,23 @@ export default function TaskDetailsModal({
                                   )}
                                   size="sm"
                                 />
-                                <div className="flex-1 bg-gray-50/50 p-4 rounded-[1.5rem] border border-gray-100/50 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                <div className="flex-1 bg-secondary/10 p-4 rounded-[1.5rem] border border-border/30 group-hover:bg-secondary/20 transition-all">
                                   <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-black text-gray-900">
+                                    <span className="text-xs font-black text-foreground uppercase tracking-tight">
                                       {users.find(
                                         (u) => u.id === comment.userId,
                                       )
                                         ? `${users.find((u) => u.id === comment.userId)?.firstName} ${users.find((u) => u.id === comment.userId)?.lastName}`
-                                        : "Team Member"}
+                                        : "TEAM MEMBER"}
                                     </span>
-                                    <span className="text-[10px] font-bold text-gray-400">
+                                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
                                       {formatDistanceToNow(
                                         new Date(comment.createdAt),
                                       )}{" "}
                                       ago
                                     </span>
                                   </div>
-                                  <p className="text-sm text-gray-900 font-bold leading-relaxed">
+                                  <p className="text-sm text-foreground font-bold leading-relaxed">
                                     {comment.text}
                                   </p>
                                 </div>
@@ -433,12 +430,12 @@ export default function TaskDetailsModal({
                       {/* Pinned Input Form */}
                       <form
                         onSubmit={handleAddComment}
-                        className="relative mt-auto pt-2 bg-white"
+                        className="relative mt-auto pt-4 bg-card"
                       >
                         <input
                           type="text"
-                          className="w-full bg-white border-2 border-gray-100 rounded-xl px-5 py-4 pr-16 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all font-black text-gray-900 shadow-sm"
-                          placeholder="Write a comment..."
+                          className="form-input !pr-20 !py-4 text-xs font-black uppercase tracking-tight"
+                          placeholder="SIGNAL COMMODITY..."
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
                           disabled={isAddingComment}
@@ -446,7 +443,7 @@ export default function TaskDetailsModal({
                         <button
                           type="submit"
                           disabled={isAddingComment || !commentText.trim()}
-                          className="absolute right-2 top-4 bottom-2 px-6 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-all disabled:opacity-50 shadow-md transform active:scale-95"
+                          className="absolute right-2 top-2 bottom-2 px-6 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all disabled:opacity-50"
                         >
                           {isAddingComment ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -462,36 +459,36 @@ export default function TaskDetailsModal({
                     <div className="space-y-6">
                       {isHistoryLoading ? (
                         <div className="flex items-center justify-center py-20">
-                          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                          <Loader2 className="w-8 h-8 text-primary animate-spin" />
                         </div>
                       ) : history.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-20 font-bold">
-                          No history available.
+                        <p className="text-[10px] text-muted-foreground text-center py-20 font-black uppercase tracking-widest opacity-40">
+                          SYSTEM LOG EMPTY.
                         </p>
                       ) : (
-                        <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+                        <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
                           {history.map((item, i) => (
                             <div key={i} className="flex gap-6 relative">
-                              <div className="w-6 h-6 rounded-full bg-white border-4 border-blue-500 z-10" />
+                              <div className="w-6 h-6 rounded-full bg-background border-4 border-primary z-10" />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-black text-gray-900">
+                                  <span className="text-[10px] font-black text-foreground uppercase tracking-tight">
                                     {item.action}
                                   </span>
-                                  <span className="text-[10px] font-bold text-gray-400">
+                                  <span className="text-[9px] font-black text-muted-foreground uppercase opacity-40">
                                     {formatDistanceToNow(
                                       new Date(item.createdAt),
                                     )}{" "}
                                     ago
                                   </span>
                                 </div>
-                                <p className="text-xs text-gray-500 font-medium italic">
+                                <p className="text-xs text-muted-foreground font-medium italic">
                                   {item.details || `Performed ${item.action}`}
                                   {item.previousValue && item.newValue && (
                                     <>
                                       {" "}
                                       from{" "}
-                                      <span className="text-gray-800 line-through opacity-50">
+                                      <span className="text-foreground line-through opacity-30">
                                         {String(item.previousValue)}
                                       </span>{" "}
                                       to{" "}
@@ -511,34 +508,34 @@ export default function TaskDetailsModal({
                 </div>
 
                 {/* Right Side: Meta Sidebar */}
-                <div className="w-full md:w-80 bg-gray-50/50 border-l border-gray-100 p-8 sm:p-10 space-y-10">
+                <div className="w-full md:w-80 bg-secondary/5 border-l border-border/50 p-8 sm:p-10 space-y-10">
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <ShieldCheck className="w-3 h-3" />
-                        Status Control
+                      <h4 className="form-label flex items-center gap-2">
+                        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                        Access Grade
                       </h4>
                       <select
-                        className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-black text-gray-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                        className="form-select text-[10px] font-black uppercase"
                         value={currentTask.status}
                         onChange={(e) =>
                           handleStatusChange(e.target.value as any)
                         }
                       >
-                        <option value="TODO">Backlog</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="REVIEW">Review</option>
-                        <option value="DONE">Done</option>
+                        <option value="TODO">BACKLOG</option>
+                        <option value="IN_PROGRESS">IN PROGRESS</option>
+                        <option value="REVIEW">REVIEW</option>
+                        <option value="DONE">DONE</option>
                       </select>
                     </div>
 
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <Clock className="w-3 h-3" />
-                        Time Tracking
+                      <h4 className="form-label flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-primary" />
+                        Uptime Tracking
                       </h4>
-                      <div className="bg-white rounded-xl p-6 border-2 border-gray-100 shadow-sm text-center">
-                        <div className="text-3xl font-black text-gray-900 mb-2 font-mono">
+                      <div className="bg-secondary/10 rounded-2xl p-6 border border-border/50 text-center">
+                        <div className="text-3xl font-black text-foreground mb-4 font-mono tracking-tighter">
                           {isTimerRunning
                             ? formatTime(timeSpent)
                             : `${(timeSpent / 3600000).toFixed(1)}h`}
@@ -548,11 +545,11 @@ export default function TaskDetailsModal({
                             handleTimerToggle(isTimerRunning ? "stop" : "start")
                           }
                           disabled={isTimerLoading}
-                          className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg
+                          className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all duration-300
                                         ${
                                           isTimerRunning
-                                            ? "bg-red-500 text-white hover:bg-red-600 shadow-red-100"
-                                            : "bg-green-500 text-white hover:bg-green-600 shadow-green-100"
+                                            ? "bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20"
+                                            : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
                                         }
                                     `}
                         >
@@ -568,49 +565,43 @@ export default function TaskDetailsModal({
 
                   <div className="space-y-8">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-xl border border-gray-100">
-                        <UserIcon className="w-4 h-4 text-gray-400" />
+                      <div className="p-2.5 bg-secondary/20 rounded-xl border border-border/50 text-primary">
+                        <UserIcon className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                          Assignee
-                        </p>
-                        <p className="text-sm font-bold text-gray-900">
+                        <p className="form-label !mb-0">Operative</p>
+                        <p className="text-xs font-black text-foreground uppercase tracking-tight">
                           {currentTask.assignedTo
                             ? users.find((u) => u.id === currentTask.assignedTo)
                               ? `${users.find((u) => u.id === currentTask.assignedTo)?.firstName} ${users.find((u) => u.id === currentTask.assignedTo)?.lastName}`
-                              : "Assigned"
-                            : "Unassigned"}
+                              : "ASSIGNED"
+                            : "UNASSIGNED"}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-xl border border-gray-100">
-                        <Calendar className="w-4 h-4 text-gray-400" />
+                      <div className="p-2.5 bg-secondary/20 rounded-xl border border-border/50 text-primary">
+                        <Calendar className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                          Due Date
-                        </p>
-                        <p className="text-sm font-black text-gray-900">
+                        <p className="form-label !mb-0">Deadline</p>
+                        <p className="text-xs font-black text-foreground uppercase tracking-tight">
                           {currentTask.dueDate
                             ? new Date(currentTask.dueDate).toLocaleDateString()
-                            : "No deadline"}
+                            : "UNSET"}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-xl border border-gray-100">
-                        <Tag className="w-4 h-4 text-gray-400" />
+                      <div className="p-2.5 bg-secondary/20 rounded-xl border border-border/50 text-primary">
+                        <Tag className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                          Story Points
-                        </p>
-                        <p className="text-sm font-black text-gray-900">
-                          {currentTask.storyPoints || 0} pts
+                        <p className="form-label !mb-0">Complexity</p>
+                        <p className="text-xs font-black text-foreground uppercase tracking-tight text-gradient">
+                          {currentTask.storyPoints || 0} NODE PTS
                         </p>
                       </div>
                     </div>

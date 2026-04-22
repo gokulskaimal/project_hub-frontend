@@ -73,6 +73,28 @@ export default function TaskCalendar({
     handleModalClose();
   };
 
+  // Memoize Tasks and Projects by Date for Performance
+  const { groupedTasks, groupedProjects } = React.useMemo(() => {
+    const tasksMap: Record<string, Task[]> = {};
+    const projectsMap: Record<string, Project[]> = {};
+
+    tasks.forEach((task) => {
+      if (!task.dueDate) return;
+      const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
+      if (!tasksMap[dateKey]) tasksMap[dateKey] = [];
+      tasksMap[dateKey].push(task);
+    });
+
+    projects.forEach((project) => {
+      if (!project.endDate) return;
+      const dateKey = format(new Date(project.endDate), "yyyy-MM-dd");
+      if (!projectsMap[dateKey]) projectsMap[dateKey] = [];
+      projectsMap[dateKey].push(project);
+    });
+
+    return { groupedTasks: tasksMap, groupedProjects: projectsMap };
+  }, [tasks, projects]);
+
   const handleCellClick = () => {
     // If global calendar (no projectId), we can't create a task from here easily
     if (!projectId) {
@@ -85,25 +107,27 @@ export default function TaskCalendar({
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-xl border border-border/50 overflow-hidden backdrop-blur-md">
         {/* Calendar Header */}
-        <div className="p-4 flex items-center justify-between border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-bold text-gray-900">
+        <div className="p-5 flex items-center justify-between border-b border-border/50 bg-secondary/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <CalendarIcon className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-black text-foreground tracking-tight">
               {format(currentMonth, "MMMM yyyy")}
             </h2>
           </div>
           <div className="flex gap-2">
             <button
               onClick={prevMonth}
-              className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all text-gray-600 hover:text-gray-900 shadow-sm"
+              className="p-2.5 hover:bg-card rounded-xl border border-border/50 hover:border-primary/30 transition-all text-muted-foreground hover:text-primary shadow-sm active:scale-95"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={nextMonth}
-              className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all text-gray-600 hover:text-gray-900 shadow-sm"
+              className="p-2.5 hover:bg-card rounded-xl border border-border/50 hover:border-primary/30 transition-all text-muted-foreground hover:text-primary shadow-sm active:scale-95"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -111,93 +135,86 @@ export default function TaskCalendar({
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+        <div className="grid grid-cols-7 border-b border-border/30 bg-muted/20">
           {weekDays.map((day) => (
             <div
               key={day}
-              className="p-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              className="p-3 text-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] overflow-hidden"
             >
-              {day}
+              <span className="hidden sm:inline">{day}</span>
+              <span className="sm:hidden">{day.charAt(0)}</span>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 auto-rows-[minmax(120px,auto)] bg-white">
-          {calendarDays.map((day, dayIdx) => (
-            <div
-              key={day.toString()}
-              onClick={handleCellClick}
-              className={`
-              min-h-[120px] p-2 border-b border-r border-gray-100 transition-colors
-              ${!isSameMonth(day, monthStart) ? "bg-gray-50/50" : ""}
-              ${isSameDay(day, new Date()) ? "bg-blue-50/30" : "hover:bg-gray-50"}
-            `}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <span
-                  className={`
-                  text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full
-                  ${
-                    isSameDay(day, new Date())
-                      ? "bg-blue-600 text-white"
-                      : !isSameMonth(day, monthStart)
-                        ? "text-gray-400"
-                        : "text-gray-700"
-                  }
-                `}
-                >
-                  {format(day, "d")}
-                </span>
-              </div>
+        <div className="grid grid-cols-7 auto-rows-[minmax(120px,auto)] bg-card/50">
+          {calendarDays.map((day, dayIdx) => {
+            const dateKey = format(day, "yyyy-MM-dd");
+            const tasksOnDay = groupedTasks[dateKey] || [];
+            const projectsOnDay = groupedProjects[dateKey] || [];
 
-              <div className="space-y-1">
-                {/* Render Projects End Dates First */}
-                {projects
-                  .filter((project) => {
-                    if (!project.endDate) return false;
-                    return isSameDay(new Date(project.endDate), day);
-                  })
-                  .map((project) => (
+            return (
+              <div
+                key={day.toString()}
+                onClick={handleCellClick}
+                className={`
+                min-h-[120px] p-2 border-b border-r border-border/30 transition-all duration-300
+                ${!isSameMonth(day, monthStart) ? "opacity-30 bg-muted/10 grayscale-[0.5]" : "hover:bg-primary/5"}
+                ${isSameDay(day, new Date()) ? "bg-primary/[0.03]" : ""}
+              `}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <span
+                    className={`
+                    text-xs font-black w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-300 shadow-sm
+                    ${
+                      isSameDay(day, new Date())
+                        ? "bg-primary text-primary-foreground scale-110 shadow-primary/20 rotate-[-4deg]"
+                        : !isSameMonth(day, monthStart)
+                          ? "text-muted-foreground/50"
+                          : "text-foreground/80"
+                    }
+                  `}
+                  >
+                    {format(day, "d")}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  {/* Render Projects End Dates First */}
+                  {projectsOnDay.map((project) => (
                     <div
                       key={`proj-${project.id}`}
                       title={`Project Deadline: ${project.name}`}
-                      className={`text-[10px] p-1.5 rounded border truncate select-none shadow-sm flex items-center justify-between ${getStatusColor("PLANNING")}`}
+                      className="text-[9px] font-black p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-500 truncate select-none shadow-sm flex items-center justify-between uppercase tracking-tighter"
                     >
-                      <span className="font-bold truncate w-full flex items-center gap-1">
-                        🚀 {project.name}
+                      <span className="truncate w-full flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                        {project.name}
                       </span>
                     </div>
                   ))}
 
-                {/* Render Tasks */}
-                {tasks
-                  .filter((task) => {
-                    if (!task.dueDate) return false;
-                    return isSameDay(new Date(task.dueDate), day);
-                  })
-                  .map((task) => (
+                  {/* Render Tasks */}
+                  {tasksOnDay.map((task) => (
                     <div
                       key={task.id}
                       title={`${task.title} (${task.project?.name || "Unknown Project"})`}
                       onClick={(e) => handleTaskClick(e, task)}
-                      className={`
-                      text-[10px] p-1.5 rounded border truncate cursor-pointer select-none transition-all hover:shadow-sm flex items-center justify-between
-                      ${getPriorityColor(task.priority)}
-                    `}
+                      className="text-[9px] font-black p-2 rounded-lg bg-primary/10 border border-primary/20 text-primary truncate cursor-pointer select-none transition-all hover:bg-primary/20 hover:scale-[1.02] active:scale-95 shadow-sm flex items-center justify-between uppercase tracking-tighter leading-tight"
                     >
-                      <span className="font-semibold truncate w-full">
-                        {task.title}
-                      </span>
+                      <span className="truncate w-full">{task.title}</span>
                       {!projectId && task.project?.name && (
-                        <span className="text-[8px] opacity-70 ml-1 truncate max-w-[40px] hidden sm:inline-block">
+                        <span className="text-[7px] opacity-60 ml-1.5 truncate max-w-[40px] hidden sm:inline-block border-l border-primary/20 pl-1.5">
                           {task.project.name}
                         </span>
                       )}
                     </div>
                   ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

@@ -1,12 +1,16 @@
+"use client";
+
 import React from "react";
+import { Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface RoleBannerProps {
   roleName: string;
   badgeText: string;
-  welcomeMessage: string | React.ReactNode;
-  description: string | React.ReactNode;
-  gradientFrom?: string; // e.g. blue-600/20
-  gradientTo?: string; // e.g. indigo-600/10
+  welcomeMessage: React.ReactNode;
+  description: React.ReactNode;
+  gradientFrom?: string;
+  gradientTo?: string;
 }
 
 export const RoleBanner: React.FC<RoleBannerProps> = ({
@@ -14,43 +18,42 @@ export const RoleBanner: React.FC<RoleBannerProps> = ({
   badgeText,
   welcomeMessage,
   description,
-  gradientFrom = "blue-600/20",
-  gradientTo = "indigo-600/10",
+  gradientFrom = "#6366F1", // Indigo
+  gradientTo = "#8B5CF6", // Violet
 }) => {
   return (
-    <div className="relative overflow-hidden rounded-xl bg-gray-900 px-6 py-10 sm:px-10 sm:py-16 text-white shadow-2xl">
-      {/* Dynamic Gradients */}
+    <div className="relative overflow-hidden bg-slate-950 rounded-[2.5rem] border border-white/5 shadow-2xl">
+      {/* Background Decorative Gradients */}
       <div
-        className={`absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 rounded-full bg-[${gradientFrom}] blur-3xl`}
+        className="absolute -top-24 -right-24 w-96 h-96 blur-[120px] opacity-20 rounded-full"
         style={{
-          backgroundColor: gradientFrom.startsWith("bg-")
-            ? undefined
-            : gradientFrom,
+          background: `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`,
         }}
       />
       <div
-        className={`absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 rounded-full bg-[${gradientTo}] blur-3xl`}
+        className="absolute -bottom-24 -left-24 w-96 h-96 blur-[120px] opacity-10 rounded-full"
         style={{
-          backgroundColor: gradientTo.startsWith("bg-")
-            ? undefined
-            : gradientTo,
+          background: `linear-gradient(to top left, ${gradientTo}, ${gradientFrom})`,
         }}
       />
 
-      {/* Actual Gradient circles with Tailwind standard classes for reliability */}
-      <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl shadow-[0_0_100px_rgba(37,99,235,0.2)]" />
-      <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl" />
-
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm">
+      <div className="relative z-10 px-8 py-12 sm:px-12 sm:py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-6"
+        >
+          <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/90">
             {badgeText}
           </span>
-        </div>
-        <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
+        </motion.div>
+
+        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight mb-4 leading-[1.1]">
           {welcomeMessage}
         </h1>
-        <div className="text-gray-400 text-sm sm:text-lg font-medium max-w-2xl leading-relaxed">
+
+        <div className="text-muted-foreground text-sm sm:text-lg font-medium max-w-2xl leading-relaxed">
           {description}
         </div>
       </div>

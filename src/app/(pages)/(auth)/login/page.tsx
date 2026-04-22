@@ -7,6 +7,7 @@ import { z } from "zod";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
+import { motion } from "framer-motion";
 
 // Components
 import Footer from "@/components/Footer";
@@ -170,97 +171,116 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
+    <div className="min-h-dvh flex flex-col bg-background selection:bg-primary/30">
       <Header />
-      <main className="relative flex-1 overflow-hidden">
-        {/* ... (UI unchanged) ... */}
-        <div className="absolute inset-0 bg-[radial-gradient(84.09%_62.5%_at_0%_0%,rgba(36,99,235,0.25)_0%,rgba(36,99,235,0)_60%),radial-gradient(84.09%_62.5%_at_100%_0%,rgba(119,80,226,0.25)_0%,rgba(119,80,226,0)_60%),linear-gradient(180deg,#F8FAFC_0%,#EBEFF5_100%)]" />
-        <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[linear-gradient(135deg,rgba(36,99,235,0.25)_0%,rgba(119,80,226,0.25)_100%)] blur-[32px]" />
-        <div className="relative flex min-h-full items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
-          <div className="w-full max-w-md">
-            <Card className="shadow-sm sm:p-8">
-              <div className="mb-8 text-center">
-                <h1 className="mb-1 text-2xl font-bold text-gray-900">
+      <main className="relative flex-1 overflow-hidden flex items-center justify-center">
+        {/* Animated Background System */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_30%,rgba(var(--primary),0.15)_0%,transparent_50%),radial-gradient(circle_at_80%_70%,rgba(99,102,241,0.1)_0%,transparent_50%)]" />
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-md px-6 py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <Card className="glass-card !p-10 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] rounded-[3rem]">
+              <div className="mb-12 text-center space-y-2">
+                <h1 className="text-4xl font-black text-foreground uppercase tracking-tighter italic">
                   Welcome back
                 </h1>
-                <p className="text-sm text-gray-600">
-                  Sign in to continue to Project Hub
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em] opacity-60">
+                  Sign in to Project Hub
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="mb-2 space-y-4">
-                <Input
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  error={formErrors.email}
-                  leftIcon={
-                    <svg
-                      className="h-4 w-4 text-gray-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.5"
-                        d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
-                      />
-                    </svg>
-                  }
-                />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-4">
+                  <Input
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    error={formErrors.email}
+                    className="bg-background/50 border-white/5 focus:border-primary/50 text-[11px] font-black uppercase tracking-wider h-14 rounded-2xl"
+                    leftIcon={
+                      <svg
+                        className="h-4 w-4 text-primary"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                        />
+                      </svg>
+                    }
+                  />
 
-                <Input
-                  name="password"
-                  type="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  error={formErrors.password}
-                  leftIcon={
-                    <svg
-                      className="h-4 w-4 text-gray-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.5"
-                        d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-                      />
-                    </svg>
-                  }
-                />
+                  <Input
+                    name="password"
+                    type="password"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    error={formErrors.password}
+                    className="bg-background/50 border-white/5 focus:border-primary/50 text-[11px] font-black uppercase tracking-wider h-14 rounded-2xl"
+                    leftIcon={
+                      <svg
+                        className="h-4 w-4 text-primary"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                        />
+                      </svg>
+                    }
+                  />
+                </div>
 
-                <Button type="submit" fullWidth isLoading={loading}>
+                <Button
+                  type="submit"
+                  fullWidth
+                  isLoading={loading}
+                  className="h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
+                >
                   {loading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
 
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mt-8 flex items-center justify-between px-2">
                 <Link
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="text-[10px] font-black text-primary uppercase tracking-widest hover:brightness-125 transition-all"
                   href="/forgot-password"
                 >
                   Forgot password?
                 </Link>
                 <Link
-                  className="text-sm text-gray-600 hover:text-gray-900"
+                  className="text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:text-foreground transition-all"
                   href="/signup"
                 >
                   Create account
                 </Link>
               </div>
 
-              <div className="mb-6 flex items-center">
-                <div className="flex-1 border-t border-gray-200" />
-                <span className="px-3 text-xs text-gray-500">Or</span>
-                <div className="flex-1 border-t border-gray-200" />
+              <div className="my-10 flex items-center gap-4">
+                <div className="flex-1 h-px bg-white/5" />
+                <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em]">
+                  Or
+                </span>
+                <div className="flex-1 h-px bg-white/5" />
               </div>
 
               <div className="flex justify-center">
@@ -269,52 +289,72 @@ export default function LoginPage() {
                   onError={() =>
                     notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED)
                   }
+                  theme="filled_black"
+                  shape="pill"
                   text="signin_with"
                 />
               </div>
             </Card>
-          </div>
+          </motion.div>
         </div>
 
         {/* Organization Name Modal */}
         {showOrgModal && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-            <Card className="w-full max-w-md shadow-xl" noPadding={false}>
-              <h2 className="mb-2 text-xl font-bold text-gray-900">
-                Create Organization
-              </h2>
-              <p className="mb-4 text-sm text-gray-600">
-                To complete your signup as a Manager, please enter your
-                Organization Name.
-              </p>
-              <form onSubmit={handleOrgSubmit}>
-                <Input
-                  label="Organization Name"
-                  type="text"
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="e.g. Acme Corp"
-                  required
-                  autoFocus
-                  containerClassName="mb-4"
-                />
-                <div className="flex justify-end gap-3">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      setShowOrgModal(false);
-                      setPendingIdToken(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={loading} isLoading={loading}>
-                    {loading ? "Creating..." : "Complete Signup"}
-                  </Button>
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-background/80 backdrop-blur-xl p-6 animate-in fade-in duration-500">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <Card
+                className="w-full max-w-md glass-card !p-10 border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] rounded-[3rem]"
+                noPadding={false}
+              >
+                <div className="mb-8 space-y-2">
+                  <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter italic">
+                    Create Organization
+                  </h2>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed">
+                    To complete your signup as a Manager, please enter your
+                    Organization Name.
+                  </p>
                 </div>
-              </form>
-            </Card>
+
+                <form onSubmit={handleOrgSubmit} className="space-y-6">
+                  <Input
+                    label="COLLECTIVE IDENTITY (ORG NAME)"
+                    type="text"
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    placeholder="e.g. CORE SYSTEMS"
+                    required
+                    autoFocus
+                    className="bg-background/50 border-white/5 text-[11px] font-black uppercase tracking-wider h-14 rounded-2xl"
+                    labelClassName="!text-[9px] !font-black !uppercase !tracking-[0.2em] !text-muted-foreground !mb-2"
+                  />
+                  <div className="flex gap-4">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setShowOrgModal(false);
+                        setPendingIdToken(null);
+                      }}
+                      className="flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest border-white/5 hover:bg-white/5"
+                    >
+                      Abort
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      isLoading={loading}
+                      className="flex-1 h-12 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
+                    >
+                      Anchor Node
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            </motion.div>
           </div>
         )}
       </main>

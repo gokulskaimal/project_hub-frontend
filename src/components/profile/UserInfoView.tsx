@@ -16,32 +16,52 @@ export default function UserInfoView({
   organizationName,
 }: Props) {
   return (
-    <div className="bg-gray-50 rounded-xl p-4 mb-6">
-      <h4 className="text-sm font-medium text-gray-900 mb-3">
-        User Information
+    <div className="bg-secondary/10 rounded-3xl p-8 mb-6 border border-border/50 shadow-inner">
+      <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">
+        Analytical Profile Data
       </h4>
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="font-medium text-gray-700">Email:</span>
-          <span className="text-gray-900">{email || "-"}</span>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center py-2 border-b border-border/10">
+          <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+            Email Identifier
+          </span>
+          <span className="text-[11px] font-black text-foreground uppercase tracking-tight">
+            {email || "-"}
+          </span>
         </div>
-        <div className="flex justify-between">
-          <span className="font-medium text-gray-700">Name:</span>
-          <span className="text-gray-900">{name}</span>
+        <div className="flex justify-between items-center py-2 border-b border-border/10">
+          <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+            Operator Name
+          </span>
+          <span className="text-[11px] font-black text-foreground uppercase tracking-tight">
+            {name}
+          </span>
         </div>
         {organizationName && (
-          <div className="flex justify-between">
-            <span className="font-medium text-gray-700">Organization:</span>
-            <span className="text-gray-900">{organizationName}</span>
+          <div className="flex justify-between items-center py-2 border-b border-border/10">
+            <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+              Nexus Organization
+            </span>
+            <span className="text-[11px] font-black text-primary uppercase tracking-tight">
+              {organizationName}
+            </span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span className="font-medium text-gray-700">Role:</span>
-          <span className="text-gray-900">{(role || "").toUpperCase()}</span>
+        <div className="flex justify-between items-center py-2 border-b border-border/10">
+          <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+            Authority Role
+          </span>
+          <span className="text-[11px] font-black text-primary uppercase tracking-tight">
+            {(role || "").toUpperCase()}
+          </span>
         </div>
-        <div className="flex justify-between">
-          <span className="font-medium text-gray-700">Status:</span>
-          <span className="text-gray-900">{status}</span>
+        <div className="flex justify-between items-center py-2">
+          <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+            Signal Status
+          </span>
+          <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded text-[9px] font-black uppercase tracking-widest">
+            {status}
+          </span>
         </div>
       </div>
     </div>

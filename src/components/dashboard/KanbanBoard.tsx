@@ -37,40 +37,41 @@ interface KanbanBoardProps {
   onEditTask: (task: Task) => void;
   showProjectBadges?: boolean;
   projectId?: string;
+  isReadOnly?: boolean;
 }
 
 const COLUMNS = [
   {
     id: "TODO",
-    title: "To Do",
-    color: "bg-gray-100/30",
-    border: "border-gray-200",
-    accent: "bg-gray-400",
-    titleColor: "text-gray-900",
+    title: "Pending Sync",
+    color: "bg-secondary/10",
+    border: "border-border/30",
+    accent: "bg-muted-foreground/30",
+    titleColor: "text-muted-foreground",
   },
   {
     id: "IN_PROGRESS",
-    title: "In Progress",
-    color: "bg-blue-50/20",
-    border: "border-blue-100",
-    accent: "bg-blue-500",
-    titleColor: "text-blue-900",
+    title: "In Operation",
+    color: "bg-primary/5",
+    border: "border-primary/20",
+    accent: "bg-primary",
+    titleColor: "text-primary",
   },
   {
     id: "REVIEW",
-    title: "In Review",
-    color: "bg-amber-50/20",
-    border: "border-amber-100",
+    title: "In Verification",
+    color: "bg-amber-500/5",
+    border: "border-amber-500/20",
     accent: "bg-amber-500",
-    titleColor: "text-amber-900",
+    titleColor: "text-amber-500",
   },
   {
     id: "DONE",
-    title: "Done",
-    color: "bg-emerald-50/20",
-    border: "border-emerald-100",
+    title: "Terminated / Success",
+    color: "bg-emerald-500/5",
+    border: "border-emerald-500/20",
     accent: "bg-emerald-500",
-    titleColor: "text-emerald-900",
+    titleColor: "text-emerald-500",
   },
 ];
 
@@ -82,6 +83,7 @@ export default function KanbanBoard({
   onEditTask,
   showProjectBadges = false,
   projectId: propProjectId,
+  isReadOnly = false,
 }: KanbanBoardProps) {
   const [toggleTimer] = useToggleTaskTimerMutation();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -116,13 +118,24 @@ export default function KanbanBoard({
     }
   };
 
-  const getTasksByStatus = (status: string) => {
-    let filtered = tasks.filter((task) => task.status === status);
-    if (showOnlyMyTasks && user?.id) {
-      filtered = filtered.filter((task) => task.assignedTo === user.id);
-    }
-    return filtered;
-  };
+  const tasksByStatus = React.useMemo(() => {
+    const map: Record<string, Task[]> = {
+      TODO: [],
+      IN_PROGRESS: [],
+      REVIEW: [],
+      DONE: [],
+    };
+
+    tasks.forEach((task) => {
+      if (task.type === "EPIC") return;
+      if (showOnlyMyTasks && user?.id && task.assignedTo !== user.id) return;
+      if (map[task.status]) {
+        map[task.status].push(task);
+      }
+    });
+
+    return map;
+  }, [tasks, showOnlyMyTasks, user?.id]);
   const getUser = (userId?: string) => users.find((u) => u.id === userId);
 
   const getTypeIcon = (type?: string) => {
@@ -186,34 +199,34 @@ export default function KanbanBoard({
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       {/* Kanban Controls Bar */}
-      <div className="flex items-center justify-between mb-6 px-2">
+      <div className="flex items-center justify-between mb-8 px-2">
         {userRole === "TEAM_MEMBER" && (
-          <div className="flex items-center gap-4">
-            <div className="bg-white/80 backdrop-blur-md p-1 rounded-xl border border-gray-100 flex gap-1 shadow-sm">
+          <div className="flex items-center gap-6">
+            <div className="bg-card/30 backdrop-blur-xl p-1.5 rounded-2xl border border-border/20 flex gap-1.5 shadow-2xl">
               <button
                 onClick={() => setShowOnlyMyTasks(true)}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2.5 ${
                   showOnlyMyTasks
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-200"
-                    : "text-gray-400 hover:text-gray-600"
+                    ? "bg-primary text-primary-foreground shadow-2xl shadow-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
                 }`}
               >
                 <UserIcon
                   size={12}
                   className={showOnlyMyTasks ? "animate-pulse" : ""}
                 />
-                My Tasks
+                My Signal
               </button>
               <button
                 onClick={() => setShowOnlyMyTasks(false)}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2.5 ${
                   !showOnlyMyTasks
-                    ? "bg-gray-900 text-white shadow-md shadow-gray-200"
-                    : "text-gray-400 hover:text-gray-600"
+                    ? "bg-foreground text-background shadow-2xl shadow-foreground/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
                 }`}
               >
                 <Users size={12} />
-                Full Team
+                Global Matrix
               </button>
             </div>
 
@@ -221,38 +234,40 @@ export default function KanbanBoard({
               <motion.span
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-1.5"
+                className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2 opacity-80"
               >
-                <Filter size={10} />
-                Focused View active
+                <Filter size={12} />
+                Neural Focus Active
               </motion.span>
             )}
           </div>
         )}
 
-        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          {tasks.length} Sync&apos;d
+        <div className="flex items-center gap-3 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-60">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          {tasks.length} Nodes Synchronized
         </div>
       </div>
 
-      <div className="flex h-full gap-6 overflow-x-auto pb-4 items-start min-h-[500px] px-2">
+      <div className="flex flex-col xl:flex-row h-full w-full gap-8 pb-12 items-start xl:min-h-[600px] px-2 overflow-x-auto no-scrollbar">
         {COLUMNS.map((col) => (
           <div
             key={col.id}
-            className={`flex flex-col h-full min-w-[300px] flex-1 rounded-2xl border ${col.border} ${col.color} p-0 shadow-sm transition-all duration-300`}
+            className={`flex flex-col h-full w-full xl:min-w-[320px] xl:max-w-[400px] xl:flex-1 rounded-[2.5rem] border ${col.border} ${col.color} p-0 shadow-2xl transition-all duration-500 glass-card`}
           >
-            <div className="flex items-center justify-between p-5 pb-3">
-              <div className="flex items-center gap-2">
-                <div className={`w-1.5 h-6 rounded-full ${col.accent}`} />
+            <div className="flex items-center justify-between p-6 pb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-1.5 h-6 rounded-full ${col.accent} shadow-2xl`}
+                />
                 <h3
-                  className={`font-black text-xs uppercase tracking-widest ${col.titleColor}`}
+                  className={`font-black text-[10px] uppercase tracking-[0.2em] ${col.titleColor}`}
                 >
                   {col.title}
                 </h3>
               </div>
-              <span className="text-[10px] font-black bg-white text-gray-500 px-2.5 py-1 rounded-lg border border-gray-100 shadow-sm">
-                {getTasksByStatus(col.id).length}
+              <span className="text-[10px] font-black bg-card/50 text-foreground px-3 py-1 rounded-xl border border-border/30 shadow-inner">
+                {tasksByStatus[col.id].length}
               </span>
             </div>
 
@@ -261,9 +276,9 @@ export default function KanbanBoard({
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`flex-1 px-4 pb-4 space-y-4 transition-colors rounded-b-2xl min-h-[150px] overflow-y-auto ${snapshot.isDraggingOver ? "bg-white/40" : ""}`}
+                  className={`flex-1 px-5 pb-6 space-y-5 transition-colors rounded-b-[2.5rem] min-h-[200px] overflow-y-auto custom-scrollbar ${snapshot.isDraggingOver ? "bg-primary/5" : ""}`}
                 >
-                  {getTasksByStatus(col.id).map((task, index) => {
+                  {tasksByStatus[col.id].map((task, index) => {
                     const activeLog = task.timeLogs?.find(
                       (l: TimeLog) => l.userId === user?.id && !l.endTime,
                     );
@@ -274,6 +289,7 @@ export default function KanbanBoard({
                         key={task.id}
                         draggableId={task.id}
                         index={index}
+                        isDragDisabled={isReadOnly}
                       >
                         {(provided, snapshot) => (
                           <div
@@ -284,130 +300,135 @@ export default function KanbanBoard({
                             className="group"
                           >
                             <motion.div
-                              whileHover={{ scale: 1.02 }}
+                              whileHover={{ y: -4, scale: 1.01 }}
                               whileTap={{ scale: 0.98 }}
                               onClick={() => {
                                 setSelectedTask(task);
                                 setIsDetailsModalOpen(true);
                               }}
-                              className={`relative bg-white p-4 rounded-2xl border border-gray-100 cursor-grab active:cursor-grabbing transition-all duration-300 ${snapshot.isDragging ? "shadow-2xl ring-2 ring-blue-500/20 z-50 scale-105" : "shadow-sm hover:shadow-xl hover:border-blue-200"}`}
+                              className={`relative bg-card p-5 rounded-[2rem] border border-border/40 cursor-grab active:cursor-grabbing transition-all duration-500 ${snapshot.isDragging ? "shadow-[0_0_50px_rgba(0,0,0,0.3)] ring-2 ring-primary/40 z-50 scale-105 rotate-2" : "shadow-xl hover:shadow-2xl hover:border-primary/20"}`}
                             >
                               {/* Priority Indicator Dot */}
                               <div
-                                className={`absolute top-4 right-4 w-2 h-2 rounded-full ${
+                                className={`absolute top-5 right-5 w-2 h-2 rounded-full ${
                                   task.priority === "CRITICAL"
-                                    ? "bg-red-500 animate-pulse"
+                                    ? "bg-destructive animate-pulse shadow-[0_0_8px_rgba(var(--destructive),0.5)]"
                                     : task.priority === "HIGH"
-                                      ? "bg-orange-500"
+                                      ? "bg-orange-500 shadow-orange-500/50"
                                       : task.priority === "MEDIUM"
-                                        ? "bg-blue-500"
-                                        : "bg-emerald-500"
+                                        ? "bg-primary shadow-primary/50"
+                                        : "bg-emerald-500 shadow-emerald-500/50"
                                 }`}
                               />
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex flex-col gap-1 pr-2">
+                              <div className="flex justify-between items-start mb-4">
+                                <div className="flex flex-col gap-2 pr-2">
                                   {task.epicId && (
-                                    <div className="flex items-center gap-1 w-fit bg-purple-50 border border-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest mb-1 shadow-sm">
+                                    <div className="flex items-center gap-1.5 w-fit bg-primary/10 border border-primary/20 text-primary px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] mb-1 shadow-sm">
                                       <Layers
                                         size={10}
-                                        className="text-purple-400"
+                                        className="text-primary/70"
                                       />
                                       {getEpicTitle(task.epicId)}
                                     </div>
                                   )}
                                   {task.parentTaskId && (
-                                    <div className="flex items-center gap-1 w-fit bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-tight">
+                                    <div className="flex items-center gap-1.5 w-fit bg-secondary/30 border border-border/30 text-muted-foreground px-2 py-0.5 rounded-lg text-[9px] font-bold tracking-tight">
                                       <CornerDownRight
                                         size={10}
-                                        className="text-slate-400"
+                                        className="text-muted-foreground/50"
                                       />
-                                      Sub-task
+                                      SUB-NODE
                                     </div>
                                   )}
-                                  <h4 className="text-sm font-bold text-gray-900 leading-tight line-clamp-2 flex items-center gap-2">
-                                    {getTypeIcon(task.type)}
-                                    <span className="text-gray-400 text-xs font-mono">
-                                      {task.taskKey}
-                                    </span>
+                                  <h4 className="text-sm font-black text-foreground leading-tight line-clamp-2 transition-colors group-hover:text-primary">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      {getTypeIcon(task.type)}
+                                      <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest bg-secondary/20 px-1.5 py-0.5 rounded border border-border/10">
+                                        {task.taskKey}
+                                      </span>
+                                    </div>
                                     {task.title}
                                   </h4>
                                 </div>
-                                {(userRole === "ORG_MANAGER" ||
-                                  userRole === "SUPER_ADMIN") && (
-                                  <div className="flex gap-1 items-center">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onEditTask(task);
-                                      }}
-                                      className="text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                      title="Edit Task Definition"
-                                    >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        className="lucide lucide-pencil"
-                                      >
-                                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                        <path d="m15 5 4 4" />
-                                      </svg>
-                                    </button>
-                                    {onDeleteTask && (
+                                {!isReadOnly &&
+                                  (userRole === "ORG_MANAGER" ||
+                                    userRole === "SUPER_ADMIN") && (
+                                    <div className="flex gap-2 items-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          onDeleteTask(task.id);
+                                          onEditTask(task);
                                         }}
-                                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                        title="Delete Task"
+                                        className="p-2 bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary hover:text-white transition-all active:scale-90 shadow-xl"
+                                        title="Modify Neural Directive"
                                       >
-                                        <Trash2 size={14} />
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          width="12"
+                                          height="12"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="3"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        >
+                                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                          <path d="m15 5 4 4" />
+                                        </svg>
                                       </button>
-                                    )}
-                                  </div>
-                                )}
+                                      {onDeleteTask && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDeleteTask(task.id);
+                                          }}
+                                          className="p-2 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all active:scale-90 shadow-xl"
+                                          title="Purge Signal"
+                                        >
+                                          <Trash2 size={12} strokeWidth={3} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
                               </div>
 
                               {task.description && (
-                                <p className="text-xs text-gray-600 mb-3 line-clamp-2 font-medium">
+                                <p className="text-[11px] text-muted-foreground/70 mb-4 line-clamp-2 font-medium leading-relaxed italic border-l-2 border-primary/20 pl-3">
                                   {task.description}
                                 </p>
                               )}
 
-                              <div className="flex flex-wrap gap-2 mb-4">
+                              <div className="flex flex-wrap gap-2 mb-5">
                                 {showProjectBadges && task.project?.name && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
+                                  <span className="text-[9px] px-2.5 py-1 rounded-xl bg-secondary/30 text-muted-foreground font-black uppercase tracking-widest border border-border/10">
                                     {task.project.name}
                                   </span>
                                 )}
                                 <span
-                                  className={`text-[10px] px-2 py-0.5 rounded font-medium ${task.priority === "CRITICAL" || task.priority === "HIGH" ? "bg-red-50 text-red-600" : task.priority === "MEDIUM" ? "bg-yellow-50 text-yellow-600" : "bg-green-50 text-green-600"}`}
+                                  className={`text-[9px] px-2.5 py-1 rounded-xl font-black uppercase tracking-widest border ${task.priority === "CRITICAL" || task.priority === "HIGH" ? "bg-destructive/10 text-destructive border-destructive/20" : task.priority === "MEDIUM" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"}`}
                                 >
                                   {task.priority}
                                 </span>
                                 {(task.storyPoints || 0) > 0 && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-bold border border-gray-200">
-                                    {task.storyPoints}
+                                  <span className="text-[9px] px-2.5 py-1 rounded-xl bg-secondary/30 text-foreground font-black tracking-widest border border-border/30 shadow-inner">
+                                    {task.storyPoints} PTS
                                   </span>
                                 )}
                               </div>
 
-                              <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-auto">
-                                <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-between pt-4 border-t border-border/10 mt-auto">
+                                <div className="flex items-center gap-4">
                                   <Flag
                                     size={14}
-                                    className={`${task.priority === "CRITICAL" ? "text-red-500 fill-red-500" : "text-gray-300"}`}
+                                    className={`${task.priority === "CRITICAL" ? "text-destructive fill-destructive" : "text-muted-foreground/30"}`}
                                   />
                                   {task.dueDate && (
-                                    <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                                      <CalendarIcon size={12} />
+                                    <div className="flex items-center gap-2 text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
+                                      <CalendarIcon
+                                        size={12}
+                                        className="text-primary/50"
+                                      />
                                       <span>
                                         {new Date(
                                           task.dueDate,
@@ -421,22 +442,23 @@ export default function KanbanBoard({
                                   )}
                                 </div>
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
                                   {/* Timer Component (Memoized) */}
-                                  {task.assignedTo === user?.id && (
-                                    <TaskTimer
-                                      task={task}
-                                      userId={user?.id}
-                                      onToggle={handleToggleTimer}
-                                    />
-                                  )}
+                                  {!isReadOnly &&
+                                    task.assignedTo === user?.id && (
+                                      <TaskTimer
+                                        task={task}
+                                        userId={user?.id}
+                                        onToggle={handleToggleTimer}
+                                      />
+                                    )}
 
                                   {task.assignedTo && (
-                                    <div className="flex items-center gap-2 group/assignee">
+                                    <div className="relative group/assignee">
                                       <UserAvatar
                                         user={getUser(task.assignedTo)}
                                         size="sm"
-                                        className="w-6 h-6 text-[10px] ring-2 ring-white shadow-sm"
+                                        className="w-7 h-7 text-[10px] ring-2 ring-card shadow-2xl group-hover/assignee:ring-primary transition-all duration-500"
                                       />
                                     </div>
                                   )}

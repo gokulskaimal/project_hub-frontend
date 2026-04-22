@@ -155,26 +155,27 @@ export default function ProjectsPage() {
   return (
     <DashboardLayout title="Projects">
       {/* Header Actions - Moved New Project here */}
-      <div className="flex justify-end mt-4 mb-6">
+      <div className="flex justify-end mt-4 mb-8">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm hover:shadow"
+          className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95"
         >
           <Plus className="w-4 h-4" />
-          New Project
+          Create New Project
         </button>
       </div>
       <div className="space-y-8">
-        {/* Real-time Analytics Header */}
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <Layout className="w-6 h-6 text-blue-600" />
-            Real-time Analytics
+          <h2 className="text-xl font-black text-foreground tracking-tighter flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Layout className="w-5 h-5 text-primary" />
+            </div>
+            Real-time Portfolio Analytics
           </h2>
-          <div className="flex gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Live Sync
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+              Live Feed
             </span>
           </div>
         </div>
@@ -208,36 +209,46 @@ export default function ProjectsPage() {
         </div>
 
         {/* Controls - Admin Style */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
+        <div className="bg-card p-4 rounded-2xl shadow-xl border border-border/50 mb-8 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
           {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <div className="flex-1 relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors w-5 h-5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search projects..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 bg-white placeholder-gray-500 transition-all text-sm"
+              placeholder="Search project name or description..."
+              className="w-full pl-10 pr-4 py-2.5 bg-secondary/30 border border-transparent rounded-xl focus:bg-secondary/50 focus:border-primary/20 transition-all outline-none text-foreground font-bold placeholder-muted-foreground text-sm"
             />
           </div>
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-3 items-center">
             <div className="relative">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 aria-label="Filter projects by status"
                 title="Filter projects by status"
-                className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-xl bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
+                className="appearance-none pl-4 pr-10 py-2.5 bg-secondary/30 border border-transparent rounded-xl text-foreground text-xs font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-secondary/50 focus:border-primary/20 transition-all"
               >
-                <option value="ALL">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="PLANNING">Planning</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="ON_HOLD">On Hold</option>
+                <option value="ALL" className="bg-card">
+                  Status: All
+                </option>
+                <option value="ACTIVE" className="bg-card">
+                  Active
+                </option>
+                <option value="PLANNING" className="bg-card">
+                  Planning
+                </option>
+                <option value="COMPLETED" className="bg-card">
+                  Completed
+                </option>
+                <option value="ON_HOLD" className="bg-card">
+                  On Hold
+                </option>
               </select>
-              <Filter className="w-3 h-3 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Filter className="w-3 h-3 text-muted-foreground absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
             <div className="relative">
@@ -246,15 +257,25 @@ export default function ProjectsPage() {
                 onChange={(e) => setPriorityFilter(e.target.value)}
                 aria-label="Filter projects by priority"
                 title="Filter projects by priority"
-                className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-xl bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer hover:bg-gray-50 transition-colors"
+                className="appearance-none pl-4 pr-10 py-2.5 bg-secondary/30 border border-transparent rounded-xl text-foreground text-xs font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-secondary/50 focus:border-primary/20 transition-all"
               >
-                <option value="ALL">All Priority</option>
-                <option value="CRITICAL">Critical</option>
-                <option value="HIGH">High</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="LOW">Low</option>
+                <option value="ALL" className="bg-card">
+                  Priority: All
+                </option>
+                <option value="CRITICAL" className="bg-card">
+                  Critical
+                </option>
+                <option value="HIGH" className="bg-card">
+                  High
+                </option>
+                <option value="MEDIUM" className="bg-card">
+                  Medium
+                </option>
+                <option value="LOW" className="bg-card">
+                  Low
+                </option>
               </select>
-              <Filter className="w-3 h-3 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Filter className="w-3 h-3 text-muted-foreground absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
             {(statusFilter !== "ALL" ||
@@ -266,10 +287,10 @@ export default function ProjectsPage() {
                   setPriorityFilter("ALL");
                   setSearchQuery("");
                 }}
-                className="px-3 py-2 text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-1"
+                className="px-4 py-2.5 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-all flex items-center gap-2"
                 title="Clear Filters"
               >
-                <X className="w-4 h-4" /> Clear
+                <X className="w-4 h-4" /> Clear filters
               </button>
             )}
           </div>
@@ -278,33 +299,34 @@ export default function ProjectsPage() {
         {/* Grid */}
         {isLoading || isFetching ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-64 animate-pulse"
+                className="bg-card/50 p-6 rounded-2xl border border-border/30 shadow-sm h-64 animate-pulse"
               >
-                <div className="h-6 bg-gray-100 rounded w-3/4 mb-4"></div>
-                <div className="h-4 bg-gray-100 rounded w-1/2 mb-8"></div>
-                <div className="h-20 bg-gray-50 rounded mb-4"></div>
+                <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
+                <div className="h-4 bg-muted rounded w-1/2 mb-8"></div>
+                <div className="h-20 bg-muted/50 rounded mb-4"></div>
               </div>
             ))}
           </div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-xl border border-gray-100 border-dashed">
-            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Filter className="w-8 h-8 text-blue-500" />
+          <div className="text-center py-24 bg-card rounded-3xl border border-border/30 border-dashed">
+            <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-12">
+              <Filter className="w-10 h-10 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              No projects found
+            <h3 className="text-2xl font-black text-foreground mb-2 tracking-tight">
+              No results match your search
             </h3>
-            <p className="text-gray-500 text-sm mb-6">
-              Try adjusting your filters or create a new project
+            <p className="text-muted-foreground text-sm font-medium mb-8 max-w-xs mx-auto">
+              We couldn&apos;t find any projects meeting those criteria. Try
+              clarifying your terms.
             </p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+              className="px-8 py-3 bg-primary text-primary-foreground rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-xl shadow-primary/20"
             >
-              Create Project
+              Start New Project
             </button>
           </div>
         ) : (
@@ -320,26 +342,26 @@ export default function ProjectsPage() {
                 status={project.status || "PLANNING"}
                 statusColor={getStatusColor(project.status)}
                 footerLeft={
-                  <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-gray-400" />
+                  <div className="flex items-center gap-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-secondary/50 rounded-lg group-hover:bg-secondary transition-colors">
+                      <Users className="w-3 h-3 text-primary/70" />
                       <span>{project.teamMemberIds?.length || 0}</span>
                     </div>
                     <div
-                      className={`px-2 py-0.5 rounded text-[10px] font-black border uppercase tracking-wider ${getPriorityColor(project.priority)}`}
+                      className={`px-2 py-1 rounded-lg border leading-none ${getPriorityColor(project.priority)}`}
                     >
                       {project.priority || "Medium"}
                     </div>
                   </div>
                 }
                 footerRight={
-                  <div className="flex flex-col items-end gap-1.5">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      {project.progress || 0}% Complete
+                  <div className="flex flex-col items-end gap-1.5 -mt-1">
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em] leading-none">
+                      {project.progress || 0}% PROGRESS
                     </span>
-                    <div className="w-20 h-1 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                        className="h-full bg-primary rounded-full transition-all duration-700 ease-out shadow-[0_0_8px_rgba(var(--primary),0.5)]"
                         style={{ width: `${project.progress || 0}%` }}
                       />
                     </div>
@@ -349,7 +371,7 @@ export default function ProjectsPage() {
                   <div className="relative">
                     <button
                       onClick={(e) => toggleActionMenu(project.id, e)}
-                      className="p-1 sm:p-1.5 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-blue-600 hover:border-blue-100 transition-all shadow-sm"
+                      className="p-2 bg-secondary/50 border border-border/30 rounded-xl text-muted-foreground hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95"
                       aria-label={`Actions for ${project.name}`}
                     >
                       <MoreHorizontal className="w-4 h-4" />
@@ -358,28 +380,31 @@ export default function ProjectsPage() {
                     {activeActionId === project.id && (
                       <div
                         ref={actionMenuRef}
-                        className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                        className="absolute right-0 top-full mt-2 w-52 bg-card rounded-2xl shadow-2xl border border-border/50 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-200 slide-in-from-top-2"
                       >
                         {project.status !== "COMPLETED" && (
                           <button
                             onClick={(e) => handleMarkAsComplete(project.id, e)}
-                            className="w-full text-left px-4 py-2.5 text-[13px] font-black text-green-600 hover:bg-green-50 flex items-center gap-2 transition-colors"
+                            className="w-full text-left px-4 py-2.5 text-xs font-black uppercase tracking-widest text-emerald-500 hover:bg-emerald-500/10 flex items-center gap-3 transition-colors"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Mark as
-                            Complete
+                            <CheckCircle2 className="w-4 h-4" />
+                            Close Project
                           </button>
                         )}
                         <button
                           onClick={(e) => handleEdit(project, e)}
-                          className="w-full text-left px-4 py-2.5 text-[13px] font-black text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                          className="w-full text-left px-4 py-2.5 text-xs font-black uppercase tracking-widest text-foreground hover:bg-primary/10 hover:text-primary flex items-center gap-3 transition-colors"
                         >
-                          <Edit2 className="w-3.5 h-3.5" /> Edit Details
+                          <Edit2 className="w-4 h-4" />
+                          Modify Settings
                         </button>
+                        <div className="mx-4 my-1 h-px bg-border/30" />
                         <button
                           onClick={(e) => handleDelete(project.id, e)}
-                          className="w-full text-left px-4 py-2.5 text-[13px] font-black text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-50 mt-1"
+                          className="w-full text-left px-4 py-2.5 text-xs font-black uppercase tracking-widest text-destructive hover:bg-destructive/10 flex items-center gap-3 transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" /> Delete Project
+                          <Trash2 className="w-4 h-4" />
+                          Prune Project
                         </button>
                       </div>
                     )}
@@ -392,23 +417,23 @@ export default function ProjectsPage() {
 
         {/* Pagination */}
         {projectsData && projectsData.totalPages > 1 && (
-          <div className="mt-8 px-6 py-4 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between">
-            <span className="text-xs text-gray-500 font-medium">
-              Showing Page {page} of {projectsData.totalPages} (
-              {projectsData.total} total items)
+          <div className="mt-12 px-6 py-4 bg-card border border-border/50 rounded-2xl shadow-xl flex items-center justify-between">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+              Section {page} / {projectsData.totalPages} ({projectsData.total}{" "}
+              items)
             </span>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                className="px-6 py-2 bg-secondary/30 border border-border/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-secondary/50 disabled:opacity-30 transition-all active:scale-95"
               >
-                Previous
+                Prev
               </button>
               <button
                 disabled={page >= projectsData.totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-30 transition-all shadow-lg shadow-primary/20 active:scale-95"
               >
                 Next
               </button>

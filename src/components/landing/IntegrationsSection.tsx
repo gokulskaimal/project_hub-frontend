@@ -2,71 +2,89 @@ import React from "react";
 
 export default function IntegrationsSection() {
   return (
-    <section
-      id="integrations"
-      className="py-20 bg-gray-50/40 border-t border-b"
-    >
-      <div className="container max-w-[1400px] mx-auto px-8">
-        <div className="text-center mb-12">
-          <div className="text-sm font-semibold text-[#2463EB] tracking-wider uppercase mb-2">
-            Integrations
+    <section id="integrations" className="py-24 bg-background relative">
+      <div className="container max-w-[1400px] mx-auto px-8 relative z-10">
+        <div className="text-center mb-20 space-y-4">
+          <div className="text-[10px] font-black text-primary tracking-[0.4em] uppercase mb-4 opacity-70 italic">
+            Network Fabric
           </div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Bring all your teams tools under one roof
+          <h2 className="text-5xl font-black text-foreground uppercase tracking-tighter italic">
+            Seamless Ecosystem
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Design, code, and communication—connected with Project Hub.
+          <p className="text-muted-foreground max-w-2xl mx-auto text-[11px] font-black uppercase tracking-[0.2em] leading-relaxed opacity-60">
+            Unify your operational stack. Bridge designers, developers, and
+            leadership across a single neural nexus.
           </p>
         </div>
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h4 className="text-sm font-semibold text-gray-700 mb-4">
-              Popular integrations
-            </h4>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {["Figma", "GitHub", "Slack", "Jira", "Notion"].map((tool) => (
-                <span
-                  key={tool}
-                  className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-3 py-1 text-xs text-gray-900 shadow-sm"
-                >
-                  {tool}
-                </span>
-              ))}
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="glass-card rounded-[2.5rem] border border-white/5 bg-card/40 p-10 shadow-2xl flex flex-col justify-between">
+            <div>
+              <h4 className="text-[10px] font-black text-foreground uppercase tracking-[0.3em] mb-8 opacity-50 italic">
+                Authorized Node Connectors
+              </h4>
+              <div className="flex flex-wrap gap-3 mb-10">
+                {["Figma", "GitHub", "Slack", "Jira", "Notion"].map((tool) => (
+                  <span
+                    key={tool}
+                    className="inline-flex items-center rounded-xl border border-white/5 bg-white/5 px-4 py-1.5 text-[10px] font-black text-foreground uppercase tracking-widest shadow-sm hover:border-primary/30 hover:bg-primary/5 transition-all cursor-crosshair"
+                  >
+                    {tool}
+                  </span>
+                ))}
+              </div>
             </div>
-            <p className="text-sm text-gray-600">
-              Connect tools your team already loves. Keep tasks, commits,
-              designs, and conversations in sync.
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] leading-relaxed opacity-60">
+              Bi-directional data flow with major ecosystem nodes. Keep
+              specifications, commits, and communications in total synchrony.
             </p>
           </div>
-          <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+
+          <div className="lg:col-span-2 glass-card rounded-[2.5rem] border border-white/5 bg-card/40 shadow-2xl overflow-hidden relative group">
+            <div className="flex items-center justify-between border-b border-white/5 px-8 py-4 bg-white/[0.02]">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#2463EB]" />
-                <span className="text-sm text-gray-600">Figma mockup</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em]">
+                  Figma Visualization Node
+                </span>
               </div>
-              <span className="text-xs text-gray-500">Live preview</span>
+              <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">
+                Live Synchronization
+              </span>
             </div>
-            <div className="p-6 flex gap-6">
-              <div className="flex-1 rounded-xl border border-gray-200 bg-gradient-to-br from-[#2463EB]/10 to-[#7750E2]/10 p-6">
-                <div className="text-sm font-medium text-gray-900 mb-3">
-                  Design
+
+            <div className="p-10 flex flex-col sm:flex-row gap-10 h-full min-h-[300px]">
+              <div className="flex-1 rounded-[2rem] border border-white/5 bg-gradient-to-br from-primary/10 to-purple-500/10 p-8 relative overflow-hidden group/vis">
+                <div className="text-[10px] font-black text-foreground uppercase tracking-[0.3em] mb-6 opacity-50 italic">
+                  Design Manifest
                 </div>
-                <div className="h-52 rounded-xl bg-white shadow-sm border border-black/5" />
+                {/* Visualizer Skeleton */}
+                <div className="h-40 rounded-2xl bg-background/50 border border-white/5 relative shadow-inner overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary),0.1)_0%,transparent_70%)] animate-pulse" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-2 w-1/2 bg-white/5 rounded" />
+                    <div className="h-2 w-1/3 bg-white/5 rounded" />
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 rounded-xl border border-gray-200 p-6">
-                <div className="text-sm font-medium text-gray-900 mb-3">
-                  Auto-create tasks
-                </div>
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-900">
-                    Generate stories from Figma frames
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    Link designs to related issues
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    Keep specs and PRs in sync
-                  </div>
+
+              <div className="flex-1 flex flex-col justify-center">
+                <h4 className="text-lg font-black text-foreground uppercase tracking-tighter italic mb-6">
+                  Automated Lifecycle
+                </h4>
+                <div className="space-y-4">
+                  {[
+                    "Generate stories from Figma frames",
+                    "Link commits to specific issue nodes",
+                    "Synchronize repository states",
+                  ].map((spec) => (
+                    <div key={spec} className="flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] opacity-70">
+                        {spec}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

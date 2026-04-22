@@ -34,6 +34,8 @@ const extractList = <T>(response: unknown): T[] => {
   return [];
 };
 
+import { ManagerAnalyticsData } from "@/types/analytics";
+
 export const managerApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getManagerPlans: builder.query<Plan[], void>({
@@ -240,9 +242,11 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         data,
       }),
       transformResponse: (response: { data: Project }) => response.data,
-      invalidatesTags: [
+      invalidatesTags: (result, error, { id }) => [
         { type: "ManagerProjects", id: "LIST" },
         { type: "ManagerProjects", id: "STATS" },
+        { type: "MemberProjects", id: id },
+        { type: "ProjectMembers", id: id },
         "ManagerAnalytics",
       ],
     }),
@@ -349,38 +353,14 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         { type: "ManagerProjects", id: "STATS" },
       ],
     }),
-    getManagerAnalytics: builder.query<
-      {
-        performance: Array<{
-          userId: string;
-          name: string;
-          storyPoints: number;
-          taskCount: number;
-        }>;
-        tasks: Array<{ status: string; count: number }>;
-        projects: Array<{ status: string; count: number }>;
-        velocity: Array<{ label: string; points: number }>;
-      },
-      string | void
-    >({
+    getManagerAnalytics: builder.query<ManagerAnalyticsData, string | void>({
       query: (timeframe = "YEAR") => ({
         url: API_ROUTES.MANAGER.ANALYTICS,
         method: "GET",
         params: { filter: timeframe },
       }),
-      transformResponse: (response: {
-        data: {
-          performance: Array<{
-            userId: string;
-            name: string;
-            storyPoints: number;
-            taskCount: number;
-          }>;
-          tasks: Array<{ status: string; count: number }>;
-          projects: Array<{ status: string; count: number }>;
-          velocity: Array<{ label: string; points: number }>;
-        };
-      }) => response.data,
+      transformResponse: (response: { data: ManagerAnalyticsData }) =>
+        response.data,
       providesTags: ["ManagerAnalytics"],
     }),
   }),

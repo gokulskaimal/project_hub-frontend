@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Mail, ArrowLeft } from "lucide-react";
+import { Mail, ArrowLeft, ShieldQuestion } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -34,81 +35,92 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
+    <div className="min-h-dvh flex flex-col bg-background selection:bg-primary/30">
       <Header />
-      <main className="relative flex-1 overflow-hidden">
-        {/* Background Aesthetics */}
-        <div className="absolute inset-0 bg-[radial-gradient(84.09%_62.5%_at_0%_0%,rgba(36,99,235,0.15)_0%,rgba(36,99,235,0)_60%),radial-gradient(84.09%_62.5%_at_100%_0%,rgba(119,80,226,0.15)_0%,rgba(119,80,226,0)_60%),linear-gradient(180deg,#F8FAFC_0%,#EBEFF5_100%)]" />
+      <main className="relative flex-1 overflow-hidden flex items-center justify-center">
+        {/* Animated Background System */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_30%,rgba(var(--primary),0.1)_0%,transparent_50%),radial-gradient(circle_at_80%_70%,rgba(99,102,241,0.08)_0%,transparent_50%)]" />
+          <div className="absolute top-[10%] right-[20%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[110px] animate-pulse" />
+        </div>
 
-        <div className="relative flex min-h-full items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
-          <div className="w-full max-w-md">
-            <Card className="shadow-xl sm:p-8 backdrop-blur-sm bg-white/90">
-              <div className="mb-8 text-center">
-                <div className="mx-auto w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4 transition-transform hover:scale-110 duration-300">
-                  <Mail className="w-6 h-6 text-blue-600" />
+        <div className="relative z-10 w-full max-w-md px-6 py-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
+            <Card className="glass-card !p-10 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] rounded-[3rem]">
+              <div className="mb-10 text-center">
+                <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(var(--primary),0.15)] border border-primary/20">
+                  <ShieldQuestion className="w-10 h-10 text-primary animate-pulse" />
                 </div>
-                <h1 className="mb-2 text-2xl font-bold text-gray-900">
-                  Forgot Password?
+                <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter italic mb-3">
+                  Logic Reset
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed">
                   {isSubmitted
-                    ? "Check your email for a link to reset your password."
-                    : "No worries! Enter your email and we'll send you a reset link."}
+                    ? "Check primary signal channel for decryption link."
+                    : "Initialize recovery sequence for your neural node."}
                 </p>
               </div>
 
               {!isSubmitted ? (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <Input
-                    type="email"
-                    placeholder="name@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    label="Email Address"
-                    required
-                    leftIcon={<Mail className="h-4 w-4 text-gray-400" />}
-                    containerClassName="animate-in slide-in-from-bottom-2 duration-300"
-                  />
+                <form
+                  onSubmit={handleSubmit}
+                  className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                >
+                  <div className="space-y-4">
+                    <Input
+                      type="email"
+                      placeholder="OPERATIVE IDENTIFIER (EMAIL)"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+                      leftIcon={<Mail className="h-4 w-4 text-primary" />}
+                    />
+                  </div>
 
                   <Button
                     type="submit"
                     fullWidth
                     isLoading={isLoading}
-                    className="bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
+                    className="h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
                   >
-                    Send Reset Link
+                    Send Recovery Signal
                   </Button>
                 </form>
               ) : (
-                <div className="text-center animate-in zoom-in-95 duration-500">
-                  <div className="p-4 bg-green-50 rounded-xl mb-6 border border-green-100">
-                    <p className="text-sm text-green-700 font-medium">
-                      If an account exists for {email}, you will receive a
-                      password reset link shortly.
+                <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                  <div className="p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-center">
+                    <p className="text-[11px] text-emerald-400 font-black uppercase tracking-widest leading-relaxed">
+                      If node exists for {email}, <br />
+                      recovery sequence has been broadcast.
                     </p>
                   </div>
                   <Button
                     variant="ghost"
                     fullWidth
                     onClick={() => setIsSubmitted(false)}
-                    className="text-gray-600 hover:text-gray-900"
+                    className="h-12 rounded-xl text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:bg-white/5"
                   >
-                    Didn&apos;t receive an email? Try again
+                    No signal received? Retry
                   </Button>
                 </div>
               )}
 
-              <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+              <div className="mt-10 pt-8 border-t border-white/5 text-center">
                 <Link
                   href="/login"
-                  className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors group"
+                  className="inline-flex items-center text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:brightness-125 transition-all group"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
-                  Back to Sign In
+                  <ArrowLeft className="w-4 h-4 mr-3 transition-transform group-hover:-translate-x-1.5" />
+                  Abort & Return
                 </Link>
               </div>
             </Card>
-          </div>
+          </motion.div>
         </div>
       </main>
       <Footer />

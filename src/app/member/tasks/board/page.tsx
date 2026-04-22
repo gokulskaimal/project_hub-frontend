@@ -98,11 +98,11 @@ export default function MemberTasksBoardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50/50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent shadow-sm"></div>
-          <p className="text-gray-500 font-bold text-sm tracking-tight">
-            Loading Board...
+      <div className="flex items-center justify-center h-full bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent shadow-[0_0_20px_rgba(var(--primary),0.2)]"></div>
+          <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.2em] opacity-70">
+            Syncing Neural Board...
           </p>
         </div>
       </div>
@@ -110,47 +110,63 @@ export default function MemberTasksBoardPage() {
   }
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500 bg-gray-50/50">
+    <div className="flex flex-col h-full animate-in fade-in duration-700 bg-background">
       {/* Search and Filters Bar */}
-      <div className="p-4 md:p-6 pb-2">
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="p-4 md:p-8 pb-4">
+        <div className="bg-card p-5 rounded-3xl border border-border/50 shadow-2xl flex flex-col md:flex-row gap-5 items-center justify-between glass-card">
+          <div className="relative w-full md:max-w-md group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors focus-within:scale-110 duration-300" />
             <input
               type="text"
-              placeholder="Search in board..."
+              placeholder="Query board nodes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+              className="w-full pl-12 pr-4 py-3 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
             />
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl">
-              <Filter className="w-3.5 h-3.5 text-gray-400" />
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-secondary/30 border border-border/10 rounded-2xl group hover:border-primary/20 transition-all">
+              <Filter className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <select
-                className="bg-transparent text-xs font-bold text-gray-700 outline-none cursor-pointer"
+                className="bg-transparent text-[10px] font-black text-foreground uppercase tracking-widest outline-none cursor-pointer"
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
               >
-                <option value="ALL">Priority: All</option>
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="CRITICAL">Critical</option>
+                <option value="ALL" className="bg-card">
+                  Priority: ALL
+                </option>
+                <option value="LOW" className="bg-card text-emerald-500">
+                  Low
+                </option>
+                <option value="MEDIUM" className="bg-card text-blue-500">
+                  Medium
+                </option>
+                <option value="HIGH" className="bg-card text-amber-500">
+                  High
+                </option>
+                <option value="CRITICAL" className="bg-card text-destructive">
+                  Critical
+                </option>
               </select>
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-secondary/30 border border-border/10 rounded-2xl group hover:border-primary/20 transition-all">
+              <SlidersHorizontal className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <select
-                className="bg-transparent text-xs font-bold text-gray-700 outline-none cursor-pointer max-w-[150px]"
+                className="bg-transparent text-[10px] font-black text-foreground uppercase tracking-widest outline-none cursor-pointer max-w-[180px]"
                 value={projectFilter}
                 onChange={(e) => setProjectFilter(e.target.value)}
               >
-                <option value="ALL">All Projects</option>
+                <option value="ALL" className="bg-card">
+                  All Projects
+                </option>
                 {projects.map((p) => (
-                  <option key={p.id as string} value={p.id as string}>
+                  <option
+                    key={p.id as string}
+                    value={p.id as string}
+                    className="bg-card"
+                  >
                     {p.name}
                   </option>
                 ))}

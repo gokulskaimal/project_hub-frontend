@@ -20,8 +20,8 @@ export const AnalyticsFilter: React.FC<AnalyticsFilterProps> = ({
   ];
 
   return (
-    <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-gray-200/50 shadow-sm">
-      <Calendar className="w-3.5 h-3.5 text-blue-600" />
+    <div className="flex items-center gap-3 bg-secondary/50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border shadow-sm transition-colors duration-500">
+      <Calendar className="w-3.5 h-3.5 text-primary" />
       <div className="flex gap-1">
         {options.map((opt) => (
           <button
@@ -29,8 +29,8 @@ export const AnalyticsFilter: React.FC<AnalyticsFilterProps> = ({
             onClick={() => onChange(opt.value)}
             className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300 ${
               value === opt.value
-                ? "bg-blue-600 text-white shadow-md shadow-blue-200 scale-105"
-                : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                ? "bg-primary text-white shadow-md shadow-primary/20 scale-105"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
             }`}
           >
             {opt.value}

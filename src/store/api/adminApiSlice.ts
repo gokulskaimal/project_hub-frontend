@@ -50,7 +50,10 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       transformResponse: (response: { data: Plan }) => response.data,
       invalidatesTags: [{ type: "AdminPlans", id: "LIST" }],
     }),
-    updateAdminPlan: builder.mutation<Plan, { id: string; data: PlanPayload }>({
+    updateAdminPlan: builder.mutation<
+      Plan,
+      { id: string; data: Partial<PlanPayload> }
+    >({
       query: ({ id, data }) => ({
         url: `${API_ROUTES.ADMIN.PLANS}/${id}`,
         method: "PUT",

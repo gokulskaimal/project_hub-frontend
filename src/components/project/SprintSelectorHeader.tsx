@@ -30,80 +30,107 @@ export default function SprintSelectorHeader({
   onDeleteSprint,
 }: SprintSelectorHeaderProps) {
   return (
-    <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+    <div className="flex items-center justify-between border-b border-border/30 pb-6 mb-2">
       <div className="flex items-center gap-4">
-        <select
-          value={selectedSprintId}
-          onChange={(e) => setSelectedSprintId(e.target.value)}
-          className="text-sm font-black border-2 border-gray-100 bg-gray-50/50 rounded-xl px-4 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all text-gray-900 shadow-sm"
-        >
-          <option value="ACTIVE" className="text-gray-900 font-bold bg-white">
-            Current Active Sprint
-          </option>
-          {sprints.map((s) => (
-            <option key={s.id} value={s.id} className="text-gray-900 bg-white">
-              {s.name} — {s.status}
+        <div className="relative group">
+          <select
+            value={selectedSprintId}
+            onChange={(e) => setSelectedSprintId(e.target.value)}
+            className="text-xs font-black border border-border/50 bg-secondary/30 rounded-2xl px-5 py-2.5 outline-none focus:border-primary/50 focus:bg-secondary/50 transition-all text-foreground shadow-xl appearance-none pr-10 cursor-pointer uppercase tracking-widest"
+          >
+            <option value="ACTIVE" className="bg-card font-black">
+              Current Active Cycle
             </option>
-          ))}
-        </select>
+            {sprints.map((s) => {
+              const startDate = new Date(s.startDate).toLocaleDateString(
+                undefined,
+                { month: "short", day: "numeric" },
+              );
+              const endDate = new Date(s.endDate).toLocaleDateString(
+                undefined,
+                { month: "short", day: "numeric" },
+              );
+              return (
+                <option
+                  key={s.id}
+                  value={s.id}
+                  className="bg-card font-bold uppercase"
+                >
+                  {s.name} ({startDate} — {endDate}){" "}
+                  {s.status === "COMPLETED" ? "✓" : ""}
+                </option>
+              );
+            })}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-hover:text-primary transition-colors">
+            <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+            </svg>
+          </div>
+        </div>
         {isManager && (
           <button
             onClick={onNewSprint}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100"
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-primary-foreground transition-all shadow-lg active:scale-95"
           >
-            + New Sprint
+            + Assemble Sprint
           </button>
         )}
       </div>
       {isManager && selectedSprint && (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           {/* Status Badge */}
           <div
-            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 shadow-sm flex items-center gap-2 ${
+            className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-lg flex items-center gap-2.5 ${
               selectedSprint.status === "ACTIVE"
-                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                : selectedSprint.status === "PLANNED"
-                  ? "bg-blue-50 text-blue-600 border-blue-100"
+                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                : selectedSprint.status === "PLANNED" ||
+                    selectedSprint.status === "PLANNING"
+                  ? "bg-primary/10 text-primary border-primary/30"
                   : selectedSprint.status === "COMPLETED"
-                    ? "bg-gray-100 text-gray-500 border-gray-200"
-                    : "bg-orange-50 text-orange-600 border-orange-100"
+                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/50"
+                    : "bg-amber-500/10 text-amber-500 border-amber-500/30"
             }`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${
+              className={`w-2 h-2 rounded-full ${
                 selectedSprint.status === "ACTIVE"
-                  ? "bg-emerald-500 animate-pulse"
-                  : "bg-current"
+                  ? "bg-emerald-500 animate-pulse-glow"
+                  : "bg-current opacity-70"
               }`}
             />
-            {selectedSprint.status}
+            {selectedSprint.status === "COMPLETED"
+              ? "COMPLETED"
+              : selectedSprint.status === "PLANNED"
+                ? "PROPOSED"
+                : selectedSprint.status}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             {selectedSprint.status === "ACTIVE" ? (
               <Button
                 size="sm"
                 onClick={onCompleteSprint}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-95"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest px-6 py-2.5 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95"
               >
-                Complete Sprint
+                Terminate Sprint
               </Button>
             ) : selectedSprint.status === "PLANNED" ||
               selectedSprint.status === "PLANNING" ? (
               <Button
                 size="sm"
                 onClick={onStartSprint}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-orange-100 transition-all active:scale-95"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest px-6 py-2.5 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95"
               >
-                Start Sprint
+                Activate Sprint
               </Button>
             ) : null}
 
-            <div className="flex items-center gap-2 ml-2 pl-4 border-l border-gray-100">
+            <div className="flex items-center gap-3 ml-2 pl-6 border-l border-border/30">
               <button
                 onClick={onEditSprint}
-                className="active:scale-95 p-2 bg-white text-gray-400 border border-gray-200 rounded-xl hover:text-blue-600 hover:border-blue-600 hover:bg-blue-50 transition-all shadow-sm group"
-                title="Edit Sprint Definition"
+                className="active:scale-95 p-2.5 bg-secondary/30 text-muted-foreground border border-border/50 rounded-2xl hover:text-primary hover:border-primary/50 hover:bg-secondary/50 transition-all shadow-xl group"
+                title="Modify Logistics"
               >
                 <Pencil
                   size={18}
@@ -112,8 +139,8 @@ export default function SprintSelectorHeader({
               </button>
               <button
                 onClick={() => onDeleteSprint(selectedSprint.id)}
-                className="active:scale-95 p-2 bg-white text-gray-400 border border-gray-200 rounded-xl hover:text-red-600 hover:border-red-600 hover:bg-red-50 transition-all shadow-sm group"
-                title="Delete Sprint"
+                className="active:scale-95 p-2.5 bg-secondary/30 text-muted-foreground border border-border/50 rounded-2xl hover:text-destructive hover:border-destructive/50 hover:bg-secondary/50 transition-all shadow-xl group font-black"
+                title="Discard Sprint"
               >
                 <Trash2
                   size={18}

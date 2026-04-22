@@ -1,37 +1,42 @@
 "use client";
 
 import React, { ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { Menu, Bell, Search, HelpCircle } from "lucide-react";
 import SocketNotification from "../notifications/SocketNotification";
 import ChatNotificationListener from "../chat/ChatNotificationListener";
+import { useAuth } from "@/hooks/useAuth";
+import { motion } from "framer-motion";
 
 type Props = {
   title: string;
   children: ReactNode;
-  // Deprecated props kept optional to prevent breakage during transition if needed, 
-  // but they won't be used.
-  onAvatarClick?: () => void;
-  avatarUrl?: string | null;
-  avatarInitial?: string;
-  onLogout?: () => void;
 };
 
+/**
+ * DashboardLayout (Headless Version)
+ * handles the page header and main scrollable content area.
+ * The Sidebar is managed by the root layouts (Manager, Member, Admin)
+ * to prevent double-sidebar glitches.
+ */
 export default function DashboardLayout({ title, children }: Props) {
   return (
-    <div className="flex flex-col h-full">
-      <SocketNotification />
-      <ChatNotificationListener />
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{title}</h1>
-            <p className="text-gray-600">Manage your workspace</p>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1">
+    <div className="min-h-full flex flex-col relative bg-background">
+      {/* 
+          DashboardLayout is now headless. 
+          Header and Sidebar are managed by the role-specific layouts 
+          (Manager, Member, Admin) to prevent double-UI glitches.
+      */}
+      <main className="flex-1">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="w-full"
+        >
           {children}
-        </div>
+        </motion.div>
+      </main>
     </div>
   );
 }

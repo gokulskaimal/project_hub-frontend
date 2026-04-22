@@ -184,22 +184,25 @@ export default function MembersPage() {
     <DashboardLayout title="Team Members">
       <div className="space-y-6">
         {/* Header Actions */}
-        <div className="flex justify-end mb-2 gap-3">
+        <div className="flex justify-end items-center mb-6 gap-4">
           <button
             onClick={refetch}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-medium transition-colors"
-            title="Refresh List"
+            className="flex items-center gap-2 px-5 py-2.5 bg-secondary/50 border border-border/50 text-foreground hover:bg-secondary rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all active:scale-95 shadow-xl"
+            title="Sync Registry"
           >
-            <RefreshCw size={16} />
-            Refresh
+            <RefreshCw
+              size={14}
+              className={isLoading ? "animate-spin" : "text-primary"}
+            />
+            <span className="hidden sm:inline">Sync Data</span>
           </button>
 
           <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-xl text-sm font-medium transition-colors shadow-sm hover:shadow"
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground hover:opacity-90 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all shadow-xl shadow-primary/20 active:scale-95"
           >
-            <Mail size={16} />
-            Invite Member
+            <Mail size={14} />
+            Authorize Operator
           </button>
         </div>
 
@@ -209,15 +212,17 @@ export default function MembersPage() {
           onSuccess={refetch}
         />
 
-        <div className="flex items-center justify-between mt-4 mb-2 px-1">
-          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <Layout className="w-6 h-6 text-blue-600" />
-            Organization Analytics
+        <div className="flex items-center justify-between mt-8 mb-6 px-1">
+          <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Layout className="w-5 h-5 text-primary" />
+            </div>
+            Squad Intelligence
           </h2>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           <StatCard
             label="Total Members"
             value={memberStats?.total || 0}
@@ -245,9 +250,9 @@ export default function MembersPage() {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest overflow-hidden">
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-widest overflow-hidden">
             <span
-              className="hover:text-blue-600 cursor-pointer transition-colors shrink-0"
+              className="hover:text-primary cursor-pointer transition-colors shrink-0"
               onClick={() => {
                 setSearchTerm("");
                 setFilterRole("ALL");
@@ -256,8 +261,8 @@ export default function MembersPage() {
             >
               Members
             </span>
-            <ChevronRight size={12} className="text-gray-300 shrink-0" />
-            <span className="text-blue-600 truncate">
+            <ChevronRight size={12} className="text-border shrink-0" />
+            <span className="text-primary truncate">
               {searchTerm
                 ? `"${searchTerm}"`
                 : filterStatus === "ALL"
@@ -268,58 +273,70 @@ export default function MembersPage() {
 
           <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-all text-[10px] sm:text-xs font-black uppercase tracking-widest shrink-0"
+            className="md:hidden flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 shadow-sm transition-all text-[10px] sm:text-xs font-black uppercase tracking-widest shrink-0"
           >
             <UserPlus size={14} />
             <span className="hidden sm:inline">Invite</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 bg-white p-2 sm:p-3 rounded-xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 bg-card p-2 sm:p-3 rounded-xl shadow-sm border border-border overflow-x-auto no-scrollbar">
           <div className="relative flex-1 min-w-[140px] group">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search..."
-              className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs sm:text-sm text-gray-900 font-bold placeholder-gray-400 outline-none focus:bg-white focus:border-blue-100 transition-all font-sans"
+              className="w-full pl-8 pr-2 py-1.5 bg-secondary/30 border border-transparent rounded-lg text-xs sm:text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-card focus:border-primary/30 transition-all font-sans"
             />
           </div>
 
-          <div className="h-6 w-px bg-gray-100 mx-1 shrink-0" />
+          <div className="h-6 w-px bg-border mx-1 shrink-0" />
 
           <div className="flex items-center gap-1.5 shrink-0">
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="w-20 sm:w-28 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-[10px] sm:text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
+              className="w-20 sm:w-28 px-1 py-1.5 bg-secondary/30 border border-transparent rounded-lg text-[10px] sm:text-xs text-foreground font-black uppercase tracking-wider outline-none focus:bg-card transition-all appearance-none cursor-pointer"
             >
-              <option value="ALL">Role</option>
-              <option value={USER_ROLES.ORG_MANAGER}>Manager</option>
-              <option value={USER_ROLES.TEAM_MEMBER}>Member</option>
+              <option value="ALL" className="bg-card">
+                Role
+              </option>
+              <option value={USER_ROLES.ORG_MANAGER} className="bg-card">
+                Manager
+              </option>
+              <option value={USER_ROLES.TEAM_MEMBER} className="bg-card">
+                Member
+              </option>
             </select>
 
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-20 sm:w-28 px-1 py-1.5 bg-gray-50 border border-transparent rounded-lg text-[10px] sm:text-xs text-gray-700 font-black uppercase tracking-wider outline-none focus:bg-white transition-all appearance-none cursor-pointer"
+              className="w-20 sm:w-28 px-1 py-1.5 bg-secondary/30 border border-transparent rounded-lg text-[10px] sm:text-xs text-foreground font-black uppercase tracking-wider outline-none focus:bg-card transition-all appearance-none cursor-pointer"
             >
-              <option value="ALL">Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
+              <option value="ALL" className="bg-card">
+                Status
+              </option>
+              <option value="ACTIVE" className="bg-card">
+                Active
+              </option>
+              <option value="INACTIVE" className="bg-card">
+                Inactive
+              </option>
             </select>
 
-            <div className="flex border border-gray-100 rounded-lg overflow-hidden bg-gray-50 translate-y-0 text-[10px]">
+            <div className="flex border border-border rounded-lg overflow-hidden bg-secondary/30 translate-y-0 text-[10px]">
               {["name", "status"].map((field) => (
                 <button
                   key={field}
                   onClick={() => toggleSort(field)}
                   className={`px-2 py-1.5 font-bold uppercase tracking-wider flex items-center gap-1 transition-colors ${
                     sortBy === field
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-500 hover:bg-gray-100"
-                  } ${field !== "status" ? "border-r border-gray-200" : ""}`}
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-secondary/50"
+                  } ${field !== "status" ? "border-r border-border" : ""}`}
                 >
                   <span className="hidden sm:inline">{field}</span>
                   <ArrowUpDown size={10} />
@@ -335,34 +352,34 @@ export default function MembersPage() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl p-6 h-48 animate-pulse border border-gray-100"
+                className="bg-card/50 rounded-xl p-6 h-48 animate-pulse border border-border"
               ></div>
             ))}
           </div>
         ) : filteredMembers.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-3xl border-2 border-gray-100 border-dashed animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="text-center py-24 bg-card rounded-3xl border-2 border-border border-dashed animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="relative w-24 h-24 mx-auto mb-8">
-              <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-20" />
-              <div className="relative w-full h-full bg-blue-50 rounded-full flex items-center justify-center shadow-inner border border-blue-100">
-                <Users className="w-10 h-10 text-blue-600" />
+              <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-20" />
+              <div className="relative w-full h-full bg-primary/5 rounded-full flex items-center justify-center shadow-inner border border-primary/10">
+                <Users className="w-10 h-10 text-primary" />
               </div>
             </div>
-            <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">
+            <h3 className="text-2xl font-black text-foreground mb-2 tracking-tight">
               Your Team Awaits
             </h3>
-            <p className="text-gray-500 text-sm font-medium max-w-xs mx-auto mb-8 leading-relaxed">
+            <p className="text-muted-foreground text-sm font-medium max-w-xs mx-auto mb-8 leading-relaxed">
               No members match your criteria. Expand your workspace or try
               adjusting your search filters.
             </p>
             <button
               onClick={() => setIsInviteModalOpen(true)}
-              className="px-8 py-3 bg-blue-600 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+              className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
             >
               + Invite Member
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredMembers.map((member) => {
               const isActive = (member.status || "ACTIVE") === "ACTIVE";
               return (
@@ -375,11 +392,11 @@ export default function MembersPage() {
                   status={isActive ? "ACTIVE" : "BLOCKED"}
                   statusColor={
                     isActive
-                      ? "bg-green-50 text-green-700 border-green-100"
-                      : "bg-red-50 text-red-700 border-red-100"
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                      : "bg-destructive/10 text-destructive border-destructive/20"
                   }
                   actions={
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 p-1">
                       <button
                         onClick={() =>
                           handleBlockMember(
@@ -390,8 +407,8 @@ export default function MembersPage() {
                         title={isActive ? "Block" : "Unblock"}
                         className={`p-1.5 rounded-lg border transition-all ${
                           isActive
-                            ? "bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100"
-                            : "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
+                            ? "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20"
+                            : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
                         }`}
                       >
                         {isActive ? (
@@ -403,14 +420,14 @@ export default function MembersPage() {
                       <button
                         onClick={() => handleRemoveMember(member.id)}
                         title="Remove"
-                        className="p-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition-all"
+                        className="p-1.5 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg hover:bg-destructive/20 transition-all"
                       >
                         <Trash2 size={16} />
                       </button>
                     </div>
                   }
                   footerLeft={
-                    <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-black uppercase tracking-wider border border-blue-100">
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-black uppercase tracking-wider border border-primary/20">
                       {member.role === USER_ROLES.SUPER_ADMIN
                         ? "Super Admin"
                         : member.role === USER_ROLES.ORG_MANAGER
@@ -425,22 +442,22 @@ export default function MembersPage() {
         )}
 
         {membersData && membersData.totalPages > 1 && (
-          <div className="px-6 py-4 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between">
-            <span className="text-xs text-gray-500 font-medium font-sans">
-              Page {page} of {membersData.totalPages}
+          <div className="px-8 py-5 bg-card border border-border/50 rounded-2xl shadow-2xl flex items-center justify-between">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+              Matrix Page {page} / {membersData.totalPages}
             </span>
-            <div className="flex gap-2">
+            <div className="flex gap-4">
               <button
                 disabled={page === 1}
                 onClick={() => setPage((p: number) => p - 1)}
-                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors font-sans"
+                className="px-6 py-2.5 bg-secondary/30 border border-border/50 rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-secondary disabled:opacity-30 transition-all active:scale-95"
               >
-                Previous
+                Prev
               </button>
               <button
                 disabled={page >= membersData.totalPages}
                 onClick={() => setPage((p: number) => p + 1)}
-                className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors font-sans"
+                className="px-6 py-2.5 bg-primary text-primary-foreground border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-30 transition-all shadow-xl shadow-primary/20 active:scale-95"
               >
                 Next
               </button>

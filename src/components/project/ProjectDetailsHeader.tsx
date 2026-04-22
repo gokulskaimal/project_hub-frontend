@@ -7,14 +7,18 @@ import {
   BarChart3,
   Rows,
   PanelRight,
+  Layers,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Project } from "@/types/project";
+import { motion } from "framer-motion";
 
 interface ProjectDetailsHeaderProps {
   project?: Project;
-  activeTab: "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS";
-  setActiveTab: (tab: "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS") => void;
+  activeTab: "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS" | "EPICS";
+  setActiveTab: (
+    tab: "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS" | "EPICS",
+  ) => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
 }
@@ -30,6 +34,7 @@ export default function ProjectDetailsHeader({
 
   const tabs = [
     { id: "TASKS", icon: Rows, label: "Tasks" },
+    { id: "EPICS", icon: Layers, label: "Roadmap" },
     { id: "CHAT", icon: MessageSquare, label: "Chat" },
     { id: "CALENDAR", icon: Calendar, label: "Calendar" },
     { id: "ANALYTICS", icon: BarChart3, label: "Analytics" },
@@ -41,49 +46,62 @@ export default function ProjectDetailsHeader({
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="p-3 bg-white border border-gray-100 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all shadow-sm group"
+            className="p-3 bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/30 rounded-2xl transition-all shadow-xl group active:scale-95"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl font-black text-foreground tracking-tighter flex items-center gap-3">
               {project?.name}
             </h1>
-            <p className="text-sm font-medium text-gray-500 mt-1">
-              {project?.description || "No project description provided."}
+            <p className="text-xs font-medium text-muted-foreground mt-1 max-w-2xl line-clamp-1">
+              {project?.description ||
+                "Strategic project initiatives and roadmap."}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`p-3 rounded-xl border transition-all shadow-sm ${
+            className={`p-3 rounded-2xl border transition-all shadow-xl active:scale-95 ${
               isSidebarOpen
-                ? "bg-blue-600 border-blue-600 text-white shadow-blue-100"
-                : "bg-white border-gray-100 text-gray-400 hover:text-gray-900 hover:bg-gray-50"
+                ? "bg-primary border-primary/20 text-primary-foreground shadow-primary/20"
+                : "bg-card border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/30"
             }`}
-            title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+            title={
+              isSidebarOpen
+                ? "Hide Intelligence Sidebar"
+                : "Show Intelligence Sidebar"
+            }
           >
-            <PanelRight size={20} />
+            <PanelRight
+              size={22}
+              className={isSidebarOpen ? "animate-pulse-glow" : ""}
+            />
           </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-1 border-b border-gray-100">
+      <div className="flex items-center gap-1 border-b border-border/30">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`pb-4 px-4 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all relative flex items-center gap-2 ${
+            className={`pb-4 px-6 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all relative flex items-center gap-2.5 group ${
               activeTab === tab.id
-                ? "text-blue-600"
-                : "text-gray-400 hover:text-gray-600 hover:bg-gray-50/50 rounded-t-xl"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/10 rounded-t-2xl"
             }`}
           >
-            <tab.icon className="w-4 h-4" />
+            <tab.icon
+              className={`w-4 h-4 transition-transform group-hover:scale-110 ${activeTab === tab.id ? "text-primary" : "text-muted-foreground"}`}
+            />
             {tab.label}
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600 rounded-full" />
+              <motion.div
+                layoutId="activeTab"
+                className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary),0.5)]"
+              />
             )}
           </button>
         ))}

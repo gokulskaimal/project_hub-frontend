@@ -2,38 +2,62 @@
 
 import UserAvatar from "@/components/ui/UserAvatar";
 import { User } from "@/types/auth";
-import { Users } from "lucide-react";
+import { UserPlus, Users } from "lucide-react";
 
 interface ProjectDetailsSidebarProps {
   teamMembers: User[];
+  isManager?: boolean;
+  onAddMembers?: () => void;
 }
 
 export default function ProjectDetailsSidebar({
   teamMembers,
+  isManager,
+  onAddMembers,
 }: ProjectDetailsSidebarProps) {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm sticky top-6">
-      <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-        <Users className="w-4 h-4 text-blue-600" />
-        Team Members
-      </h3>
-      <div className="space-y-4">
+    <div className="w-full bg-card/60 backdrop-blur-xl p-5 rounded-[2rem] border border-white/5 shadow-2xl">
+      <div className="flex items-center justify-between mb-5 px-1">
+        <h3 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.3em] flex items-center gap-2 opacity-60">
+          <Users className="w-3.5 h-3.5 text-primary" />
+          Neural Team
+        </h3>
+        {isManager && (
+          <button
+            onClick={onAddMembers}
+            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all group active:scale-90"
+            title="Manage Team Synergy"
+          >
+            <UserPlus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+          </button>
+        )}
+      </div>
+      <div className="space-y-2">
         {teamMembers.map((member) => (
           <div
             key={member.id}
-            className="group flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-all cursor-default"
+            className="group flex items-center gap-3 p-2 hover:bg-white/5 rounded-2xl transition-all cursor-default border border-transparent hover:border-white/5"
           >
-            <UserAvatar user={member} size="sm" />
-            <div className="min-w-0">
-              <p className="text-sm font-black text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+            <div className="shrink-0">
+              <UserAvatar user={member} size="xs" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-black text-foreground truncate group-hover:text-primary transition-colors leading-tight">
                 {member.firstName} {member.lastName}
               </p>
-              <p className="text-[10px] font-medium text-gray-400 truncate">
+              <p className="text-[9px] font-bold text-muted-foreground truncate uppercase tracking-tighter opacity-50 mt-0.5">
                 {member.email}
               </p>
             </div>
           </div>
         ))}
+        {teamMembers.length === 0 && (
+          <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-2xl">
+            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+              No Active Nodes
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -77,76 +77,87 @@ export default function MemberBoardsPage() {
   }
 
   return (
-    <DashboardLayout title="Project Boards">
-      <div className="space-y-8 pb-12">
+    <DashboardLayout title="Tactical Boards">
+      <div className="space-y-10 sm:space-y-12 pb-12">
         {/* Boards Banner */}
-        <div className="relative overflow-hidden rounded-xl bg-gray-900 px-6 py-10 sm:px-10 sm:py-12 text-white shadow-xl">
-          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 rounded-full bg-blue-600/10 blur-3xl" />
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-card px-8 py-12 sm:px-12 sm:py-16 border border-border/50 shadow-2xl group">
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 rounded-full bg-primary/10 blur-[100px] group-hover:scale-125 transition-transform duration-700" />
+          <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 rounded-full bg-blue-500/5 blur-[80px]" />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[10px] font-black uppercase tracking-widest">
-                Agile Hub
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
+                <LayoutDashboard className="w-6 h-6 text-primary" />
+              </div>
+              <span className="px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
+                Neural Control
               </span>
             </div>
-            <h1 className="text-3xl font-black tracking-tight mb-2">
-              Interactive Boards
+            <h1 className="text-4xl font-black text-foreground tracking-tighter mb-4 uppercase">
+              Mission <span className="text-primary">Boards</span>
             </h1>
-            <p className="text-gray-400 text-sm font-medium max-w-xl">
-              Jump directly into your active project boards to manage sprints,
-              tasks, and team velocity.
+            <p className="text-muted-foreground text-sm font-medium max-w-xl leading-relaxed">
+              Launch directly into active operational partitions to coordinate
+              sprint cycles, node synchronization, and system-wide delivery
+              velocity.
             </p>
           </div>
         </div>
 
         {/* Compact Controls Bar */}
-        <div className="flex items-center gap-2 bg-white p-2 sm:p-3 rounded-xl shadow-sm border border-gray-100">
-          <div className="relative flex-1 group">
-            <KanbanSquare className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors w-4 h-4" />
+        <div className="bg-card p-4 rounded-3xl border border-border/50 shadow-2xl flex flex-col md:flex-row gap-5 items-center">
+          <div className="relative flex-1 group w-full">
+            <KanbanSquare className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors w-4 h-4" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Find a board..."
-              className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs sm:text-sm text-gray-900 font-bold placeholder-gray-400 outline-none focus:bg-white focus:border-blue-100 transition-all"
+              placeholder="Locate mission board..."
+              className="w-full pl-12 pr-4 py-3 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
             />
           </div>
         </div>
 
         {filteredProjects.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-xl border border-gray-100 border-dashed">
-            <KanbanSquare className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-            <h3 className="text-lg font-black text-gray-900 mb-1">
-              No boards found
+          <div className="text-center py-32 bg-card/30 rounded-[3rem] border border-dashed border-border/50 animate-in fade-in zoom-in-95 duration-700">
+            <div className="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-8 border border-primary/10 shadow-inner">
+              <KanbanSquare className="w-12 h-12 text-primary opacity-40 mx-auto" />
+            </div>
+            <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">
+              Void Matrix
             </h3>
-            <p className="text-gray-500 text-sm">
-              Try adjusting your search criteria.
+            <p className="text-muted-foreground text-sm font-medium leading-relaxed">
+              No tactical boards detected within the current query scope.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProjects.map((project: Project) => (
               <EntityCard
                 key={project.id}
                 id={project.id}
                 title={project.name}
                 description={
-                  project.description || "Active agile execution board."
+                  project.description ||
+                  "Active agile mission node requiring synchronization."
                 }
                 icon={KanbanSquare}
                 href={`/member/projects/${project.id}/board`}
                 status={project.status}
                 statusColor={getStatusBg(project.status)}
-                sideBorderColor="bg-blue-500"
                 footerLeft={
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
-                    <Users className="w-3.5 h-3.5" />
-                    <span>{project.teamMemberIds?.length || 0}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 bg-secondary rounded-lg border border-border/50">
+                      <Users className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                      {project.members?.length || 0} Operators
+                    </span>
                   </div>
                 }
                 footerRight={
-                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                    Launch <ArrowRight className="w-3 h-3" />
+                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+                    Initialize <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 }
               />

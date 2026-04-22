@@ -12,6 +12,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Lock, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { z } from "zod";
+import { motion } from "framer-motion";
 
 const passwordSchema = z
   .string()
@@ -35,7 +36,7 @@ function ResetPasswordForm() {
   useEffect(() => {
     if (!token) {
       notifier.error(null, "Invalid or missing reset token.");
-      router.push("/login"); // Redirect if no token is present
+      router.push("/login");
     }
   }, [token, router]);
 
@@ -43,7 +44,6 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError(null);
 
-    // Initial Validations
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -62,7 +62,6 @@ function ResetPasswordForm() {
       setIsSuccess(true);
       notifier.success("Password reset successful!");
 
-      // Delay redirect to show success state
       setTimeout(() => {
         router.push("/login");
       }, 3000);
@@ -76,23 +75,25 @@ function ResetPasswordForm() {
 
   if (isSuccess) {
     return (
-      <div className="text-center space-y-6 animate-in zoom-in-95 duration-500">
-        <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-6">
-          <CheckCircle2 className="w-10 h-10 text-green-600" />
+      <div className="text-center space-y-8 animate-in zoom-in-95 duration-500">
+        <div className="mx-auto w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(16,185,129,0.15)] border border-emerald-500/20">
+          <CheckCircle2 className="w-10 h-10 text-emerald-500" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900">Success!</h2>
-        <p className="text-gray-600">
-          Your password has been reset successfully. You will be redirected to
-          the login page shortly.
+        <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter italic">
+          Success!
+        </h2>
+        <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
+          Neural access key reconfigured. <br />
+          Redirecting to primary login node...
         </p>
-        <div className="pt-4">
+        <div className="pt-6">
           <Link href="/login">
             <Button
               variant="ghost"
               fullWidth
-              className="text-blue-600 font-medium hover:text-blue-700"
+              className="h-12 rounded-xl text-[10px] font-black text-primary uppercase tracking-widest hover:bg-primary/10"
             >
-              Go to Login Now
+              Access Login Node Now
             </Button>
           </Link>
         </div>
@@ -101,32 +102,33 @@ function ResetPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
+    >
       <div className="space-y-4">
         <Input
           type="password"
-          label="New Password"
-          placeholder="••••••••"
+          placeholder="NEW ACCESS KEY (PASSWORD)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          leftIcon={<Lock className="h-4 w-4 text-gray-400" />}
-          containerClassName="animate-in slide-in-from-bottom-2 duration-300"
+          className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+          leftIcon={<Lock className="h-4 w-4 text-primary" />}
         />
         <Input
           type="password"
-          label="Confirm New Password"
-          placeholder="••••••••"
+          placeholder="VERIFY NEW KEY"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
-          leftIcon={<Lock className="h-4 w-4 text-gray-400" />}
-          containerClassName="animate-in slide-in-from-bottom-2 duration-400"
+          className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+          leftIcon={<Lock className="h-4 w-4 text-primary" />}
         />
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-100 animate-in shake duration-300">
+        <div className="flex items-center gap-3 p-4 bg-destructive/10 text-destructive rounded-xl text-[9px] font-black uppercase tracking-widest border border-destructive/20 animate-in shake duration-300">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <p>{error}</p>
         </div>
@@ -136,9 +138,9 @@ function ResetPasswordForm() {
         type="submit"
         fullWidth
         isLoading={isLoading}
-        className="bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
+        className="h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
       >
-        Reset Password
+        Finalize Key Reset
       </Button>
     </form>
   );
@@ -146,49 +148,56 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
+    <div className="min-h-dvh flex flex-col bg-background selection:bg-primary/30">
       <Header />
-      <main className="relative flex-1 overflow-hidden">
-        {/* Background Aesthetics */}
-        <div className="absolute inset-0 bg-[radial-gradient(84.09%_62.5%_at_0%_0%,rgba(36,99,235,0.15)_0%,rgba(36,99,235,0)_60%),radial-gradient(84.09%_62.5%_at_100%_0%,rgba(119,80,226,0.15)_0%,rgba(119,80,226,0)_60%),linear-gradient(180deg,#F8FAFC_0%,#EBEFF5_100%)]" />
+      <main className="relative flex-1 overflow-hidden flex items-center justify-center">
+        {/* Animated Background System */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_30%,rgba(var(--primary),0.1)_0%,transparent_50%),radial-gradient(circle_at_80%_70%,rgba(99,102,241,0.08)_0%,transparent_50%)]" />
+          <div className="absolute top-[10%] right-[20%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[110px] animate-pulse" />
+        </div>
 
-        <div className="relative flex min-h-full items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
-          <div className="w-full max-w-md">
-            <Card className="shadow-xl sm:p-8 backdrop-blur-sm bg-white/90">
-              <div className="mb-8 text-center">
-                <div className="mx-auto w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                  <Lock className="w-6 h-6 text-blue-600" />
+        <div className="relative z-10 w-full max-w-md px-6 py-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
+            <Card className="glass-card !p-10 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] rounded-[3rem]">
+              <div className="mb-10 text-center">
+                <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(var(--primary),0.15)] border border-primary/20">
+                  <Lock className="w-10 h-10 text-primary" />
                 </div>
-                <h1 className="mb-2 text-2xl font-bold text-gray-900">
-                  Set New Password
+                <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter italic mb-3">
+                  Reconfigure Key
                 </h1>
-                <p className="text-sm text-gray-600">
-                  Please enter your new password below to regain access to your
-                  account.
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
+                  Establish a new neural access key <br />
+                  to regain network connectivity.
                 </p>
               </div>
 
               <Suspense
                 fallback={
-                  <div className="flex items-center justify-center p-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="flex items-center justify-center p-12">
+                    <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary/20 border-t-primary"></div>
                   </div>
                 }
               >
                 <ResetPasswordForm />
               </Suspense>
 
-              <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+              <div className="mt-10 pt-8 border-t border-white/5 text-center">
                 <Link
                   href="/login"
-                  className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 group transition-colors"
+                  className="inline-flex items-center text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:brightness-125 transition-all group"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                  Back to Sign In
+                  <ArrowLeft className="w-4 h-4 mr-3 transition-transform group-hover:-translate-x-1.5" />
+                  Abort & Return
                 </Link>
               </div>
             </Card>
-          </div>
+          </motion.div>
         </div>
       </main>
       <Footer />

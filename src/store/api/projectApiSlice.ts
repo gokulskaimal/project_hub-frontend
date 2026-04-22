@@ -97,16 +97,40 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       ],
     }),
     getProjectTasks: builder.query<
-      Task[],
-      { projectId: string; epicId?: string; parentTaskId?: string }
+      PaginatedResponse<Task> | Task[],
+      {
+        projectId: string;
+        epicId?: string;
+        parentTaskId?: string;
+        page?: number;
+        limit?: number;
+        isInBacklog?: boolean;
+        type?: string;
+      }
     >({
-      query: ({ projectId, epicId, parentTaskId }) => ({
+      query: ({
+        projectId,
+        epicId,
+        parentTaskId,
+        page,
+        limit,
+        isInBacklog,
+        type,
+      }) => ({
         url: `${API_ROUTES.PROJECTS.TASKS_BY_PROJECT(projectId)}`,
         method: "GET",
-        params: { epicId, parentTaskId },
+        params: { epicId, parentTaskId, page, limit, isInBacklog, type },
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: unknown) => extractList<Task>(response),
+      transformResponse: (response: unknown) => {
+        const maybeObject = response as {
+          data?: PaginatedResponse<Task> | Task[];
+        };
+        if (maybeObject?.data && "items" in (maybeObject.data as any)) {
+          return maybeObject.data as PaginatedResponse<Task>;
+        }
+        return extractList<Task>(response);
+      },
       providesTags: [{ type: "MemberTasks", id: "LIST" }],
     }),
     getEpicAnalytics: builder.query<EpicAnalytics[], string>({

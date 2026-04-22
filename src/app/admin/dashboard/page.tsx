@@ -8,6 +8,7 @@ import {
   Activity,
   ShieldCheck,
   TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 import React, { useState } from "react";
 import {
@@ -17,7 +18,6 @@ import {
 } from "@/store/api/adminApiSlice";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
-import { StatCard } from "@/components/ui/StatCard";
 import { RoleBanner } from "@/components/ui/RoleBanner";
 import {
   AnalyticsFilter,
@@ -32,6 +32,22 @@ import {
   mapStatusDistribution,
   mapPlanDistribution,
 } from "@/utils/analyticsUtils";
+import { motion } from "framer-motion";
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+};
 
 export default function AdminDashboardPage() {
   const [timeframe, setTimeframe] = useState<TimeFrame>("YEAR");
@@ -56,248 +72,222 @@ export default function AdminDashboardPage() {
   );
   const planData = mapPlanDistribution(analyticsData?.plans);
 
-  return (
-    <DashboardLayout title="Admin Dashboard">
-      <div className="p-6 space-y-10">
-        {/* Welcome Banner */}
-        <RoleBanner
-          roleName="Super Admin"
-          badgeText="System Authority"
-          welcomeMessage={
-            <>
-              Welcome, <span className="text-blue-400">Admin</span>
-            </>
-          }
-          description={
-            <>
-              You have full oversight of{" "}
-              <span className="text-white font-bold">
-                {reportsData?.overview.totalOrganizations || 0} organizations
-              </span>{" "}
-              and{" "}
-              <span className="text-white font-bold">
-                {reportsData?.overview.totalUsers || 0} users
-              </span>
-              . Monitor system health and manage global configurations below.
-            </>
-          }
-          gradientFrom="#3B82F6"
-          gradientTo="#6366F1"
-        />
-
-        {/* Main Stats Overview using PremiumStatGrid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {[1, 2, 3, 4].map((i: number) => (
+  if (loading) {
+    return (
+      <DashboardLayout title="Admin Command">
+        <div className="p-6 space-y-10">
+          <div className="h-48 bg-secondary/30 rounded-3xl animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-32 bg-white rounded-2xl animate-pulse border border-gray-100 shadow-sm"
+                className="h-32 bg-secondary/30 rounded-2xl animate-pulse"
               />
             ))}
           </div>
-        ) : reportsData ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                <Activity className="w-6 h-6 text-blue-600" />
-                Global Analytics
-              </h2>
-              <div className="flex items-center gap-4">
-                <AnalyticsFilter value={timeframe} onChange={setTimeframe} />
-                <div className="flex gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-1" />
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    Live System
-                  </span>
-                </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout title="Admin Command">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="p-6 space-y-10 pb-12"
+      >
+        {/* Welcome Banner */}
+        <motion.div variants={item}>
+          <RoleBanner
+            roleName="Super Admin"
+            badgeText="System Authority"
+            welcomeMessage={
+              <>
+                Central <span className="text-white">Command</span>
+              </>
+            }
+            description={
+              <>
+                Operational oversight for{" "}
+                <span className="text-white border-b border-white/30 pb-0.5">
+                  {reportsData?.overview.totalOrganizations || 0} organizations
+                </span>{" "}
+                across the primary ecosystem fabric.
+              </>
+            }
+            gradientFrom="#6366F1"
+            gradientTo="#8B5CF6"
+          />
+        </motion.div>
+
+        {/* Status Section */}
+        <motion.div variants={item} className="space-y-6">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Activity className="w-5 h-5 text-primary" />
               </div>
-            </div>
-            <PremiumStatGrid
-              items={[
-                {
-                  label: "Total Entities",
-                  value:
-                    reportsData.overview.totalUsers +
-                    reportsData.overview.totalOrganizations,
-                  icon: ShieldCheck,
-                  color: "blue",
-                },
-                {
-                  label: "Active Users",
-                  value: reportsData.users.active,
-                  icon: Users,
-                  color: "green",
-                },
-                {
-                  label: "Active Orgs",
-                  value: reportsData.organizations.active,
-                  icon: Building2,
-                  color: "purple",
-                },
-                {
-                  label: "System Health",
-                  value: `${Math.round(((reportsData.users.active + reportsData.organizations.active) / (reportsData.overview.totalUsers + reportsData.overview.totalOrganizations || 1)) * 100)}%`,
-                  icon: Activity,
-                  color: "emerald",
-                },
-              ]}
-            />
-
-            {/* Visual Analytics */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
-              <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                {analyticsLoading ? (
-                  <div className="h-full flex items-center justify-center p-20 animate-pulse bg-gray-50/30 rounded-xl border border-dashed border-gray-100">
-                    <TrendingUp className="w-8 h-8 text-blue-200" />
-                  </div>
-                ) : analyticsError ? (
-                  <div className="h-full flex items-center justify-center p-12 text-center border-2 border-dashed border-red-50 rounded-xl">
-                    <p className="text-xs font-bold text-red-400 uppercase tracking-widest">
-                      Analytics Unavailable
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
-                          Revenue Growth
-                        </h3>
-                        <p className="text-[10px] text-gray-400 font-bold mt-0.5">
-                          Financial trajectory over time
-                        </p>
-                      </div>
-                      <TrendingUp className="w-4 h-4 text-emerald-500" />
-                    </div>
-                    <div className="h-[300px]">
-                      <AnalyticsBarChart
-                        data={revenueData}
-                        color="#10b981"
-                        label="Revenue"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="space-y-6">
-                {/* Org Status Distribution */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                  {analyticsLoading ? (
-                    <div className="h-[200px] flex items-center justify-center animate-pulse bg-gray-50/30 rounded-xl">
-                      <Activity className="w-6 h-6 text-purple-200" />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-4">
-                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">
-                          Org Status
-                        </h3>
-                        <p className="text-[8px] text-gray-400 font-bold mt-0.5">
-                          Account Activity
-                        </p>
-                      </div>
-                      <div className="h-[180px]">
-                        <StatusDistribution data={orgData} />
-                      </div>
-                      <div className="mt-4 space-y-1">
-                        {orgData
-                          .slice(0, 3)
-                          .map((item: { name: string; value: number }) => (
-                            <div
-                              key={item.name}
-                              className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest"
-                            >
-                              <span className="text-gray-400">{item.name}</span>
-                              <span className="text-gray-900">
-                                {item.value} Orgs
-                              </span>
-                            </div>
-                          ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Plan Distribution */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                  {analyticsLoading ? (
-                    <div className="h-[200px] flex items-center justify-center animate-pulse bg-gray-50/30 rounded-xl">
-                      <ShieldCheck className="w-6 h-6 text-blue-200" />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-4">
-                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">
-                          Plan Distribution
-                        </h3>
-                        <p className="text-[8px] text-gray-400 font-bold mt-0.5">
-                          Subscription Tiers
-                        </p>
-                      </div>
-                      <div className="h-[180px]">
-                        <StatusDistribution data={planData} />
-                      </div>
-                      <div className="mt-4 space-y-1">
-                        {planData
-                          .slice(0, 3)
-                          .map((item: { name: string; value: number }) => (
-                            <div
-                              key={item.name}
-                              className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest"
-                            >
-                              <span className="text-gray-400">{item.name}</span>
-                              <span className="text-gray-900">
-                                {item.value} Accounts
-                              </span>
-                            </div>
-                          ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+              Global Analytics
+            </h2>
+            <div className="flex items-center gap-4">
+              <AnalyticsFilter value={timeframe} onChange={setTimeframe} />
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+                  Active System
+                </span>
               </div>
             </div>
           </div>
-        ) : null}
 
-        {/* Financial & Entity Stats */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 px-1">
-            Financial Oversight
+          <PremiumStatGrid
+            items={[
+              {
+                label: "Total Entities",
+                value:
+                  (reportsData?.overview.totalUsers || 0) +
+                  (reportsData?.overview.totalOrganizations || 0),
+                icon: ShieldCheck,
+                color: "blue",
+              },
+              {
+                label: "Active Users",
+                value: reportsData?.users.active || 0,
+                icon: Users,
+                color: "emerald",
+              },
+              {
+                label: "Active Orgs",
+                value: reportsData?.organizations.active || 0,
+                icon: Building2,
+                color: "violet",
+              },
+              {
+                label: "System Health",
+                value: `${Math.round((((reportsData?.users.active || 0) + (reportsData?.organizations.active || 0)) / ((reportsData?.overview.totalUsers || 0) + (reportsData?.overview.totalOrganizations || 0) || 1)) * 100)}%`,
+                icon: Activity,
+                color: "blue",
+              },
+            ]}
+          />
+        </motion.div>
+
+        {/* Visual Analytics */}
+        <motion.div
+          variants={item}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+        >
+          <div className="lg:col-span-2 glass-card rounded-3xl p-8 border border-border/50">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">
+                  Revenue Trajectory
+                </h3>
+                <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
+                  Financial velocity across the grid
+                </p>
+              </div>
+              <TrendingUp className="w-5 h-5 text-emerald-500" />
+            </div>
+
+            <div className="h-[320px]">
+              {analyticsError ? (
+                <div className="h-full flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-2xl bg-secondary/10">
+                  <AlertCircle className="w-8 h-8 text-muted-foreground mb-2" />
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                    Data Stream Offline
+                  </p>
+                </div>
+              ) : (
+                <AnalyticsBarChart
+                  data={revenueData}
+                  dataKey="value"
+                  xKey="name"
+                  color="var(--primary)"
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            {/* Org Distribution */}
+            <div className="glass-card rounded-3xl p-8 border border-border/50">
+              <div className="mb-6">
+                <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest mb-1">
+                  Org Status Distribution
+                </h3>
+                <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">
+                  System Access Levels
+                </p>
+              </div>
+              <div className="h-[280px]">
+                <StatusDistribution data={orgData} />
+              </div>
+            </div>
+
+            {/* Plan Distribution */}
+            <div className="glass-card rounded-3xl p-8 border border-border/50">
+              <div className="mb-6">
+                <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest mb-1">
+                  Subscription Tiers
+                </h3>
+                <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">
+                  Plan distribution metrics
+                </p>
+              </div>
+              <div className="h-[280px]">
+                <StatusDistribution data={planData} />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Financial Oversight Detail */}
+        <motion.div variants={item} className="space-y-6">
+          <h2 className="text-xl font-black text-foreground tracking-tight px-1 flex items-center gap-2">
+            <div className="p-2 bg-emerald-500/10 rounded-lg">
+              <Banknote className="w-5 h-5 text-emerald-500" />
+            </div>
+            Fiscal Monitoring
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              label="Organizations"
-              value={reportsData?.overview.totalOrganizations || 0}
-              icon={Building2}
-              color="blue"
-              loading={loading}
-            />
-            <StatCard
-              label="Users"
-              value={reportsData?.overview.totalUsers || 0}
-              icon={Users}
-              color="green"
-              loading={loading}
-            />
-            <StatCard
-              label="Revenue"
-              value={`₹${(invoicesData?.totalRevenue || 0).toLocaleString()}`}
-              icon={Banknote}
-              color="emerald"
-              loading={loading}
-            />
-            <StatCard
-              label="Invoices"
-              value={invoicesData?.total || 0}
-              icon={ReceiptText}
-              color="orange"
-              loading={loading}
-            />
+            <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Revenue
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-1">
+                ₹{(invoicesData?.totalRevenue || 0).toLocaleString()}
+              </h4>
+            </div>
+            <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Invoices
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-1">
+                {invoicesData?.total || 0}
+              </h4>
+            </div>
+            <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Users
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-1">
+                {reportsData?.overview.totalUsers || 0}
+              </h4>
+            </div>
+            <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Orgs
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-1">
+                {reportsData?.overview.totalOrganizations || 0}
+              </h4>
+            </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </DashboardLayout>
   );
 }

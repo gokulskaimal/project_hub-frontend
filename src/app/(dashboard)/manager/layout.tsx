@@ -117,7 +117,7 @@ function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
     return null;
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-background overflow-hidden font-sans transition-colors duration-500">
       <ChatNotificationListener />
 
       <Sidebar
@@ -134,10 +134,10 @@ function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 px-4 md:px-8 flex items-center justify-between gap-4">
+        <header className="h-16 bg-card border-b border-border px-4 md:px-8 flex items-center justify-between gap-4">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden text-gray-500 hover:text-blue-600 transition-colors shrink-0"
+            className="md:hidden text-muted-foreground hover:text-primary transition-colors shrink-0"
             aria-label="Open menu"
             title="Open menu"
           >
@@ -148,20 +148,20 @@ function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
             <SocketNotification />
             <NotificationBell />
 
-            <div className="h-8 w-px bg-gray-200 hidden md:block mx-1"></div>
+            <div className="h-8 w-px bg-border hidden md:block mx-1"></div>
 
             <button
               onClick={openProfile}
-              className="group flex items-center gap-3 hover:bg-white hover:shadow-sm rounded-full pl-1 pr-3 py-1 transition-all border border-transparent hover:border-gray-200"
+              className="group flex items-center gap-3 hover:bg-background hover:shadow-sm rounded-full pl-1 pr-3 py-1 transition-all border border-transparent hover:border-border"
             >
               <UserAvatar user={user} size="sm" />
               <div className="hidden md:block text-left">
-                <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate max-w-[150px]">
+                <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate max-w-[150px]">
                   {user?.firstName && user?.lastName
                     ? `${user.firstName} ${user.lastName}`
                     : user?.name || user?.firstName || "Manager"}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold truncate max-w-[150px]">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold truncate max-w-[150px]">
                   {role?.replace("_", " ") || "Manager"}
                 </p>
               </div>
@@ -169,7 +169,7 @@ function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-4 md:p-8 bg-gray-50/50">
+        <main className="flex-1 overflow-auto p-4 md:p-8 bg-background">
           {children}
         </main>
       </div>
