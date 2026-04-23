@@ -39,7 +39,7 @@ export default function ProjectDetailsSidebar({
             className="group flex items-center gap-3 p-2 hover:bg-white/5 rounded-2xl transition-all cursor-default border border-transparent hover:border-white/5"
           >
             <div className="shrink-0">
-              <UserAvatar user={member} size="xs" />
+              <UserAvatar user={member} size="sm" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-black text-foreground truncate group-hover:text-primary transition-colors leading-tight">
