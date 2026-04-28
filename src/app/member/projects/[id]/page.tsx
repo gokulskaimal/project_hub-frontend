@@ -39,6 +39,8 @@ import EpicListing from "@/components/dashboard/EpicListing";
 import SprintSelectorHeader from "@/components/project/SprintSelectorHeader";
 import { User } from "@/types/auth";
 import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
+import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
+import StrategicProjectReport from "@/components/analytics/StrategicProjectReport";
 import {
   Layers,
   CheckCircle2,
@@ -126,6 +128,9 @@ export default function MemberProjectDetailsPage() {
 
   // Sprint Selector & Backlog Pagination State
   const [selectedSprintId, setSelectedSprintId] = useState<string>("ACTIVE");
+  const [analyticsView, setAnalyticsView] = useState<"SPRINT" | "STRATEGIC">(
+    "SPRINT",
+  );
   const [backlogPage, setBacklogPage] = useState(1);
   const [allBacklogTasks, setAllBacklogTasks] = useState<Task[]>([]);
 
@@ -315,99 +320,59 @@ export default function MemberProjectDetailsPage() {
               />
             </div>
           ) : activeTab === "ANALYTICS" ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key="analytics"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="space-y-6"
-              >
-                {/* Project Health Card */}
-                <div className="bg-card p-8 rounded-3xl border border-border/50 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl opacity-50 group-hover:scale-150 transition-transform duration-700" />
+            <div className="space-y-8">
+              {/* Analytics Strategy Toggle */}
+              <div className="flex items-center justify-center">
+                <div className="bg-slate-950 p-1 rounded-2xl border border-white/10 flex items-center shadow-2xl">
+                  <button
+                    onClick={() => setAnalyticsView("SPRINT")}
+                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "SPRINT" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
+                  >
+                    Tactical Sprint
+                  </button>
+                  <button
+                    onClick={() => setAnalyticsView("STRATEGIC")}
+                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "STRATEGIC" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
+                  >
+                    Strategic Project
+                  </button>
+                </div>
+              </div>
 
-                  <div className="flex items-center gap-5 relative z-10">
-                    <div className="p-4 bg-emerald-500/10 rounded-2xl relative border border-emerald-500/20">
-                      <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl animate-pulse blur-xl" />
-                      <CheckCircle2 className="w-7 h-7 text-emerald-500 relative z-10" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black text-foreground tracking-tight">
-                        Project Health: Nominal
+              <AnimatePresence mode="wait">
+                {analyticsView === "SPRINT" ? (
+                  selectedSprint ? (
+                    <SprintAnalysisReport
+                      key="sprint-report"
+                      sprint={selectedSprint}
+                      tasks={tasks}
+                      sprints={sprints}
+                      members={projectMembers}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 bg-secondary/10 rounded-[3rem] border border-dashed border-border/50">
+                      <div className="w-16 h-16 bg-card rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl border border-border/50">
+                        <BarChart className="w-8 h-8 text-muted-foreground/30" />
+                      </div>
+                      <h3 className="text-xl font-black text-foreground tracking-tighter uppercase mb-2">
+                        No Sprint Selected
                       </h3>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1.5 opacity-70">
-                        Average Velocity:{" "}
-                        <span className="text-emerald-500">
-                          {projectVelocity || 0} PTS/WK
-                        </span>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[260px] text-center leading-relaxed">
+                        Select an active or completed operational node to
+                        generate a performance audit.
                       </p>
                     </div>
-                  </div>
-                  <div className="flex-1 max-w-sm w-full relative z-10">
-                    <div className="flex justify-between items-center mb-2.5">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                        Global Progress
-                      </span>
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] tabular-nums">
-                        {project?.progress || 0}%
-                      </span>
-                    </div>
-                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden border border-border/10">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${project?.progress || 0}%` }}
-                        transition={{ duration: 1.5, ease: "easeOut" }}
-                        className="h-full bg-emerald-500 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sprint Wise Metrics */}
-                <div className="flex flex-col gap-4">
-                  <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1 opacity-70">
-                    Internal Metric Spectrum
-                  </h4>
-                  <SprintMetricsGrid
-                    selectedSprintId={selectedSprintId}
-                    sprints={sprints}
-                    tasks={tasks}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <ProjectBurnUpChart project={project!} tasks={tasks} />
-                  <MemberContributionChart
+                  )
+                ) : (
+                  <StrategicProjectReport
+                    key="strategic-report"
+                    project={project!}
                     tasks={tasks}
                     sprints={sprints}
-                    selectedSprintId={selectedSprintId}
                   />
-
-                  <VelocityChart sprints={sprints} tasks={tasks} />
-                  <SprintCapacity
-                    sprints={sprints}
-                    tasks={tasks}
-                    activeSprintId={selectedSprintId}
-                  />
-
-                  <div className="lg:col-span-2">
-                    <SprintBurndownChart
-                      sprint={
-                        activeSprint ||
-                        sprints.find((s) => s.id === selectedSprintId)!
-                      }
-                      tasks={tasks}
-                    />
-                  </div>
-
-                  <div className="lg:col-span-2">
-                    <EpicProgressTracker projectId={projectId} />
-                  </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                )}
+              </AnimatePresence>
+            </div>
           ) : (
             <div className="space-y-6">
               <ProjectStatsCards
@@ -462,6 +427,7 @@ export default function MemberProjectDetailsPage() {
                   onStartSprint={() => {}}
                   onEditSprint={() => {}}
                   onDeleteSprint={() => {}}
+                  tasks={tasks}
                 />
 
                 {!selectedSprint ? (

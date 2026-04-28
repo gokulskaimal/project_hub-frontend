@@ -71,6 +71,8 @@ import ProjectDetailsSidebar from "@/components/project/ProjectDetailsSidebar";
 import ProjectStatsCards from "@/components/project/ProjectStatsCards";
 import SprintSelectorHeader from "@/components/project/SprintSelectorHeader";
 import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
+import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
+import StrategicProjectReport from "@/components/analytics/StrategicProjectReport";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -145,6 +147,9 @@ export default function ProjectDetailsPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
   const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
+  const [analyticsView, setAnalyticsView] = useState<"SPRINT" | "STRATEGIC">(
+    "SPRINT",
+  );
 
   // UI State: Sidebar Toggle (Professional Style)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -319,20 +324,24 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  const handleCompleteSprint = async () => {
+  const handleCompleteSprint = async (destination?: string) => {
     if (!activeSprint) return;
     const confirmed = await confirmWithAlert(
       "Complete Sprint?",
-      `Are you sure you want to complete ${activeSprint.name}? All unfinished tasks will move to backlog.`,
+      `Are you sure you want to complete ${activeSprint.name}? Any unfinished tasks will be migrated to ${destination === "BACKLOG" ? "backlog" : "the next cycle"}.`,
     );
     if (confirmed) {
       try {
         await updateSprint({
           id: activeSprint.id,
           projectId,
-          data: { status: "COMPLETED" },
+          data: {
+            status: "COMPLETED",
+            spilloverDestination: destination,
+          },
         }).unwrap();
         notifier.success(MESSAGES.SPRINTS.COMPLETE_SUCCESS);
+        refetchTasks();
       } catch (err) {
         notifier.error(err, MESSAGES.SPRINTS.UPDATE_FAILED);
       }
@@ -446,92 +455,59 @@ export default function ProjectDetailsPage() {
               onTaskUpdate={refetchTasks}
             />
           ) : activeTab === "ANALYTICS" ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key="analytics"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="space-y-6"
-              >
-                {/* Project Health Card */}
-                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden group">
-                  <div className="flex items-center gap-4 relative z-10">
-                    <div className="p-3 bg-emerald-500/10 rounded-xl relative">
-                      <div className="absolute inset-0 bg-emerald-500/20 rounded-xl animate-pulse-glow opacity-40"></div>
-                      <CheckCircle2 className="w-6 h-6 text-emerald-500 relative z-10" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-black text-foreground tracking-tight">
-                        Project Health: On Track
+            <div className="space-y-8">
+              {/* Analytics Strategy Toggle */}
+              <div className="flex items-center justify-center">
+                <div className="bg-slate-950 p-1 rounded-2xl border border-white/10 flex items-center shadow-2xl">
+                  <button
+                    onClick={() => setAnalyticsView("SPRINT")}
+                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "SPRINT" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
+                  >
+                    Tactical Sprint
+                  </button>
+                  <button
+                    onClick={() => setAnalyticsView("STRATEGIC")}
+                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "STRATEGIC" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
+                  >
+                    Strategic Project
+                  </button>
+                </div>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {analyticsView === "SPRINT" ? (
+                  selectedSprint ? (
+                    <SprintAnalysisReport
+                      key="sprint-report"
+                      sprint={selectedSprint}
+                      tasks={tasks}
+                      sprints={sprints}
+                      members={projectMembers}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 bg-secondary/10 rounded-[3rem] border border-dashed border-border/50">
+                      <div className="w-16 h-16 bg-card rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl border border-border/50">
+                        <BarChart3 className="w-8 h-8 text-muted-foreground/30" />
+                      </div>
+                      <h3 className="text-xl font-black text-foreground tracking-tighter uppercase mb-2">
+                        No Sprint Selected
                       </h3>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5 whitespace-nowrap">
-                        Tied to Average Velocity: {projectVelocity || 0} pts/wk
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[260px] text-center leading-relaxed">
+                        Select an active or completed operational node to
+                        generate a performance audit.
                       </p>
                     </div>
-                  </div>
-                  <div className="flex-1 max-w-xs w-full relative z-10">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                        Global Progress
-                      </span>
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
-                        {project?.progress || 0}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full bg-secondary/30 rounded-full overflow-hidden border border-border">
-                      <div
-                        className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
-                        style={{ width: `${project?.progress || 0}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sprint Wise Metrics */}
-                <div className="flex flex-col gap-2">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                    Selected Sprint Scorecard
-                  </h4>
-                  <SprintMetricsGrid
-                    selectedSprintId={selectedSprintId}
-                    sprints={sprints}
-                    tasks={tasks}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <ProjectBurnUpChart project={project!} tasks={tasks} />
-                  <MemberContributionChart
+                  )
+                ) : (
+                  <StrategicProjectReport
+                    key="strategic-report"
+                    project={project!}
                     tasks={tasks}
                     sprints={sprints}
-                    selectedSprintId={selectedSprintId}
                   />
-
-                  <VelocityChart sprints={sprints} tasks={tasks} />
-                  <SprintCapacity
-                    sprints={sprints}
-                    tasks={tasks}
-                    activeSprintId={selectedSprintId}
-                  />
-
-                  <div className="lg:col-span-2">
-                    <SprintBurndownChart
-                      sprint={
-                        activeSprint ||
-                        sprints.find((s) => s.id === selectedSprintId)!
-                      }
-                      tasks={tasks}
-                    />
-                  </div>
-
-                  <div className="lg:col-span-2">
-                    <EpicProgressTracker projectId={projectId} />
-                  </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                )}
+              </AnimatePresence>
+            </div>
           ) : (
             <div className="space-y-6">
               {/* Real-time Analytics Header */}
@@ -614,6 +590,7 @@ export default function ProjectDetailsPage() {
                   onCompleteSprint={handleCompleteSprint}
                   onStartSprint={() => setIsStartSprintOpen(true)}
                   onDeleteSprint={handleDeleteSprint}
+                  tasks={tasks}
                 />
 
                 {selectedSprint && (

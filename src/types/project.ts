@@ -148,6 +148,7 @@ export interface UpdateSprintPayload {
   startDate?: string | Date;
   endDate?: string | Date;
   goal?: string;
+  spilloverDestination?: string;
 }
 
 export interface CreateTaskPayload {

@@ -44,6 +44,10 @@ export default function SprintMetricsGrid({
   const completionRate =
     totalPoints > 0 ? Math.round((completedPoints / totalPoints) * 100) : 0;
 
+  // Say/Do Ratio: Actual Delivery vs Committed Points
+  // Typically measured at the end of the sprint
+  const sayDoRatio = completionRate;
+
   const metrics = [
     {
       label: "Velocity Delivery",
@@ -54,10 +58,10 @@ export default function SprintMetricsGrid({
       bg: "bg-primary/10",
     },
     {
-      label: "Node Success Rate",
-      value: `${completionRate}%`,
-      sub: "Points Efficiency",
-      icon: BarChart3,
+      label: "Say/Do Ratio",
+      value: `${sayDoRatio}%`,
+      sub: "Commitment Reliability",
+      icon: TrendingUp,
       color: "text-violet-500",
       bg: "bg-violet-500/10",
     },

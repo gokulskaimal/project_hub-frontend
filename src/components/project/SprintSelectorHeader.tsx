@@ -1,8 +1,10 @@
 "use client";
 
+import SpilloverWizard from "../modals/SpilloverWizard";
+import { useState, useMemo } from "react";
 import { Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Sprint } from "@/types/project";
+import { Sprint, Task } from "@/types/project";
 
 interface SprintSelectorHeaderProps {
   selectedSprintId: string;
@@ -11,10 +13,11 @@ interface SprintSelectorHeaderProps {
   isManager: boolean;
   selectedSprint: Sprint | null;
   onNewSprint: () => void;
-  onCompleteSprint: () => void;
+  onCompleteSprint: (destination?: string) => void;
   onStartSprint: () => void;
   onEditSprint: () => void;
   onDeleteSprint: (id: string) => void;
+  tasks: Task[] | null;
 }
 
 export default function SprintSelectorHeader({
@@ -28,7 +31,38 @@ export default function SprintSelectorHeader({
   onStartSprint,
   onEditSprint,
   onDeleteSprint,
+  tasks,
 }: SprintSelectorHeaderProps) {
+  const [isSpilloverOpen, setIsSpilloverOpen] = useState(false);
+  const unfinishedTasks = useMemo(() => {
+    if (!selectedSprint || !tasks) return [];
+
+    return tasks.filter(
+      (t) =>
+        t.sprintId == selectedSprint.id &&
+        t.status !== "DONE" &&
+        t.type !== "EPIC",
+    );
+  }, [selectedSprint, tasks]);
+
+  const futureSprints = useMemo(() => {
+    return sprints.filter(
+      (s) => s.status == "PLANNED" && s.id !== selectedSprint?.id,
+    );
+  }, [sprints, selectedSprint]);
+
+  const handleCompleteClick = () => {
+    if (unfinishedTasks.length > 0) {
+      setIsSpilloverOpen(true);
+    } else {
+      onCompleteSprint();
+    }
+  };
+
+  const handleSpilloverConfirm = async (destination: string) => {
+    await onCompleteSprint(destination);
+    setIsSpilloverOpen(false);
+  };
   return (
     <div className="flex items-center justify-between border-b border-border/30 pb-6 mb-2">
       <div className="flex items-center gap-4">
@@ -110,7 +144,7 @@ export default function SprintSelectorHeader({
             {selectedSprint.status === "ACTIVE" ? (
               <Button
                 size="sm"
-                onClick={onCompleteSprint}
+                onClick={handleCompleteClick}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest px-6 py-2.5 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95"
               >
                 Terminate Sprint
@@ -151,6 +185,13 @@ export default function SprintSelectorHeader({
           </div>
         </div>
       )}
+      <SpilloverWizard
+        isOpen={isSpilloverOpen}
+        onClose={() => setIsSpilloverOpen(false)}
+        stalledCount={unfinishedTasks.length}
+        futureSprints={futureSprints}
+        onConfirm={handleSpilloverConfirm}
+      />
     </div>
   );
 }

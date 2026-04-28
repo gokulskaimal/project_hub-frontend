@@ -42,24 +42,28 @@ import PremiumStatGrid from "@/components/admin/PremiumStatGrid";
 import { Toggle } from "@/components/ui/Toggle";
 
 const planSchema = z.object({
-  name: z.string().min(1, MESSAGES.VALIDATION.REQUIRED),
-  description: z.string().optional(),
-  price: z.number().min(0),
+  name: z.string().min(3, "Identify must be at least 3 characters"),
+  description: z
+    .string()
+    .min(10, "Provide a more tactical description (min 10 chars)"),
+  price: z.number().min(0, "Cost cannot be negative"),
   currency: z.string().min(1, MESSAGES.VALIDATION.REQUIRED),
   type: z.enum(["STARTER", "PRO", "ENTERPRISE"]),
-  features: z.array(z.string()).min(1),
+  features: z
+    .array(z.string().min(1, "Feature node cannot be empty"))
+    .min(1, "At least one feature required"),
   isActive: z.boolean(),
   limits: z.object({
-    projects: z.number().min(1),
-    members: z.number().min(1),
-    storage: z.number().min(1),
-    messages: z.number().min(1),
+    projects: z.number().min(1, "Minimum 1 Project Partition required"),
+    members: z.number().min(1, "Minimum 1 Operator Capacity required"),
+    storage: z.number().min(1, "Storage node required"),
+    messages: z.number().min(1, "Communication nodes required"),
   }),
 });
 
 type PlanFormData = {
   name: string;
-  description?: string;
+  description: string;
   price: number;
   currency: string;
   type: "STARTER" | "PRO" | "ENTERPRISE";
@@ -120,11 +124,11 @@ export default function AdminPlansPage() {
       name: "",
       description: "",
       price: 0,
-      currency: "USD",
+      currency: "INR",
       type: "STARTER",
       isActive: true,
       features: [""],
-      limits: { projects: 1, members: 5, storage: 1, messages: 100 },
+      limits: { projects: 5, members: 10, storage: 10, messages: 1000 },
     },
   });
 
@@ -140,7 +144,7 @@ export default function AdminPlansPage() {
         name: plan.name || "",
         description: plan.description || "",
         price: plan.price,
-        currency: plan.currency || "USD",
+        currency: plan.currency || "INR",
         type: plan.type,
         isActive: plan.isActive,
         features: plan.features,
@@ -157,11 +161,11 @@ export default function AdminPlansPage() {
         name: "",
         description: "",
         price: 0,
-        currency: "USD",
+        currency: "INR",
         type: "STARTER",
         isActive: true,
         features: [""],
-        limits: { projects: 1, members: 5, storage: 1, messages: 100 },
+        limits: { projects: 5, members: 10, storage: 10, messages: 1000 },
       });
     }
     setIsModalOpen(true);
@@ -261,19 +265,19 @@ export default function AdminPlansPage() {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="appearance-none px-6 py-3 bg-secondary/30 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground outline-none focus:bg-secondary/50 focus:border-primary/20 cursor-pointer transition-all hover:bg-secondary/40 min-w-[160px]"
+                className="appearance-none px-6 py-3 bg-secondary/30 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground outline-none focus:bg-secondary/50 focus:border-primary/20 cursor-pointer transition-all hover:bg-secondary/40 min-w-[170px]"
               >
                 <option value="ALL" className="bg-card">
-                  Spectrum: ALL
+                  Tier Hierarchy: ALL
                 </option>
                 <option value="STARTER" className="bg-card">
-                  Starter
+                  Tactical Starter
                 </option>
                 <option value="PRO" className="bg-card">
-                  Pro
+                  Strategic Pro
                 </option>
                 <option value="ENTERPRISE" className="bg-card">
-                  Enterprise
+                  Industrial Enterprise
                 </option>
               </select>
             </div>
@@ -284,13 +288,13 @@ export default function AdminPlansPage() {
                 className="appearance-none px-6 py-3 bg-secondary/30 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground outline-none focus:bg-secondary/50 focus:border-primary/20 cursor-pointer transition-all hover:bg-secondary/40 min-w-[180px]"
               >
                 <option value="price_asc" className="bg-card">
-                  Cost: Ascending
+                  Cost: Low → High
                 </option>
                 <option value="price_desc" className="bg-card">
-                  Cost: Descending
+                  Cost: High → Low
                 </option>
                 <option value="name_asc" className="bg-card">
-                  Identity: A-Z
+                  Identity: Primary
                 </option>
               </select>
             </div>
@@ -447,7 +451,7 @@ export default function AdminPlansPage() {
                             <Plus size={22} className="text-primary" />
                           )}
                         </div>
-                        {editingPlan ? "Plan Modification" : "Manifest Plan"}
+                        {editingPlan ? "Tier Modification" : "Manifest Plan"}
                       </Dialog.Title>
                       <button
                         onClick={handleCloseModal}
@@ -486,6 +490,11 @@ export default function AdminPlansPage() {
                             className="w-full px-6 py-4 bg-secondary/30 border border-border/30 rounded-2xl text-sm font-bold text-foreground focus:bg-secondary/50 focus:border-primary/20 transition-all outline-none shadow-inner resize-none"
                             placeholder="Describe the operational scope of this tier..."
                           />
+                          {errors.description && (
+                            <p className="text-[10px] font-black text-destructive mt-2.5 ml-1 uppercase tracking-widest">
+                              {errors.description.message}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2.5 block ml-1 opacity-70">
@@ -501,6 +510,11 @@ export default function AdminPlansPage() {
                               className="w-full pl-10 pr-6 py-4 bg-secondary/30 border border-border/30 rounded-2xl text-sm font-bold text-foreground focus:bg-secondary/50 focus:border-primary/20 transition-all outline-none shadow-inner tabular-nums"
                             />
                           </div>
+                          {errors.price && (
+                            <p className="text-[10px] font-black text-destructive mt-2.5 ml-1 uppercase tracking-widest">
+                              {errors.price.message}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2.5 block ml-1 opacity-70">
@@ -537,10 +551,11 @@ export default function AdminPlansPage() {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <h4 className="text-xs font-black text-foreground uppercase tracking-widest">
-                                    Active Authorization
+                                    Strategic Availability
                                   </h4>
                                   <p className="text-[10px] font-medium text-muted-foreground mt-1 uppercase tracking-tighter opacity-70">
-                                    Toggle visibility in the node network.
+                                    Deploy or suspend this tier in the
+                                    subscription matrix.
                                   </p>
                                 </div>
                                 <Toggle
@@ -553,29 +568,53 @@ export default function AdminPlansPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-8">
-                        <div>
-                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2.5 block ml-1 opacity-70">
-                            Quantum Projects
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-secondary/10 p-6 rounded-3xl border border-border/30">
+                        <div className="col-span-1">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 block ml-1 opacity-70">
+                            Projects
                           </label>
                           <input
                             type="number"
                             {...register("limits.projects", {
                               valueAsNumber: true,
                             })}
-                            className="w-full px-6 py-4 bg-secondary/30 border border-border/30 rounded-2xl text-sm font-bold text-foreground outline-none shadow-inner tabular-nums"
+                            className="w-full px-5 py-3 bg-card border border-border/30 rounded-xl text-xs font-bold text-foreground outline-none shadow-inner tabular-nums"
                           />
                         </div>
-                        <div>
-                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2.5 block ml-1 opacity-70">
-                            Max Node Operators
+                        <div className="col-span-1">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 block ml-1 opacity-70">
+                            Operators
                           </label>
                           <input
                             type="number"
                             {...register("limits.members", {
                               valueAsNumber: true,
                             })}
-                            className="w-full px-6 py-4 bg-secondary/30 border border-border/30 rounded-2xl text-sm font-bold text-foreground outline-none shadow-inner tabular-nums"
+                            className="w-full px-5 py-3 bg-card border border-border/30 rounded-xl text-xs font-bold text-foreground outline-none shadow-inner tabular-nums"
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 block ml-1 opacity-70">
+                            Storage (GB)
+                          </label>
+                          <input
+                            type="number"
+                            {...register("limits.storage", {
+                              valueAsNumber: true,
+                            })}
+                            className="w-full px-5 py-3 bg-card border border-border/30 rounded-xl text-xs font-bold text-foreground outline-none shadow-inner tabular-nums"
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 block ml-1 opacity-70">
+                            Comm Nodes
+                          </label>
+                          <input
+                            type="number"
+                            {...register("limits.messages", {
+                              valueAsNumber: true,
+                            })}
+                            className="w-full px-5 py-3 bg-card border border-border/30 rounded-xl text-xs font-bold text-foreground outline-none shadow-inner tabular-nums"
                           />
                         </div>
                       </div>

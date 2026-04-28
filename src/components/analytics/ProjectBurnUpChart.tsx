@@ -152,7 +152,7 @@ export default function ProjectBurnUpChart({
             />
             <Tooltip
               content={({ active, payload, label }) => {
-                if (active && payload && payload.length) {
+                if (active && payload && payload.length >= 2) {
                   return (
                     <div className="bg-slate-950 border border-white/10 p-4 rounded-[1.5rem] shadow-2xl backdrop-blur-xl ring-1 ring-white/10">
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3 pb-2 border-b border-white/5">
@@ -167,7 +167,7 @@ export default function ProjectBurnUpChart({
                             </span>
                           </div>
                           <span className="text-xs font-black text-white">
-                            {payload[0].value}{" "}
+                            {payload[0]?.value ?? 0}{" "}
                             <span className="text-[10px] opacity-40">PTS</span>
                           </span>
                         </div>
@@ -179,7 +179,7 @@ export default function ProjectBurnUpChart({
                             </span>
                           </div>
                           <span className="text-xs font-black text-white">
-                            {payload[1].value}{" "}
+                            {payload[1]?.value ?? 0}{" "}
                             <span className="text-[10px] opacity-40">PTS</span>
                           </span>
                         </div>

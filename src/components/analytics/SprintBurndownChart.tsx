@@ -167,7 +167,7 @@ export default function SprintBurndownChart({
                             </span>
                           </div>
                           <span className="text-xs font-black text-white tabular-nums">
-                            {payload[0].value}{" "}
+                            {payload[0]?.value ?? 0}{" "}
                             <span className="text-[10px] opacity-40">PTS</span>
                           </span>
                         </div>
@@ -180,7 +180,7 @@ export default function SprintBurndownChart({
                               </span>
                             </div>
                             <span className="text-xs font-black tabular-nums">
-                              {payload[1].value}{" "}
+                              {payload[1]?.value ?? 0}{" "}
                               <span className="text-[10px] opacity-40">
                                 PTS
                               </span>
