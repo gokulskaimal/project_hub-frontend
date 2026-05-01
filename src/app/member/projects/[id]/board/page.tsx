@@ -15,6 +15,7 @@ import { useSocket } from "@/context/SocketContext";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { LayoutGrid } from "lucide-react";
+import MeetingSection from "@/components/Meeting/MeetingSection";
 
 export default function MemberProjectBoardPage() {
   const params = useParams();
@@ -120,6 +121,11 @@ export default function MemberProjectBoardPage() {
               </h2>
               <p className="text-sm text-gray-500">Active Sprint</p>
             </div>
+            <MeetingSection
+              sprintId={activeSprint.id}
+              projectId={projectId}
+              isManager={false}
+            />
             <KanbanBoard
               tasks={boardTasks}
               users={projectMembers}

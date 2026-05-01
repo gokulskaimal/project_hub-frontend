@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   X,
+  Video,
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SocketNotification from "@/components/notifications/SocketNotification";
@@ -87,6 +88,7 @@ export default function MemberLayout({
     { name: "Dashboard", href: "/member/dashboard", icon: LayoutDashboard },
     { name: "Projects", href: "/member/projects", icon: Briefcase },
     { name: "Tasks", href: "/member/tasks", icon: CheckSquare },
+    { name: "Meetings", href: "/member/meetings", icon: Video },
     { name: "Calendar", href: "/member/calendar", icon: CalendarDays },
   ];
 

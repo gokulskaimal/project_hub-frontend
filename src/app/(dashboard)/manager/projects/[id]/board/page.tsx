@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import { StatCard } from "@/components/ui/StatCard";
+import MeetingSection from "@/components/Meeting/MeetingSection";
 
 export default function ProjectBoardPage() {
   const params = useParams();
@@ -229,6 +230,11 @@ export default function ProjectBoardPage() {
                 />
               </div>
             </div>
+            <MeetingSection
+              sprintId={activeSprint.id}
+              projectId={projectId}
+              isManager={true}
+            />
             <KanbanBoard
               tasks={boardTasks}
               users={projectMembers}

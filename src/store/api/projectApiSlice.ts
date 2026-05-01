@@ -320,6 +320,68 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         { type: "ProjectMembers", id: projectId },
       ],
     }),
+    getSprintMeetings: builder.query({
+      query: (sprintId) => ({
+        url: API_ROUTES.MEETINGS.SPRINT_MEETINGS(sprintId),
+        method: "GET",
+        skipGlobalLoader: true,
+      }),
+      transformResponse: (response: { data: any[] }) => response.data || [],
+      providesTags: ["Meetings"],
+    }),
+    createMeeting: builder.mutation({
+      query: (data) => ({
+        url: API_ROUTES.MEETINGS.CREATE_MEETING,
+        method: "POST",
+        data,
+      }),
+      transformResponse: (response: { data: any }) => response.data,
+      invalidatesTags: ["Meetings"],
+    }),
+    getMyMeetings: builder.query<
+      {
+        items: any[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      },
+      { page?: number; limit?: number; status: "SCHEDULED" | "HISTORY" }
+    >({
+      query: (params) => ({
+        url: API_ROUTES.MEETINGS.MY_MEETINGS,
+        method: "GET",
+        params,
+        skipGlobalLoader: true,
+      }),
+      transformResponse: (response: { data: any }) => response.data,
+      providesTags: ["Meetings"],
+    }),
+    completeMeeting: builder.mutation({
+      query: (roomId) => ({
+        url: API_ROUTES.MEETINGS.MEETINGS_COMPLETE(roomId),
+        method: "PATCH",
+      }),
+      transformResponse: (response: { data: any }) => response.data,
+      invalidatesTags: ["Meetings"],
+    }),
+    updateMeeting: builder.mutation({
+      query: ({ roomId, ...data }) => ({
+        url: API_ROUTES.MEETINGS.MEETINGS_UPDATE(roomId),
+        method: "PUT",
+        data,
+      }),
+      transformResponse: (response: { data: any }) => response.data,
+      invalidatesTags: ["Meetings"],
+    }),
+    deleteMeeting: builder.mutation({
+      query: (roomId) => ({
+        url: API_ROUTES.MEETINGS.MEETINGS_DELETE(roomId),
+        method: "DELETE",
+      }),
+      transformResponse: (response: { data: any }) => response.data,
+      invalidatesTags: ["Meetings"],
+    }),
   }),
 });
 
@@ -345,4 +407,10 @@ export const {
   useAddAttachmentMutation,
   useGetOrganizationUsersQuery,
   useGetProjectMembersQuery,
+  useGetSprintMeetingsQuery,
+  useCreateMeetingMutation,
+  useGetMyMeetingsQuery,
+  useCompleteMeetingMutation,
+  useUpdateMeetingMutation,
+  useDeleteMeetingMutation,
 } = projectApiSlice;

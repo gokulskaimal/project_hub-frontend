@@ -24,6 +24,7 @@ import {
   CalendarDays,
   ReceiptText,
   Briefcase,
+  Video,
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SocketNotification from "@/components/notifications/SocketNotification";
@@ -104,6 +105,7 @@ function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
     { name: "Plans", href: "/manager/plans", icon: CreditCard },
     { name: "Projects", href: "/manager/projects", icon: Briefcase },
     { name: "Boards", href: "/manager/boards", icon: KanbanSquare },
+    { name: "Meetings", href: "/manager/meetings", icon: Video },
     { name: "Calendar", href: "/manager/calendar", icon: CalendarDays },
     { name: "Billing", href: "/manager/billing", icon: ReceiptText },
   ];

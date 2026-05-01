@@ -96,6 +96,16 @@ export const API_ROUTES = {
     SUBSCRIPTION: "/payments/subscription",
     VERIFY: "/payments/verify",
   },
+  MEETINGS: {
+    SPRINT_MEETINGS: (sprintId: string) =>
+      `/projects/meetings/sprint/${sprintId}`,
+    CREATE_MEETING: "/projects/meetings",
+    MY_MEETINGS: "/projects/meetings/my-meetings",
+    MEETINGS_COMPLETE: (roomId: string) =>
+      `/projects/meetings/${roomId}/complete`,
+    MEETINGS_UPDATE: (roomId: string) => `/projects/meetings/${roomId}`,
+    MEETINGS_DELETE: (roomId: string) => `/projects/meetings/${roomId}`,
+  },
 } as const;
 
 export const api = axios.create({

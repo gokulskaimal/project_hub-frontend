@@ -143,6 +143,7 @@ export const apiSlice = createApi({
     "ProjectMembers",
     "Members",
     "Invitations",
+    "Meetings",
   ],
   keepUnusedDataFor: 300,
   endpoints: () => ({}),

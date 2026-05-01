@@ -73,6 +73,7 @@ import SprintSelectorHeader from "@/components/project/SprintSelectorHeader";
 import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
 import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
 import StrategicProjectReport from "@/components/analytics/StrategicProjectReport";
+import MeetingSection from "@/components/Meeting/MeetingSection";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -599,6 +600,11 @@ export default function ProjectDetailsPage() {
                       sprints={sprints}
                       tasks={tasks}
                       activeSprintId={selectedSprint.id}
+                    />
+                    <MeetingSection
+                      sprintId={selectedSprint.id}
+                      projectId={projectId}
+                      isManager={isManager}
                     />
                     <KanbanBoard
                       tasks={boardTasks}

@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { Sprint, Task, Project } from "@/types/project";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
+import { useGetMyMeetingsQuery } from "@/store/api/projectApiSlice";
+import { useRouter } from "next/navigation";
 import { User } from "@/types/auth";
 import { getPriorityColor, getStatusColor } from "@/utils/projectUtils";
 
@@ -41,6 +43,12 @@ export default function TaskCalendar({
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { data: meetingsData } = useGetMyMeetingsQuery({
+    page: 1,
+    limit: 100,
+    status: "SCHEDULED",
+  });
+  const router = useRouter();
 
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
@@ -73,27 +81,40 @@ export default function TaskCalendar({
     handleModalClose();
   };
 
-  // Memoize Tasks and Projects by Date for Performance
-  const { groupedTasks, groupedProjects } = React.useMemo(() => {
-    const tasksMap: Record<string, Task[]> = {};
-    const projectsMap: Record<string, Project[]> = {};
+  // Memoize Tasks, Projects, and Meetings by Date for Performance
+  const { groupedTasks, groupedProjects, groupedMeetings } =
+    React.useMemo(() => {
+      const tasksMap: Record<string, Task[]> = {};
+      const projectsMap: Record<string, Project[]> = {};
+      const meetingsMap: Record<string, any[]> = {};
 
-    tasks.forEach((task) => {
-      if (!task.dueDate) return;
-      const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
-      if (!tasksMap[dateKey]) tasksMap[dateKey] = [];
-      tasksMap[dateKey].push(task);
-    });
+      tasks.forEach((task) => {
+        if (!task.dueDate) return;
+        const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
+        if (!tasksMap[dateKey]) tasksMap[dateKey] = [];
+        tasksMap[dateKey].push(task);
+      });
 
-    projects.forEach((project) => {
-      if (!project.endDate) return;
-      const dateKey = format(new Date(project.endDate), "yyyy-MM-dd");
-      if (!projectsMap[dateKey]) projectsMap[dateKey] = [];
-      projectsMap[dateKey].push(project);
-    });
+      projects.forEach((project) => {
+        if (!project.endDate) return;
+        const dateKey = format(new Date(project.endDate), "yyyy-MM-dd");
+        if (!projectsMap[dateKey]) projectsMap[dateKey] = [];
+        projectsMap[dateKey].push(project);
+      });
 
-    return { groupedTasks: tasksMap, groupedProjects: projectsMap };
-  }, [tasks, projects]);
+      (meetingsData?.items || []).forEach((meeting: any) => {
+        if (!meeting.scheduledAt) return;
+        const dateKey = format(new Date(meeting.scheduledAt), "yyyy-MM-dd");
+        if (!meetingsMap[dateKey]) meetingsMap[dateKey] = [];
+        meetingsMap[dateKey].push(meeting);
+      });
+
+      return {
+        groupedTasks: tasksMap,
+        groupedProjects: projectsMap,
+        groupedMeetings: meetingsMap,
+      };
+    }, [tasks, projects, meetingsData]);
 
   const handleCellClick = () => {
     // If global calendar (no projectId), we can't create a task from here easily
@@ -152,6 +173,7 @@ export default function TaskCalendar({
             const dateKey = format(day, "yyyy-MM-dd");
             const tasksOnDay = groupedTasks[dateKey] || [];
             const projectsOnDay = groupedProjects[dateKey] || [];
+            const meetingsOnDay = groupedMeetings[dateKey] || [];
 
             return (
               <div
@@ -191,6 +213,26 @@ export default function TaskCalendar({
                       <span className="truncate w-full flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
                         {project.name}
+                      </span>
+                    </div>
+                  ))}
+
+                  {/* Render Meetings */}
+                  {meetingsOnDay.map((meeting) => (
+                    <div
+                      key={`meet-${meeting.id}`}
+                      title={`Meeting: ${meeting.title}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(
+                          `/meeting/${meeting.roomId}?projectId=${meeting.projectId}`,
+                        );
+                      }}
+                      className="text-[9px] font-black p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 truncate cursor-pointer select-none transition-all hover:bg-emerald-500/20 hover:scale-[1.02] active:scale-95 shadow-sm flex items-center justify-between uppercase tracking-tighter leading-tight"
+                    >
+                      <span className="truncate w-full flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        {meeting.title}
                       </span>
                     </div>
                   ))}

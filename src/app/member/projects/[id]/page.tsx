@@ -7,7 +7,7 @@ import { notifier } from "@/utils/notifier";
 import { Task, Sprint } from "@/types/project";
 import { LayoutGrid } from "lucide-react";
 import { useSocket } from "@/context/SocketContext";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import ProjectChat from "@/components/chat/ProjectChat";
@@ -16,6 +16,7 @@ import KanbanBoard from "@/components/dashboard/KanbanBoard";
 import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
 import SprintBurndownChart from "@/components/analytics/SprintBurndownChart";
+import MeetingSection from "@/components/Meeting/MeetingSection";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import ProjectFilters from "@/components/project/ProjectFilters";
 import {
@@ -25,6 +26,7 @@ import {
   useGetProjectSprintsQuery,
   useGetProjectVelocityQuery,
   useUpdateTaskMutation,
+  projectApiSlice,
 } from "@/store/api/projectApiSlice";
 
 import MemberContributionChart from "@/components/analytics/MemberContributionChart";
@@ -56,6 +58,7 @@ import SprintMetricsGrid from "@/components/analytics/SprintMetricsGrid";
 export default function MemberProjectDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const dispatch = useDispatch();
   const projectId = params.id as string;
 
   const [activeTab, setActiveTab] = useState<
@@ -171,16 +174,30 @@ export default function MemberProjectDetailsPage() {
       refetchTasks();
     };
 
+    const handleMeetingChange = () => {
+      dispatch(projectApiSlice.util.invalidateTags(["Meetings"]));
+    };
+
     socket.on("sprint:created", handleSprintUpdate);
     socket.on("sprint:active", handleSprintUpdate);
     socket.on("sprint:completed", handleSprintUpdate);
     socket.on("sprint:deleted", handleSprintUpdate);
+
+    socket.on("meeting:created", handleMeetingChange);
+    socket.on("meeting:updated", handleMeetingChange);
+    socket.on("meeting:deleted", handleMeetingChange);
+    socket.on("meeting:completed", handleMeetingChange);
 
     return () => {
       socket.off("sprint:created", handleSprintUpdate);
       socket.off("sprint:active", handleSprintUpdate);
       socket.off("sprint:completed", handleSprintUpdate);
       socket.off("sprint:deleted", handleSprintUpdate);
+
+      socket.off("meeting:created", handleMeetingChange);
+      socket.off("meeting:updated", handleMeetingChange);
+      socket.off("meeting:deleted", handleMeetingChange);
+      socket.off("meeting:completed", handleMeetingChange);
     };
   }, [socket, refetchSprints, refetchTasks]);
 
@@ -449,6 +466,11 @@ export default function MemberProjectDetailsPage() {
                       sprints={sprints}
                       tasks={tasks} // normalized tasks
                       activeSprintId={selectedSprint.id}
+                    />
+                    <MeetingSection
+                      sprintId={selectedSprint.id}
+                      projectId={projectId}
+                      isManager={false}
                     />
                     <KanbanBoard
                       tasks={boardTasks}

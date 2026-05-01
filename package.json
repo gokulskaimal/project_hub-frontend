@@ -17,6 +17,7 @@
     "@react-oauth/google": "^0.12.2",
     "@reduxjs/toolkit": "^2.9.0",
     "@types/react-window": "^1.8.8",
+    "@zegocloud/zego-uikit-prebuilt": "^2.17.3",
     "axios": "^1.12.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
