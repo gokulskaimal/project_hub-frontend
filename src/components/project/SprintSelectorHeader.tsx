@@ -147,7 +147,7 @@ export default function SprintSelectorHeader({
                 onClick={handleCompleteClick}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest px-6 py-2.5 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95"
               >
-                Terminate Sprint
+                Complete Sprint
               </Button>
             ) : selectedSprint.status === "PLANNED" ||
               selectedSprint.status === "PLANNING" ? (

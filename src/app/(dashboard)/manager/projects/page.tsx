@@ -355,13 +355,13 @@ export default function ProjectsPage() {
                   </div>
                 }
                 footerRight={
-                  <div className="flex flex-col items-end gap-1.5 -mt-1">
-                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em] leading-none">
-                      {project.progress || 0}% PROGRESS
+                  <div className="flex flex-col items-end gap-2 -mt-1 min-w-[100px]">
+                    <span className="text-[10px] font-black text-foreground uppercase tracking-wider leading-none">
+                      {project.progress || 0}% Done
                     </span>
-                    <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden border border-border/10 shadow-inner">
                       <div
-                        className="h-full bg-primary rounded-full transition-all duration-700 ease-out shadow-[0_0_8px_rgba(var(--primary),0.5)]"
+                        className="h-full bg-primary rounded-full transition-all duration-1000 ease-in-out shadow-[0_0_10px_rgba(99,102,241,0.4)]"
                         style={{ width: `${project.progress || 0}%` }}
                       />
                     </div>

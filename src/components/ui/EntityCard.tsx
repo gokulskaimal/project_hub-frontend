@@ -143,7 +143,7 @@ export const EntityCard: React.FC<EntityCardProps> = ({
           <div className="flex -space-x-2 overflow-hidden items-center text-xs font-black text-muted-foreground">
             {footerLeft}
           </div>
-          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate max-w-[60%]">
+          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
             {footerRight}
           </div>
         </div>
