@@ -20,7 +20,7 @@ const MeetingRoom: React.FC<MeetingRoomProps> = ({
   const router = useRouter();
   const { role } = useSelector((state: RootState) => state.auth);
   const containerRef = useRef<HTMLDivElement>(null);
-  const zpRef = useRef<any>(null);
+  const zpRef = useRef<ZegoUIKitPrebuilt | null>(null);
   const isJoiningRef = useRef(false);
 
   useEffect(() => {

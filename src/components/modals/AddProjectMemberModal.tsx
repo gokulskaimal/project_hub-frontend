@@ -2,22 +2,12 @@
 
 import { useState, Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import {
-  X,
-  Search,
-  Check,
-  Users,
-  Loader2,
-  ShieldCheck,
-  UserCheck,
-  ChevronRight,
-} from "lucide-react";
+import { X, Search, Check, Users, Loader2 } from "lucide-react";
 import {
   useGetManagerMembersQuery,
   useUpdateManagerProjectMutation,
 } from "@/store/api/managerApiSlice";
 import { notifier } from "@/utils/notifier";
-import { MESSAGES } from "@/constants/messages";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { Project } from "@/types/project";
 
@@ -185,7 +175,7 @@ export default function AddProjectMemberModal({
                             }`}
                           >
                             <div className="flex items-center gap-3">
-                              <UserAvatar user={member as any} size="sm" />
+                              <UserAvatar user={member} size="sm" />
                               <div className="min-w-0">
                                 <p className="text-sm font-black text-foreground uppercase tracking-tight">
                                   {member.firstName} {member.lastName}

@@ -4,7 +4,8 @@ interface InputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "size"
 > {
-  label?: string;
+  label?: React.ReactNode;
+  labelClassName?: string;
   error?: string;
   helperText?: string;
   leftIcon?: React.ReactNode;
@@ -17,6 +18,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
       label,
+      labelClassName = "",
       error,
       helperText,
       leftIcon,
@@ -38,7 +40,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={`w-full ${containerClassName}`}>
         {label && (
-          <label className="block text-[10px] font-black text-muted-foreground mb-2 px-1 uppercase tracking-widest opacity-80">
+          <label
+            className={`block text-[10px] font-black text-muted-foreground mb-2 px-1 uppercase tracking-widest opacity-80 ${labelClassName}`}
+          >
             {label}
           </label>
         )}

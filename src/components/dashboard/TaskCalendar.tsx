@@ -16,12 +16,12 @@ import {
   ChevronRight,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { Sprint, Task, Project } from "@/types/project";
+import { Task, Project } from "@/types/project";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import { useGetMyMeetingsQuery } from "@/store/api/projectApiSlice";
 import { useRouter } from "next/navigation";
 import { User } from "@/types/auth";
-import { getPriorityColor, getStatusColor } from "@/utils/projectUtils";
+import { Meeting } from "@/types/meeting";
 
 interface TaskCalendarProps {
   tasks: Task[];
@@ -86,7 +86,7 @@ export default function TaskCalendar({
     React.useMemo(() => {
       const tasksMap: Record<string, Task[]> = {};
       const projectsMap: Record<string, Project[]> = {};
-      const meetingsMap: Record<string, any[]> = {};
+      const meetingsMap: Record<string, Meeting[]> = {};
 
       tasks.forEach((task) => {
         if (!task.dueDate) return;
@@ -102,7 +102,7 @@ export default function TaskCalendar({
         projectsMap[dateKey].push(project);
       });
 
-      (meetingsData?.items || []).forEach((meeting: any) => {
+      (meetingsData?.items || []).forEach((meeting: Meeting) => {
         if (!meeting.scheduledAt) return;
         const dateKey = format(new Date(meeting.scheduledAt), "yyyy-MM-dd");
         if (!meetingsMap[dateKey]) meetingsMap[dateKey] = [];
@@ -169,7 +169,7 @@ export default function TaskCalendar({
         </div>
 
         <div className="grid grid-cols-7 auto-rows-[minmax(120px,auto)] bg-card/50">
-          {calendarDays.map((day, dayIdx) => {
+          {calendarDays.map((day) => {
             const dateKey = format(day, "yyyy-MM-dd");
             const tasksOnDay = groupedTasks[dateKey] || [];
             const projectsOnDay = groupedProjects[dateKey] || [];

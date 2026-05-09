@@ -11,7 +11,6 @@ import {
   TrendingUp,
   Clock,
 } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface ProjectForecastCardProps {
   project: Project;

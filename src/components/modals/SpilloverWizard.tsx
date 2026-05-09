@@ -2,14 +2,7 @@
 
 import React, { useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import {
-  AlertTriangle,
-  ArrowRight,
-  Layers,
-  Package,
-  X,
-  History,
-} from "lucide-react";
+import { AlertTriangle, ArrowRight, Package, X, History } from "lucide-react";
 import { Sprint } from "@/types/project";
 
 interface SpilloverWizardProps {

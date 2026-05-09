@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useParams } from "next/navigation";
 import {
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
@@ -19,14 +19,10 @@ import MeetingSection from "@/components/Meeting/MeetingSection";
 
 export default function MemberProjectBoardPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params.id as string;
 
-  const {
-    data: project,
-    isLoading: projectLoading,
-    isFetching: projectFetching,
-  } = useGetProjectByIdQuery(projectId);
+  const { isLoading: projectLoading, isFetching: projectFetching } =
+    useGetProjectByIdQuery(projectId);
 
   const {
     data: tasksData,

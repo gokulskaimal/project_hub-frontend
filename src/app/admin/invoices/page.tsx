@@ -20,7 +20,7 @@ export default function AdminInvoicesPage() {
 
   const { data, isLoading } = useGetAdminInvoicesQuery({
     page,
-    limit: 10,
+    limit: 12,
     search: debouncedSearch,
     status,
     sort,

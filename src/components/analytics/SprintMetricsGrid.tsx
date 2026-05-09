@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Task, Sprint } from "@/types/project";
-import { CheckCircle2, Target, BarChart3, TrendingUp, Zap } from "lucide-react";
+import { CheckCircle2, Target, TrendingUp, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface SprintMetricsGridProps {

@@ -6,36 +6,12 @@ import { Plan } from "../../types/plan";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 
-interface RazorpayResponse {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature: string;
-  razorpay_subscription_id?: string;
-}
-
-interface RazorpayOptions {
-  key: string | undefined;
-  subscription_id: string;
-  name: string;
-  description: string;
-  handler: (response: RazorpayResponse) => Promise<void>;
-  theme: {
-    color: string;
-  };
-}
-
 interface SubscriptionResponse {
   success: boolean;
   data: {
     id: string;
     key_id: string;
   };
-}
-
-declare global {
-  interface Window {
-    Razorpay: new (options: unknown) => { open: () => void };
-  }
 }
 
 interface ApiResponse<T> {

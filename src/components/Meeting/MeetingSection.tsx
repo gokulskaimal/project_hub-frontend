@@ -3,6 +3,7 @@ import { Video, Plus } from "lucide-react";
 import { useGetSprintMeetingsQuery } from "@/store/api/projectApiSlice";
 import MeetingCard from "./MeetingCard";
 import ScheduleMeetingModal from "./ScheduleMeetingModal";
+import { Meeting } from "@/types/meeting";
 
 interface MeetingSectionProps {
   sprintId: string;
@@ -18,7 +19,9 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: meetings = [], isLoading } =
     useGetSprintMeetingsQuery(sprintId);
-  const activeMeetings = meetings.filter((m: any) => m.status !== "COMPLETED");
+  const activeMeetings = meetings.filter(
+    (m: Meeting) => m.status !== "COMPLETED",
+  );
 
   return (
     <div className="mt-12 mb-8 animate-in slide-in-from-bottom-4 duration-700">
@@ -53,7 +56,7 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({
         </div>
       ) : activeMeetings.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeMeetings.map((meeting: any) => (
+          {activeMeetings.map((meeting: Meeting) => (
             <MeetingCard
               key={meeting.id}
               meeting={meeting}

@@ -16,8 +16,6 @@ import {
   Shield,
   ShieldOff,
   Building,
-  CheckCircle2,
-  XCircle,
   ChevronRight,
   Users,
 } from "lucide-react";
@@ -26,11 +24,11 @@ import { notifier } from "@/utils/notifier";
 import { confirmWithAlert } from "@/utils/confirm";
 import PremiumStatGrid from "@/components/admin/PremiumStatGrid";
 import { EntityCard } from "@/components/ui/EntityCard";
-import { MoreHorizontal, Edit2 } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function AdminOrganizationsPage() {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(12);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const { data, isLoading, refetch } = useGetAdminOrgsQuery({
@@ -39,19 +37,18 @@ export default function AdminOrganizationsPage() {
     search,
     status: statusFilter,
   });
-  const { data: reportsData, isLoading: reportsLoading } =
-    useGetAdminReportsQuery();
+  const { data: reportsData } = useGetAdminReportsQuery();
   const [updateStatus] = useUpdateAdminOrgStatusMutation();
   const [deleteOrg] = useDeleteAdminOrgMutation();
 
   const orgs = useMemo(() => {
     return data?.items ?? [];
   }, [data]);
-  const [sortBy, setSortBy] = useState("name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy] = useState("name");
+  const [sortOrder] = useState<"asc" | "desc">("asc");
 
   const filteredOrgs = useMemo(() => {
-    let result = [...orgs];
+    const result = [...orgs];
     // Backend now handles search and statusFilter
 
     result.sort((a, b) => {
@@ -63,11 +60,6 @@ export default function AdminOrganizationsPage() {
     });
     return result;
   }, [orgs, sortBy, sortOrder]);
-
-  const toggleSort = (field: string) => {
-    setSortOrder(sortBy === field && sortOrder === "asc" ? "desc" : "asc");
-    setSortBy(field);
-  };
 
   const confirmToggleStatus = async (orgId: string, currentStatus: string) => {
     const isSuspending = currentStatus === "ACTIVE";
@@ -270,30 +262,12 @@ export default function AdminOrganizationsPage() {
           )}
         </div>
 
-        {data && data.totalPages > 1 && (
-          <div className="p-8 bg-card border border-border/50 rounded-[2.5rem] shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6 glass-card">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">
-              Quadrant Registry Page {page}{" "}
-              <span className="mx-2 text-border">/</span> {data.totalPages}
-            </span>
-            <div className="flex gap-4 w-full sm:w-auto">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="flex-1 sm:flex-none px-8 py-3 bg-secondary/30 border border-border/50 rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-secondary disabled:opacity-30 transition-all active:scale-95"
-              >
-                Previous Trace
-              </button>
-              <button
-                disabled={page >= data.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="flex-1 sm:flex-none px-8 py-3 bg-primary text-primary-foreground rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-30 transition-all shadow-2xl shadow-primary/20 active:scale-95"
-              >
-                Next Trace
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          currentPage={page}
+          totalPages={data?.totalPages || 1}
+          totalItems={data?.total || 0}
+          onPageChange={setPage}
+        />
       </div>
     </DashboardLayout>
   );

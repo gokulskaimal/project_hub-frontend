@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
 import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
 import { useGetProfileQuery } from "@/store/api/userApiSlice";
-import Link from "next/link";
 import UserModal from "@/components/modals/UserModal";
 import { useMemberProfile } from "@/hooks/useMemberProfile";
 import {
@@ -14,9 +13,7 @@ import {
   Briefcase,
   CheckSquare,
   CalendarDays,
-  LogOut,
   Menu,
-  X,
   Video,
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -54,7 +51,7 @@ export default function MemberLayout({
     setIsReady(true);
   }, [dispatch]);
 
-  const { isLoading: profileLoading } = useGetProfileQuery(undefined, {
+  useGetProfileQuery(undefined, {
     skip: !isLoggedIn || !!user,
   });
 

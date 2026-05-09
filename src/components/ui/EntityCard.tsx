@@ -62,7 +62,7 @@ export const EntityCard: React.FC<EntityCardProps> = ({
       typeof icon === "function" ||
       (typeof icon === "object" && !React.isValidElement(icon))
     ) {
-      const Icon = icon as any;
+      const Icon = icon as LucideIcon;
       return <Icon size={22} />;
     }
 

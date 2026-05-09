@@ -4,13 +4,9 @@ import { useState } from "react";
 import { useGetMyProjectsQuery } from "@/store/api/projectApiSlice";
 import { Project } from "@/types/project";
 import { KanbanSquare, ArrowRight, Users, LayoutDashboard } from "lucide-react";
-import Link from "next/link";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { EntityCard } from "@/components/ui/EntityCard";
-import {
-  getStatusColor as getStatusBg,
-  getPriorityColor as getPriorityBg,
-} from "@/utils/projectUtils";
+import { getStatusColor as getStatusBg } from "@/utils/projectUtils";
 
 export default function MemberBoardsPage() {
   const {
@@ -21,38 +17,6 @@ export default function MemberBoardsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const loading = isLoading || isFetching;
-
-  const getStatusColor = (status: string) => {
-    switch ((status || "").toUpperCase()) {
-      case "ACTIVE":
-        return "bg-green-50 text-green-700 border-green-200";
-      case "COMPLETED":
-        return "bg-blue-50 text-blue-700 border-blue-200";
-      case "ARCHIVED":
-        return "bg-gray-50 text-gray-600 border-gray-200";
-      case "ON_HOLD":
-        return "bg-orange-50 text-orange-700 border-orange-200";
-      case "PLANNING":
-        return "bg-purple-50 text-purple-700 border-purple-200";
-      default:
-        return "bg-gray-50 text-gray-600 border-gray-200";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch ((priority || "").toUpperCase()) {
-      case "CRITICAL":
-        return "bg-red-50 text-red-700 border-red-200";
-      case "HIGH":
-        return "bg-orange-50 text-orange-700 border-orange-200";
-      case "MEDIUM":
-        return "bg-blue-50 text-blue-700 border-blue-200";
-      case "LOW":
-        return "bg-gray-50 text-gray-700 border-gray-200";
-      default:
-        return "bg-gray-50 text-gray-600 border-gray-200";
-    }
-  };
 
   const projectList = Array.isArray(projects)
     ? projects

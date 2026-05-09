@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
@@ -11,27 +11,17 @@ import {
 } from "@/store/api/projectApiSlice";
 import { useUpdateManagerProjectMutation } from "@/store/api/managerApiSlice";
 import { Sprint, Task } from "@/types/project";
-import { User } from "@/types/auth";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
-import { Sprint as ProjectSprint } from "@/types/project";
 import { useSocket } from "@/context/SocketContext";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
-import {
-  ArrowLeft,
-  LayoutGrid,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  Play,
-} from "lucide-react";
+import { LayoutGrid, CheckCircle2, AlertCircle, Play } from "lucide-react";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import { StatCard } from "@/components/ui/StatCard";
 import MeetingSection from "@/components/Meeting/MeetingSection";
 
 export default function ProjectBoardPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params.id as string;
 
   const {

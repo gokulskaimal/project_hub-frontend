@@ -21,6 +21,7 @@ import { Task } from "@/types/project";
 import { motion, AnimatePresence } from "framer-motion";
 import { notifier } from "@/utils/notifier";
 import { MESSAGES } from "@/constants/messages";
+import { PaginatedResponse } from "@/types/project";
 
 interface EpicListingProps {
   projectId: string;
@@ -53,13 +54,13 @@ export default function EpicListing({
 
   const epics = useMemo(() => {
     if (Array.isArray(rawEpics)) return rawEpics;
-    return (rawEpics as any)?.items || [];
+    return (rawEpics as PaginatedResponse<Task>)?.items || [];
   }, [rawEpics]);
 
   const allTasks = useMemo(() => {
     const tasks = Array.isArray(rawAllTasks)
       ? rawAllTasks
-      : (rawAllTasks as any)?.items || [];
+      : (rawAllTasks as PaginatedResponse<Task>)?.items || [];
     console.log("[EpicListing] All Tasks Count:", tasks.length);
     if (tasks.length > 0) {
       console.log("[EpicListing] First Task EpicId:", tasks[0].epicId);
@@ -177,9 +178,7 @@ export default function EpicListing({
       ) : (
         <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 items-start">
           {epics.map((epic: Task, index: number) => {
-            const { total, completed, progress, stories } = getEpicData(
-              epic.id,
-            );
+            const { total, progress, stories } = getEpicData(epic.id);
             const isExpanded = expandedEpics.has(epic.id);
 
             return (

@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
 import { useMemo, useState, useEffect } from "react";
 import { z } from "zod";
-import { AppDispatch } from "@/store/store";
 import {
   useAcceptInviteMutation,
   useGoogleSignInMutation,
@@ -19,13 +17,12 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { UserCheck, ShieldPlus, ArrowRight } from "lucide-react";
+import { UserCheck, ShieldPlus } from "lucide-react";
 
 export default function AcceptInvitePage() {
   const { token: routeToken } = useParams<{ token: string }>();
   const [inviteToken] = useState(routeToken);
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     if (inviteToken) {

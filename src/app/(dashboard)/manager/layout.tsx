@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
 import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
 import { useGetProfileQuery } from "@/store/api/userApiSlice";
-import Link from "next/link";
 import UserModal from "@/components/modals/UserModal";
 import InviteModal from "@/components/modals/InviteModal";
 import CreateProjectModal from "@/components/modals/CreateProjectModal";
@@ -17,9 +15,7 @@ import {
   Users,
   Mail,
   CreditCard,
-  LogOut,
   Menu,
-  X,
   KanbanSquare,
   CalendarDays,
   ReceiptText,
@@ -46,10 +42,8 @@ function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
   );
 
   const {
-    openInviteModal,
     isInviteModalOpen,
     closeInviteModal,
-    openCreateProjectModal,
     isCreateProjectModalOpen,
     closeCreateProjectModal,
   } = useManagerModals();
@@ -70,7 +64,7 @@ function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
     setIsReady(true);
   }, [dispatch]);
 
-  const { isLoading: profileLoading } = useGetProfileQuery(undefined, {
+  useGetProfileQuery(undefined, {
     skip: !isLoggedIn || !!user,
   });
 

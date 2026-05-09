@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   ArrowUpRight,
   AlertCircle,
-  Clock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -73,7 +72,7 @@ export default function SprintAnalysisReport({
               new Set(sprintTasks.map((t) => t.assignedTo).filter(Boolean)),
             )
               .slice(0, 5)
-              .map((userId, idx) => {
+              .map((userId) => {
                 const member = members.find(
                   (m) => String(m.id) === String(userId),
                 );

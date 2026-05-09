@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { useSelector, UseSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 
 interface SocketContextType {
@@ -57,7 +57,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         setSyncTimestamp(Date.now());
       });
 
-      socketInstance.on("connect_error", (err) => {
+      socketInstance.on("connect_error", (_err) => {
         // Do not nullify socket here immediately to allow reconnection attempts
         setIsConnected(false);
       });

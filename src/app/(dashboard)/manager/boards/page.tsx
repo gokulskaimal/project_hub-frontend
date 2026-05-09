@@ -4,22 +4,17 @@ import { useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useGetManagerProjectsQuery } from "@/store/api/managerApiSlice";
 import { Project } from "@/types/project";
-import { getStatusColor, getPriorityColor } from "@/utils/projectUtils";
+import { getStatusColor } from "@/utils/projectUtils";
 import {
   KanbanSquare,
   ArrowRight,
-  LayoutGrid,
-  Clock,
-  AlertCircle,
   Users,
-  Layout,
   Briefcase,
   Rocket,
   ShieldAlert,
   Target,
   Search,
 } from "lucide-react";
-import Link from "next/link";
 import { StatCard } from "@/components/ui/StatCard";
 import { EntityCard } from "@/components/ui/EntityCard";
 
@@ -28,7 +23,6 @@ export default function GlobalBoardsPage() {
     data: projectsData = { items: [], total: 0 },
     isLoading,
     isFetching,
-    refetch,
   } = useGetManagerProjectsQuery({ page: 1, limit: 1000 });
   const [searchQuery, setSearchQuery] = useState("");
 

@@ -14,7 +14,7 @@ interface RoleBannerProps {
 }
 
 export const RoleBanner: React.FC<RoleBannerProps> = ({
-  roleName,
+  roleName: _roleName,
   badgeText,
   welcomeMessage,
   description,

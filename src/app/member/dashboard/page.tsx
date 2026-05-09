@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   Briefcase,
   CheckCircle2,
@@ -68,7 +68,7 @@ export default function MemberDashboard() {
     { skip: !user },
   );
 
-  const tasks = tasksData?.items || [];
+  const tasks = useMemo(() => tasksData?.items || [], [tasksData?.items]);
 
   const {
     data: analyticsData,
@@ -101,7 +101,11 @@ export default function MemberDashboard() {
   }, [socket, isConnected, refetchProjects]);
 
   const velocityPoints = mapRevenueData(analyticsData?.velocity);
-  const taskStats = mapStatusDistribution(analyticsData?.taskDistribution);
+  const taskStats = mapStatusDistribution(analyticsData?.tasks);
+
+  const activeTasksList = useMemo(() => {
+    return tasks.filter((t) => t.status !== "DONE");
+  }, [tasks]);
 
   const loading = projectsLoading || tasksLoading || analyticsLoading;
 
@@ -123,12 +127,15 @@ export default function MemberDashboard() {
     );
   }
 
-  const completedTasks = tasks.filter((t: any) => t.status === "DONE").length;
+  const completedTasks = tasks.filter((t) => t.status === "DONE").length;
   const pendingTasks = tasks.filter(
-    (t: any) => t.status === "TODO" || t.status === "IN_PROGRESS",
+    (t) =>
+      t.status === "TODO" ||
+      t.status === "IN_PROGRESS" ||
+      t.status === "REVIEW",
   ).length;
   const criticalTasks = tasks.filter(
-    (t: any) => t.priority === "CRITICAL" && t.status !== "DONE",
+    (t) => t.priority === "CRITICAL" && t.status !== "DONE",
   ).length;
 
   return (
@@ -291,7 +298,7 @@ export default function MemberDashboard() {
             </div>
 
             <div className="glass-card rounded-3xl border border-border/50 overflow-hidden shadow-sm">
-              {tasks.length === 0 ? (
+              {activeTasksList.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[300px] p-12 text-center">
                   <div className="w-16 h-16 bg-secondary/30 rounded-full flex items-center justify-center mb-4">
                     <CheckSquare className="w-8 h-8 text-muted-foreground/30" />
@@ -302,7 +309,7 @@ export default function MemberDashboard() {
                 </div>
               ) : (
                 <div className="divide-y divide-border/30">
-                  {tasks.slice(0, 5).map((task: any) => (
+                  {activeTasksList.slice(0, 5).map((task) => (
                     <Link
                       key={task.id}
                       href={`/member/projects/${task.projectId}`}
@@ -380,7 +387,7 @@ export default function MemberDashboard() {
                   </p>
                 </div>
               ) : (
-                projects.slice(0, 4).map((project: any, pIdx: number) => (
+                projects.slice(0, 4).map((project: Project, pIdx: number) => (
                   <motion.div
                     key={project.id}
                     initial={{ opacity: 0, x: 20 }}

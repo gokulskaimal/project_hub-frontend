@@ -5,7 +5,6 @@ import { useGetManagerInvoicesQuery } from "@/store/api/managerApiSlice";
 import { Invoice } from "@/types/invoice";
 import {
   ReceiptText,
-  Download,
   Calendar,
   ArrowRight,
   IndianRupee,
@@ -18,7 +17,7 @@ import { useMemo } from "react";
 
 export default function ManagerBillingPage() {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useGetManagerInvoicesQuery({ page, limit: 10 });
+  const { data, isLoading } = useGetManagerInvoicesQuery({ page, limit: 12 });
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   const stats = useMemo(() => {

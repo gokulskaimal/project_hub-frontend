@@ -14,6 +14,11 @@ import type {
   EpicAnalytics,
 } from "@/types/project";
 import type { User } from "@/types/auth";
+import type {
+  Meeting,
+  CreateMeetingPayload,
+  UpdateMeetingPayload,
+} from "@/types/meeting";
 
 const extractList = <T>(response: unknown): T[] => {
   if (Array.isArray(response)) return response as T[];
@@ -92,7 +97,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         skipGlobalLoader: true,
       }),
       transformResponse: (response: { data: Task }) => response.data,
-      providesTags: (result, error, taskId) => [
+      providesTags: (_result, _error, taskId) => [
         { type: "MemberTasks", id: taskId },
       ],
     }),
@@ -126,7 +131,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         const maybeObject = response as {
           data?: PaginatedResponse<Task> | Task[];
         };
-        if (maybeObject?.data && "items" in (maybeObject.data as any)) {
+        if (maybeObject?.data && "items" in (maybeObject.data as object)) {
           return maybeObject.data as PaginatedResponse<Task>;
         }
         return extractList<Task>(response);
@@ -149,7 +154,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         skipGlobalLoader: true,
       }),
       transformResponse: (response: unknown) => extractList<Sprint>(response),
-      providesTags: (result, error, projectId) => [
+      providesTags: (_result, _error, projectId) => [
         { type: "ProjectSprints", id: projectId },
       ],
     }),
@@ -160,8 +165,8 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         data,
       }),
       transformResponse: (response: { data: Sprint }) => response.data,
-      invalidatesTags: (result, error, { projectId }) => [
-        { type: "ProjectSprints", id: projectId },
+      invalidatesTags: (_result, _error, { projectId: _projectId }) => [
+        { type: "ProjectSprints", id: _projectId },
       ],
     }),
     updateSprint: builder.mutation<
@@ -174,8 +179,8 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         data,
       }),
       transformResponse: (response: { data: Sprint }) => response.data,
-      invalidatesTags: (result, error, { projectId }) => [
-        { type: "ProjectSprints", id: projectId },
+      invalidatesTags: (_result, _error, { projectId: _projectId }) => [
+        { type: "ProjectSprints", id: _projectId },
       ],
     }),
     deleteSprint: builder.mutation<void, { id: string; projectId: string }>({
@@ -183,8 +188,8 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         url: API_ROUTES.PROJECTS.SPRINT_DELETE(id),
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { projectId }) => [
-        { type: "ProjectSprints", id: projectId },
+      invalidatesTags: (_result, _error, { projectId: _projectId }) => [
+        { type: "ProjectSprints", id: _projectId },
       ],
     }),
     createTask: builder.mutation<
@@ -197,7 +202,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         data,
       }),
       transformResponse: (response: { data: Task }) => response.data,
-      invalidatesTags: (result, error, { projectId }) => [
+      invalidatesTags: (_result, _error, { projectId: _projectId }) => [
         { type: "MemberTasks", id: "LIST" },
       ],
     }),
@@ -211,16 +216,66 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         data,
       }),
       transformResponse: (response: { data: Task }) => response.data,
-      invalidatesTags: (result, error, { projectId }) => [
-        { type: "MemberTasks", id: "LIST" },
-      ],
+      async onQueryStarted(
+        { id, data, projectId },
+        { dispatch, queryFulfilled, getState },
+      ) {
+        // Scan ALL cached getProjectTasks queries matching this projectId
+        // This handles all query variants (different page, limit, epicId params)
+        const state = getState() as {
+          api: { queries: Record<string, unknown> };
+        };
+        const patches: { undo: () => void }[] = [];
+
+        Object.entries(state.api.queries).forEach(([key, entry]) => {
+          if (!key.startsWith("getProjectTasks(")) return;
+          const originalArgs = (
+            entry as {
+              originalArgs?: Parameters<
+                typeof projectApiSlice.endpoints.getProjectTasks.initiate
+              >[0];
+            }
+          )?.originalArgs;
+          if (!originalArgs || originalArgs.projectId !== projectId) return;
+
+          const patch = dispatch(
+            projectApiSlice.util.updateQueryData(
+              "getProjectTasks",
+              originalArgs,
+              (draft) => {
+                const draftData = draft as { items?: Task[] } | Task[];
+                const items = Array.isArray(draftData)
+                  ? draftData
+                  : draftData.items;
+                if (items && Array.isArray(items)) {
+                  const taskIndex = items.findIndex((t: Task) => t.id === id);
+                  if (taskIndex !== -1) {
+                    Object.assign(items[taskIndex], data);
+                  }
+                }
+              },
+            ),
+          );
+          patches.push(patch);
+        });
+
+        try {
+          await queryFulfilled;
+          // Optimistic patch is already applied — no refetch needed
+        } catch {
+          // Undo all patches if the server request fails
+          patches.forEach((p) => p.undo());
+        }
+      },
+      // invalidatesTags intentionally removed: the optimistic patch handles the UI update.
+      // Re-adding invalidatesTags would refetch the entire list and defeat the optimistic update.
     }),
     deleteTask: builder.mutation<void, { id: string; projectId: string }>({
       query: ({ id }) => ({
         url: API_ROUTES.PROJECTS.TASK_DELETE(id),
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { projectId }) => [
+      invalidatesTags: (_result, _error, { projectId: _projectId }) => [
         { type: "MemberTasks", id: "LIST" },
       ],
     }),
@@ -249,7 +304,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         data: { action },
       }),
       transformResponse: (response: { data: Task }) => response.data,
-      invalidatesTags: (result, error, { projectId }) => [
+      invalidatesTags: (_result, _error, { projectId: _projectId }) => [
         { type: "MemberTasks", id: "LIST" },
       ],
     }),
@@ -270,7 +325,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         data: { text },
       }),
       transformResponse: (response: { data: Task }) => response.data,
-      invalidatesTags: (result, error, { taskId }) => [
+      invalidatesTags: (_result, _error, { taskId }) => [
         { type: "MemberTasks", id: taskId },
         { type: "MemberTasks", id: "LIST" },
       ],
@@ -316,7 +371,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         skipGlobalLoader: true,
       }),
       transformResponse: (response: unknown) => extractList<User>(response),
-      providesTags: (result, error, projectId) => [
+      providesTags: (_result, _error, projectId) => [
         { type: "ProjectMembers", id: projectId },
       ],
     }),
@@ -326,21 +381,21 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         method: "GET",
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: { data: any[] }) => response.data || [],
+      transformResponse: (response: { data: Meeting[] }) => response.data || [],
       providesTags: ["Meetings"],
     }),
-    createMeeting: builder.mutation({
+    createMeeting: builder.mutation<Meeting, CreateMeetingPayload>({
       query: (data) => ({
         url: API_ROUTES.MEETINGS.CREATE_MEETING,
         method: "POST",
         data,
       }),
-      transformResponse: (response: { data: any }) => response.data,
+      transformResponse: (response: { data: Meeting }) => response.data,
       invalidatesTags: ["Meetings"],
     }),
     getMyMeetings: builder.query<
       {
-        items: any[];
+        items: Meeting[];
         total: number;
         page: number;
         limit: number;
@@ -354,32 +409,43 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         params,
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: { data: any }) => response.data,
+      transformResponse: (response: {
+        data: {
+          items: Meeting[];
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
+      }) => response.data,
       providesTags: ["Meetings"],
     }),
-    completeMeeting: builder.mutation({
+    completeMeeting: builder.mutation<Meeting, string>({
       query: (roomId) => ({
         url: API_ROUTES.MEETINGS.MEETINGS_COMPLETE(roomId),
         method: "PATCH",
       }),
-      transformResponse: (response: { data: any }) => response.data,
+      transformResponse: (response: { data: Meeting }) => response.data,
       invalidatesTags: ["Meetings"],
     }),
-    updateMeeting: builder.mutation({
+    updateMeeting: builder.mutation<
+      Meeting,
+      { roomId: string } & UpdateMeetingPayload
+    >({
       query: ({ roomId, ...data }) => ({
         url: API_ROUTES.MEETINGS.MEETINGS_UPDATE(roomId),
         method: "PUT",
         data,
       }),
-      transformResponse: (response: { data: any }) => response.data,
+      transformResponse: (response: { data: Meeting }) => response.data,
       invalidatesTags: ["Meetings"],
     }),
-    deleteMeeting: builder.mutation({
+    deleteMeeting: builder.mutation<void, string>({
       query: (roomId) => ({
         url: API_ROUTES.MEETINGS.MEETINGS_DELETE(roomId),
         method: "DELETE",
       }),
-      transformResponse: (response: { data: any }) => response.data,
+      transformResponse: (response: { data: void }) => response.data,
       invalidatesTags: ["Meetings"],
     }),
   }),

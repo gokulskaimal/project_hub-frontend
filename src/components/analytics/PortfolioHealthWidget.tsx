@@ -1,13 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  Activity,
-  ShieldCheck,
-  AlertCircle,
-  CheckCircle2,
-  ChevronRight,
-} from "lucide-react";
+import { Activity, ShieldCheck, ChevronRight } from "lucide-react";
 import { ProgressArc } from "../ui/ProgressArc";
 import { motion } from "framer-motion";
 

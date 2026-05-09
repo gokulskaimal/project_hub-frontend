@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import Image from "next/image";
 import UserInfoView from "@/components/profile/UserInfoView";
 import EditUserForm from "@/components/profile/EditUserForm";
 import { useMemberProfile } from "@/hooks/useMemberProfile";

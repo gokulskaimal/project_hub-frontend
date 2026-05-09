@@ -2,10 +2,7 @@
 
 import { useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { X, PlayCircle, Calendar, Target, Loader2, Zap } from "lucide-react";
-import { useCreateSprintMutation } from "@/store/api/projectApiSlice";
-import { notifier } from "@/utils/notifier";
-import { MESSAGES } from "@/constants/messages";
+import { X, PlayCircle, Calendar, Target, Zap } from "lucide-react";
 
 interface StartSprintModalProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -279,11 +279,6 @@ export default function KanbanBoard({
                   className={`flex-1 px-5 pb-6 space-y-5 transition-colors rounded-b-[2.5rem] min-h-[200px] overflow-y-auto custom-scrollbar ${snapshot.isDraggingOver ? "bg-primary/5" : ""}`}
                 >
                   {tasksByStatus[col.id].map((task, index) => {
-                    const activeLog = task.timeLogs?.find(
-                      (l: TimeLog) => l.userId === user?.id && !l.endTime,
-                    );
-                    const isTracking = !!activeLog;
-
                     return (
                       <Draggable
                         key={task.id}

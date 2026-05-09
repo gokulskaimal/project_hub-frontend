@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { Layers, Target, CheckCircle2, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useGetEpicAnalyticsQuery } from "@/store/api/projectApiSlice";

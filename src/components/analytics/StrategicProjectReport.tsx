@@ -5,7 +5,7 @@ import { Project, Task, Sprint } from "@/types/project";
 import ProjectForecastCard from "./ProjectForecastCard";
 import EfficiencyTrendChart from "./EfficiencyTrendChart";
 import ProjectBurnUpChart from "./ProjectBurnUpChart";
-import { ShieldCheck, BarChart3, Target, TrendingUp } from "lucide-react";
+import { ShieldCheck, Target, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface StrategicProjectReportProps {

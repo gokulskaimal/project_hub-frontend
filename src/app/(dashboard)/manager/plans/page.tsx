@@ -1,14 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import api, { API_ROUTES } from "@/utils/api";
 import { Plan } from "@/types/plan";
 import {
   CheckCircle,
-  CreditCard,
-  RefreshCw,
   Zap,
   Shield,
   Star,
@@ -156,7 +154,7 @@ export default function ManagerPlansPage() {
         },
       };
 
-      const rzp1 = new (window as any).Razorpay(options);
+      const rzp1 = new window.Razorpay(options);
       rzp1.open();
     } catch {
       notifier.error(null, MESSAGES.AUTH.PAYMENT_INIT_FAILED);
@@ -336,7 +334,7 @@ export default function ManagerPlansPage() {
                       }
 
                       const currentPlanPrice =
-                        currentOrg?.metadata?.planPrice || 0;
+                        (currentOrg?.metadata?.planPrice as number) || 0;
                       const isUpgrade = plan.price > currentPlanPrice;
 
                       return (

@@ -12,7 +12,6 @@ import {
 } from "recharts";
 import { Task } from "@/types/project";
 import { Activity, Clock } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface EfficiencyTrendChartProps {
   tasks: Task[];

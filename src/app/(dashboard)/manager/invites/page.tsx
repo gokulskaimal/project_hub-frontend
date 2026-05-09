@@ -22,21 +22,10 @@ import {
   useCancelManagerInvitationMutation,
   useGetManagerInvitationStatsQuery,
 } from "@/store/api/managerApiSlice";
-import { Input } from "@/components/ui/Input";
 import { StatCard } from "@/components/ui/StatCard";
 import { EntityCard } from "@/components/ui/EntityCard";
-import { USER_ROLES } from "@/utils/constants";
 import { notifier } from "@/utils/notifier";
 import { confirmWithAlert } from "@/utils/confirm";
-
-interface Invitation {
-  id: string;
-  email: string;
-  assignedRole?: string;
-  role?: string;
-  status: "PENDING" | "ACCEPTED" | "EXPIRED" | "CANCELLED";
-  createdAt?: string;
-}
 
 export default function InvitesPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -61,10 +50,13 @@ export default function InvitesPage() {
   const [cancelInvite] = useCancelManagerInvitationMutation();
 
   // Sort State
-  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const invitations = invitationsData?.items || [];
+  const invitations = useMemo(
+    () => invitationsData?.items || [],
+    [invitationsData?.items],
+  );
   const loading = isLoading || isFetching;
 
   // Reset page when filters change
@@ -74,7 +66,7 @@ export default function InvitesPage() {
 
   // Derived Data
   const filteredInvitations = useMemo(() => {
-    let result = [...invitations];
+    const result = [...invitations];
 
     // We avoid client-side filtering for search/status now as it's server-driven.
     // However, if we need local sorting, we keep this useMemo.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api, { API_ROUTES } from "@/utils/api";
 import { getFriendlyError } from "@/utils/errors";
@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/Button";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const token = searchParams.get("code") || searchParams.get("token");
 
   const [status, setStatus] = useState<"verifying" | "success" | "error">(

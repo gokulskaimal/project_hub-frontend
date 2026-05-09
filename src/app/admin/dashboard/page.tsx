@@ -3,7 +3,6 @@
 import {
   Users,
   Building2,
-  ReceiptText,
   Banknote,
   Activity,
   ShieldCheck,

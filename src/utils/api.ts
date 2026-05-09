@@ -1,9 +1,4 @@
-import axios, {
-  InternalAxiosRequestConfig,
-  AxiosResponse,
-  AxiosError,
-} from "axios";
-import { toast } from "react-hot-toast"; // Still used for internal fallback but preferred to use notifier
+import axios from "axios";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { startLoading, stopLoading } from "@/features/ui/uiSlice";
@@ -204,7 +199,6 @@ api.interceptors.response.use(
     try {
       const data = error?.response?.data;
       const statusCode = error?.response?.status;
-      const errorCode = data?.code;
 
       // Handle JWT token expiration
       if (statusCode === 401) {
@@ -284,7 +278,9 @@ api.interceptors.response.use(
       if (extracted && typeof extracted === "string") {
         error.message = extracted;
       }
-    } catch {}
+    } catch {
+      // Ignore extraction errors and fallback to default
+    }
 
     return Promise.reject(error);
   },

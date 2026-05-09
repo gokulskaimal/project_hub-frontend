@@ -42,7 +42,7 @@ export const formatDate = (dateString?: string) => {
       day: "numeric",
       year: "numeric",
     });
-  } catch (e) {
+  } catch {
     return "Invalid Date";
   }
 };

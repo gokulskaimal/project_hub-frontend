@@ -31,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   links,
   pathname,
   handleLogout,
-  role,
+  role: _role,
 }) => {
   return (
     <>

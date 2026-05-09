@@ -1,7 +1,7 @@
 import { apiSlice } from "./apiSlice";
 import { API_ROUTES } from "@/utils/api";
 import type { Plan } from "@/types/plan";
-import type { Project, Task, Sprint, PaginatedResponse } from "@/types/project";
+import type { Project, PaginatedResponse } from "@/types/project";
 import type { Invoice } from "@/types/invoice";
 
 export interface ManagerMember {
@@ -52,6 +52,7 @@ export const managerApiSlice = apiSlice.injectEndpoints({
         id: string;
         planId?: string;
         subscriptionStatus?: string;
+        metadata?: Record<string, unknown>;
       },
       void
     >({
@@ -67,6 +68,7 @@ export const managerApiSlice = apiSlice.injectEndpoints({
           id: string;
           planId?: string;
           subscriptionStatus?: string;
+          metadata?: Record<string, unknown>;
         };
       }) => {
         return response.data || response;

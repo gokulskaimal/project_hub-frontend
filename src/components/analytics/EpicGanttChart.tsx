@@ -44,7 +44,7 @@ export const EpicGanttChart: React.FC<EpicGanttChartProps> = ({
       });
 
       const absoluteMinDate = min(epicDates.map((d) => d.start));
-      let absoluteMaxDate = max(epicDates.map((d) => d.end));
+      const absoluteMaxDate = max(epicDates.map((d) => d.end));
 
       const chartStart = startOfMonth(absoluteMinDate);
       let chartEnd = startOfMonth(addMonths(absoluteMaxDate, 2));

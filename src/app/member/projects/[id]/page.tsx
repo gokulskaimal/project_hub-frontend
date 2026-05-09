@@ -13,9 +13,7 @@ import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import ProjectChat from "@/components/chat/ProjectChat";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
-import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
-import SprintBurndownChart from "@/components/analytics/SprintBurndownChart";
 import MeetingSection from "@/components/Meeting/MeetingSection";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import ProjectFilters from "@/components/project/ProjectFilters";
@@ -24,14 +22,11 @@ import {
   useGetProjectTasksQuery,
   useGetProjectMembersQuery,
   useGetProjectSprintsQuery,
-  useGetProjectVelocityQuery,
   useUpdateTaskMutation,
   projectApiSlice,
 } from "@/store/api/projectApiSlice";
 
-import MemberContributionChart from "@/components/analytics/MemberContributionChart";
-import ProjectBurnUpChart from "@/components/analytics/ProjectBurnUpChart";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 
 import ProjectDetailsHeader from "@/components/project/ProjectDetailsHeader";
 import ProjectDetailsSidebar from "@/components/project/ProjectDetailsSidebar";
@@ -39,21 +34,11 @@ import ProjectStatsCards from "@/components/project/ProjectStatsCards";
 import BacklogList from "@/components/dashboard/BacklogList";
 import EpicListing from "@/components/dashboard/EpicListing";
 import SprintSelectorHeader from "@/components/project/SprintSelectorHeader";
-import { User } from "@/types/auth";
 import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
 import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
 import StrategicProjectReport from "@/components/analytics/StrategicProjectReport";
-import {
-  Layers,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  BarChart3,
-  BarChart,
-  Target,
-} from "lucide-react";
-import EpicProgressTracker from "@/components/analytics/EpicProgressTracker";
-import SprintMetricsGrid from "@/components/analytics/SprintMetricsGrid";
+import { Layers, BarChart } from "lucide-react";
+import { PaginatedResponse } from "@/types/project";
 
 export default function MemberProjectDetailsPage() {
   const params = useParams();
@@ -98,12 +83,6 @@ export default function MemberProjectDetailsPage() {
     isLoading: sprintsLoading,
     refetch: refetchSprints,
   } = useGetProjectSprintsQuery(projectId);
-
-  const { data: velocityData } = useGetProjectVelocityQuery({
-    projectId,
-    days: 7,
-  });
-  const projectVelocity = velocityData?.totalPoints || 0;
 
   const [updateTask] = useUpdateTaskMutation();
 
@@ -199,7 +178,7 @@ export default function MemberProjectDetailsPage() {
       socket.off("meeting:deleted", handleMeetingChange);
       socket.off("meeting:completed", handleMeetingChange);
     };
-  }, [socket, refetchSprints, refetchTasks]);
+  }, [socket, refetchSprints, refetchTasks, dispatch]);
 
   // Reconnection Sync
   useEffect(() => {
@@ -512,7 +491,7 @@ export default function MemberProjectDetailsPage() {
                       isLoadingMore={backlogLoading}
                       totalCount={
                         backlogData && "total" in backlogData
-                          ? (backlogData as any).total
+                          ? (backlogData as PaginatedResponse<Task>).total
                           : backlogTasks.length
                       }
                     />

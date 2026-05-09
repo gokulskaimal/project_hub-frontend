@@ -17,7 +17,25 @@ import { motion } from "framer-motion";
 
 const COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981"];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface ChartDataItem {
+  name: string;
+  value: number;
+  [key: string]: string | number | undefined;
+}
+
+interface PayloadItem {
+  name: string;
+  value: number;
+  [key: string]: unknown;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: PayloadItem[];
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="glass-card p-3 rounded-xl border border-white/10 shadow-2xl backdrop-blur-2xl">
@@ -39,7 +57,12 @@ export const AnalyticsBarChart = ({
   dataKey,
   xKey,
   color = "var(--primary)",
-}: any) => (
+}: {
+  data: ChartDataItem[];
+  dataKey: string;
+  xKey: string;
+  color?: string;
+}) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -95,7 +118,7 @@ export const AnalyticsBarChart = ({
   </motion.div>
 );
 
-export const StatusDistribution = ({ data }: { data: any[] }) => {
+export const StatusDistribution = ({ data }: { data: ChartDataItem[] }) => {
   if (!data || data.length === 0) {
     return (
       <div className="h-full w-full flex items-center justify-center text-muted-foreground text-[10px] font-black uppercase tracking-widest border-2 border-dashed border-border/50 rounded-3xl">
@@ -148,7 +171,7 @@ export const StatusDistribution = ({ data }: { data: any[] }) => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            key={item.name}
+            key={`${item.name}-${index}`}
             className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.05] transition-all"
           >
             <div className="flex items-center gap-3">

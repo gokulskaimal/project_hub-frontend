@@ -12,7 +12,6 @@ import {
 } from "recharts";
 import { Task, Sprint } from "@/types/project";
 import { Layers } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface TaskDistributionChartProps {
   tasks: Task[];

@@ -10,8 +10,6 @@ import {
   Loader2,
   Save,
   Sparkles,
-  Users,
-  Search,
   Target,
   Check,
 } from "lucide-react";
@@ -197,33 +195,29 @@ export default function EditProjectModal({
 
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                      <div className="md:col-span-3 space-y-2">
-                        <label className="form-label">Node Identifier</label>
-                        <input
-                          type="text"
+                      <div className="md:col-span-3">
+                        <Input
+                          label="Node Identifier"
                           required
-                          className="form-input"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
+                          labelClassName="uppercase tracking-[0.2em]"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="form-label flex items-center gap-2">
-                          <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-                          Tag
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          maxLength={5}
-                          className="form-input text-center !font-black !text-primary uppercase tracking-widest"
-                          value={key}
-                          onChange={(e) => setKey(e.target.value.toUpperCase())}
-                        />
-                        <p className="text-[9px] text-muted-foreground mt-1 italic tracking-widest uppercase opacity-40">
-                          * Prefix for Task IDs (e.g. {key || "PRJ"}-1)
-                        </p>
-                      </div>
+                      <Input
+                        label={
+                          <span className="flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                            Tag
+                          </span>
+                        }
+                        required
+                        maxLength={5}
+                        className="text-center !font-black !text-primary uppercase tracking-widest"
+                        value={key}
+                        onChange={(e) => setKey(e.target.value.toUpperCase())}
+                        labelClassName="uppercase tracking-[0.2em]"
+                      />
                     </div>
 
                     <div className="space-y-4">
@@ -364,30 +358,30 @@ export default function EditProjectModal({
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="form-label flex items-center gap-2">
-                          <Calendar className="w-3.5 h-3.5 text-primary" />
-                          Start Node
-                        </label>
-                        <input
-                          type="date"
-                          className="form-input"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="form-label flex items-center gap-2">
-                          <Calendar className="w-3.5 h-3.5 text-primary" />
-                          Target End
-                        </label>
-                        <input
-                          type="date"
-                          className="form-input"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                        />
-                      </div>
+                      <Input
+                        label={
+                          <span className="flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5 text-primary" />
+                            Start Node
+                          </span>
+                        }
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        labelClassName="uppercase tracking-[0.2em]"
+                      />
+                      <Input
+                        label={
+                          <span className="flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5 text-primary" />
+                            Target End
+                          </span>
+                        }
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        labelClassName="uppercase tracking-[0.2em]"
+                      />
                     </div>
 
                     <div className="bg-secondary/10 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4 border-t border-border/50">

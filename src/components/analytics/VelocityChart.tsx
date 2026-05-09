@@ -13,7 +13,6 @@ import {
   Cell,
 } from "recharts";
 import { Activity, Zap } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface VelocityChartProps {
   sprints: Sprint[];

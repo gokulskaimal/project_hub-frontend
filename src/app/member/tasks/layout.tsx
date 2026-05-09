@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { LayoutList, KanbanSquare } from "lucide-react";
 import Link from "next/link";
 
@@ -9,7 +9,6 @@ export default function MemberTasksLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
 
   const tabs = [

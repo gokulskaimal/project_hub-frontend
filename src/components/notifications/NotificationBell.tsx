@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+
 import { useRouter } from "next/navigation";
-import { AppDispatch, RootState } from "@/store/store";
+
 import {
   useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
@@ -21,9 +21,8 @@ import {
 
 export default function NotificationBell() {
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
 
-  const { data: items = [], isLoading: loading } = useGetNotificationsQuery();
+  const { data: items = [] } = useGetNotificationsQuery();
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
 

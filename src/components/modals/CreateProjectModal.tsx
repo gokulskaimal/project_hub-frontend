@@ -8,20 +8,17 @@ import {
   Loader2,
   ArrowRight,
   ArrowLeft,
-  Calendar,
   Users,
   Target,
   Check,
-  Search,
   Briefcase,
 } from "lucide-react";
 import {
   useCreateProjectMutation,
   useGetManagerMembersQuery,
 } from "@/store/api/managerApiSlice";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
 import { Input } from "@/components/ui/Input";
+import { Project } from "@/types/project";
 import { notifier } from "@/utils/notifier";
 import { MESSAGES } from "@/constants/messages";
 
@@ -47,8 +44,8 @@ export default function CreateProjectModal({
     description: "",
     startDate: "",
     endDate: "",
-    status: "PLANNING" as const as any, // Temporary bypass to match Partial<Project>
-    priority: "MEDIUM" as const as any,
+    status: "PLANNING" as Project["status"],
+    priority: "MEDIUM" as Project["priority"],
     tags: [] as string[],
     teamMemberIds: [] as string[],
   });
@@ -72,8 +69,8 @@ export default function CreateProjectModal({
         description: "",
         startDate: "",
         endDate: "",
-        status: "PLANNING" as any,
-        priority: "MEDIUM" as any,
+        status: "PLANNING",
+        priority: "MEDIUM",
         tags: [],
         teamMemberIds: [],
       });
@@ -274,21 +271,20 @@ export default function CreateProjectModal({
                   <div className="min-h-[400px]">
                     {step === 1 && (
                       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <Input
+                          label="Node Identifier"
+                          placeholder="PROJECT QUANTUM"
+                          required
+                          value={formData.name}
+                          onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                          }
+                          labelClassName="uppercase tracking-[0.2em]"
+                        />
                         <div className="space-y-2">
-                          <label className="form-label">Node Identifier</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="PROJECT QUANTUM"
-                            value={formData.name}
-                            onChange={(e) =>
-                              setFormData({ ...formData, name: e.target.value })
-                            }
-                            className="form-input"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="form-label">Mission Briefing</label>
+                          <label className="form-label uppercase tracking-[0.2em]">
+                            Mission Briefing
+                          </label>
                           <textarea
                             rows={4}
                             placeholder="DEFINE THE STRATEGIC OBJECTIVES..."
@@ -308,49 +304,46 @@ export default function CreateProjectModal({
                     {step === 2 && (
                       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <label className="form-label">Activation</label>
-                            <input
-                              type="date"
-                              required
-                              value={formData.startDate}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  startDate: e.target.value,
-                                })
-                              }
-                              className="form-input"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="form-label">
-                              Target Completion
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={formData.endDate}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  endDate: e.target.value,
-                                })
-                              }
-                              className="form-input"
-                            />
-                          </div>
+                          <Input
+                            label="Activation"
+                            type="date"
+                            required
+                            value={formData.startDate}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                startDate: e.target.value,
+                              })
+                            }
+                            labelClassName="uppercase tracking-[0.2em]"
+                          />
+                          <Input
+                            label="Target Completion"
+                            type="date"
+                            required
+                            value={formData.endDate}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                endDate: e.target.value,
+                              })
+                            }
+                            labelClassName="uppercase tracking-[0.2em]"
+                          />
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <label className="form-label">Priority Tier</label>
+                            <label className="form-label uppercase tracking-[0.2em]">
+                              Priority Tier
+                            </label>
                             <select
                               value={formData.priority}
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
-                                  priority: e.target.value as any,
+                                  priority: e.target
+                                    .value as Project["priority"],
                                 })
                               }
                               className="form-select"
@@ -362,7 +355,7 @@ export default function CreateProjectModal({
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <label className="form-label">
+                            <label className="form-label uppercase tracking-[0.2em]">
                               Initial Protocol
                             </label>
                             <select
@@ -370,7 +363,7 @@ export default function CreateProjectModal({
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
-                                  status: e.target.value as any,
+                                  status: e.target.value as Project["status"],
                                 })
                               }
                               className="form-select"

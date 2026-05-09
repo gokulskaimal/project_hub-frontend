@@ -23,7 +23,6 @@ import {
   Briefcase,
   Rocket,
   Crown,
-  MoreHorizontal,
 } from "lucide-react";
 import { EntityCard } from "@/components/ui/EntityCard";
 import { Dialog, Transition } from "@headlessui/react";

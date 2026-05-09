@@ -1,11 +1,6 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import { usePathname } from "next/navigation";
-import { Menu, Bell, Search, HelpCircle } from "lucide-react";
-import SocketNotification from "../notifications/SocketNotification";
-import ChatNotificationListener from "../chat/ChatNotificationListener";
-import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 
 type Props = {
@@ -19,7 +14,7 @@ type Props = {
  * The Sidebar is managed by the root layouts (Manager, Member, Admin)
  * to prevent double-sidebar glitches.
  */
-export default function DashboardLayout({ title, children }: Props) {
+export default function DashboardLayout({ title: _title, children }: Props) {
   return (
     <div className="min-h-full flex flex-col relative bg-background">
       {/* 

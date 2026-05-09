@@ -7,35 +7,30 @@ import {
   Calendar,
   Users,
   ArrowRight,
-  MoreHorizontal,
   Edit2,
   Search,
-  ChevronRight,
   Activity,
-  RefreshCw,
 } from "lucide-react";
-import Link from "next/link";
 import { Project } from "@/types/project";
 import { useGetMyProjectsQuery } from "@/store/api/projectApiSlice";
-import {
-  getStatusColor,
-  getPriorityColor,
-  formatDate,
-} from "@/utils/projectUtils";
-import { StatCard } from "@/components/ui/StatCard";
+import { getStatusColor, getPriorityColor } from "@/utils/projectUtils";
 import { EntityCard } from "@/components/ui/EntityCard";
 import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
 import { motion } from "framer-motion";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function MemberProjectsPage() {
   const { user } = useAuth();
+  const [page, setPage] = useState(1);
   const {
     data: projectsData,
     isLoading,
     isFetching,
-  } = useGetMyProjectsQuery({ page: 1, limit: 100 }, { skip: !user });
+  } = useGetMyProjectsQuery({ page, limit: 12 }, { skip: !user });
 
   const projects = projectsData?.items || [];
+  const totalPages = projectsData?.totalPages || 1;
+  const totalItems = projectsData?.total || 0;
 
   // Controls State
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,7 +69,7 @@ export default function MemberProjectsPage() {
 
   // Stats Logic
   const stats = {
-    total: projects.length,
+    total: totalItems,
     active: projects.filter((p: Project) => p.status === "ACTIVE").length,
     completed: projects.filter((p: Project) => p.status === "COMPLETED").length,
     planning: projects.filter((p: Project) => p.status === "PLANNING").length,
@@ -300,6 +295,13 @@ export default function MemberProjectsPage() {
             ))}
           </div>
         )}
+
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          onPageChange={setPage}
+        />
       </div>
     </DashboardLayout>
   );

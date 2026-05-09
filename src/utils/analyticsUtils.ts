@@ -18,13 +18,37 @@ export const mapStatusDistribution = (
   }));
 };
 
-export const mapPlanDistribution = (data: any[] | undefined) => {
+export interface PlanDistributionItem {
+  planName: string;
+  count: number;
+  totalRevenue?: number;
+}
+
+export const mapPlanDistribution = (
+  data: PlanDistributionItem[] | undefined,
+) => {
   if (!data || !Array.isArray(data)) return [];
-  return data.map((item) => ({
-    name: item.planName || "Unknown",
-    value: item.count || 0,
-    amount: item.totalRevenue || 0,
-  }));
+  const mergedMap = new Map<
+    string,
+    { name: string; value: number; amount: number }
+  >();
+
+  data.forEach((item) => {
+    const name = item.planName || "Unknown";
+    const existing = mergedMap.get(name);
+    if (existing) {
+      existing.value += item.count || 0;
+      existing.amount += item.totalRevenue || 0;
+    } else {
+      mergedMap.set(name, {
+        name: name,
+        value: item.count || 0,
+        amount: item.totalRevenue || 0,
+      });
+    }
+  });
+
+  return Array.from(mergedMap.values());
 };
 
 export const mapPerformanceData = (data: PerformanceMetric[] | undefined) => {
@@ -35,13 +59,22 @@ export const mapPerformanceData = (data: PerformanceMetric[] | undefined) => {
   }));
 };
 
+export interface RevenueItem {
+  label?: string;
+  month?: string;
+  amount: number;
+}
+
 export const mapRevenueData = (
-  data: MonthlyVelocityItem[] | any[] | undefined,
+  data: (MonthlyVelocityItem | RevenueItem)[] | undefined,
 ) => {
   if (!data || !Array.isArray(data)) return [];
   return data.map((item) => ({
     name:
-      (item as any).label || (item as MonthlyVelocityItem).month || "Unknown",
-    value: (item as any).amount || (item as MonthlyVelocityItem).points || 0,
+      (item as RevenueItem).label ||
+      (item as MonthlyVelocityItem).month ||
+      "Unknown",
+    value:
+      (item as RevenueItem).amount || (item as MonthlyVelocityItem).points || 0,
   }));
 };

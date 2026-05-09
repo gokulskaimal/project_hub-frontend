@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
 import type { RootState, AppDispatch } from "@/store/store";
 import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
 import { useGetProfileQuery } from "@/store/api/userApiSlice";
@@ -12,9 +11,7 @@ import {
   Users,
   Building2,
   CreditCard,
-  LogOut,
   Menu,
-  X,
   ReceiptText,
 } from "lucide-react";
 
@@ -59,7 +56,7 @@ export default function AdminLayout({
     setIsReady(true);
   }, [dispatch]);
 
-  const { isLoading: profileLoading } = useGetProfileQuery(undefined, {
+  useGetProfileQuery(undefined, {
     skip: !isLoggedIn || !!user,
   });
 

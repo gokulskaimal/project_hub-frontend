@@ -23,19 +23,15 @@ import {
   Layout,
   CheckCircle2,
 } from "lucide-react";
-import Link from "next/link";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { confirmWithAlert } from "@/utils/confirm";
 import { Project } from "@/types/project";
 import { extractErrorMessage } from "@/utils/api";
-import {
-  getStatusColor,
-  getPriorityColor,
-  formatDate,
-} from "@/utils/projectUtils";
+import { getStatusColor, getPriorityColor } from "@/utils/projectUtils";
 import { StatCard } from "@/components/ui/StatCard";
 import { EntityCard } from "@/components/ui/EntityCard";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function ProjectsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,7 +49,7 @@ export default function ProjectsPage() {
     refetch,
   } = useGetManagerProjectsQuery({
     page,
-    limit: 6,
+    limit: 12,
     search: searchQuery,
     status: statusFilter,
     priority: priorityFilter,
@@ -84,9 +80,6 @@ export default function ProjectsPage() {
 
   const projects = projectsData?.items || [];
   const [deleteProject] = useDeleteManagerProjectMutation();
-
-  // Filters
-  const [showFilters, setShowFilters] = useState(false);
 
   // Reset page when filters change
   useEffect(() => {
@@ -299,7 +292,7 @@ export default function ProjectsPage() {
         {/* Grid */}
         {isLoading || isFetching ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
               <div
                 key={i}
                 className="bg-card/50 p-6 rounded-2xl border border-border/30 shadow-sm h-64 animate-pulse"
@@ -415,31 +408,12 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {/* Pagination */}
-        {projectsData && projectsData.totalPages > 1 && (
-          <div className="mt-12 px-6 py-4 bg-card border border-border/50 rounded-2xl shadow-xl flex items-center justify-between">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              Section {page} / {projectsData.totalPages} ({projectsData.total}{" "}
-              items)
-            </span>
-            <div className="flex gap-3">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="px-6 py-2 bg-secondary/30 border border-border/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-secondary/50 disabled:opacity-30 transition-all active:scale-95"
-              >
-                Prev
-              </button>
-              <button
-                disabled={page >= projectsData.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="px-6 py-2 bg-primary text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-30 transition-all shadow-lg shadow-primary/20 active:scale-95"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          currentPage={page}
+          totalPages={projectsData?.totalPages || 1}
+          totalItems={projectsData?.total || 0}
+          onPageChange={setPage}
+        />
       </div>
 
       <CreateProjectModal

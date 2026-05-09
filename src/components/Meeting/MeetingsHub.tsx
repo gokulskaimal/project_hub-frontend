@@ -24,7 +24,7 @@ export default function MeetingHub() {
     "SCHEDULED",
   );
   const [page, setPage] = useState(1);
-  const limit = 8;
+  const limit = 12;
   const { role } = useSelector((state: RootState) => state.auth);
   const isManager = role === "ORG_MANAGER" || role === "SUPER_ADMIN";
   const dispatch = useDispatch();

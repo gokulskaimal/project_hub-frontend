@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { useRequestPasswordResetMutation } from "@/store/api/authApiSlice";
 import { Button } from "@/components/ui/Button";
@@ -29,7 +28,7 @@ export default function ForgotPasswordPage() {
       await requestReset({ email }).unwrap();
       setIsSubmitted(true);
       notifier.success("Reset link sent successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
       notifier.error(err, "Failed to send reset link. Please try again.");
     }
   };

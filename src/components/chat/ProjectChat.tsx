@@ -12,7 +12,6 @@ import { confirmWithAlert } from "@/utils/confirm";
 import {
   Send,
   Paperclip,
-  MoreVertical,
   Trash2,
   Edit2,
   X,
@@ -54,7 +53,7 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [initialLoaded, setInitialLoaded] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
@@ -84,7 +83,6 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
           } else {
             // Initial load
             setMessages(newMessages);
-            setInitialLoaded(true);
             // Scroll to bottom on initial load
             setTimeout(scrollToBottom, 100);
           }
@@ -102,7 +100,6 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
     // Reset state on project change
     setMessages([]);
     setNextCursor(null);
-    setInitialLoaded(false);
     fetchMessages();
   }, [projectId, fetchMessages]);
 

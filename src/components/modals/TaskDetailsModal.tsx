@@ -16,7 +16,6 @@ import {
   History,
   File as FileIcon,
   Download,
-  Trash2,
 } from "lucide-react";
 import {
   useUpdateTaskMutation,
@@ -26,7 +25,7 @@ import {
   useAddAttachmentMutation,
   useGetTaskByIdQuery,
 } from "@/store/api/projectApiSlice";
-import { Task, TaskHistory } from "@/types/project";
+import { Task } from "@/types/project";
 import { User } from "@/types/auth";
 import { formatDistanceToNow } from "date-fns";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -61,12 +60,12 @@ export default function TaskDetailsModal({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [updateTask, { isLoading: isStatusUpdating }] = useUpdateTaskMutation();
+  const [updateTask] = useUpdateTaskMutation();
   const [toggleTimer, { isLoading: isTimerLoading }] =
     useToggleTaskTimerMutation();
   const [addComment, { isLoading: isAddingComment }] = useAddCommentMutation();
   const [addAttachment] = useAddAttachmentMutation();
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
 
   // Real-time ticker for the timer
   useEffect(() => {
@@ -109,6 +108,7 @@ export default function TaskDetailsModal({
         projectId,
       }).unwrap();
       notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
+      if (onTaskUpdated) onTaskUpdated();
     } catch (err) {
       notifier.error(err, MESSAGES.TASKS.SAVE_FAILED);
     }
@@ -122,6 +122,7 @@ export default function TaskDetailsModal({
           ? MESSAGES.TASKS.TIMER_STARTED
           : MESSAGES.TASKS.TIMER_STOPPED,
       );
+      if (onTaskUpdated) onTaskUpdated();
     } catch (err) {
       notifier.error(err, MESSAGES.TASKS.TIMER_TOGGLE_FAILED);
     }
@@ -272,7 +273,11 @@ export default function TaskDetailsModal({
                     ].map((tab) => (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
+                        onClick={() =>
+                          setActiveTab(
+                            tab.id as "details" | "history" | "comments",
+                          )
+                        }
                         className={`flex items-center gap-2 px-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all relative
                             ${activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground"}
                           `}
@@ -519,7 +524,7 @@ export default function TaskDetailsModal({
                         className="form-select text-[10px] font-black uppercase"
                         value={currentTask.status}
                         onChange={(e) =>
-                          handleStatusChange(e.target.value as any)
+                          handleStatusChange(e.target.value as Task["status"])
                         }
                       >
                         <option value="TODO">BACKLOG</option>

@@ -49,3 +49,18 @@ export interface ManagerAnalyticsData {
   health: ProjectHealthItem[];
   workload: MemberWorkloadItem[];
 }
+
+export interface MemberAnalyticsData {
+  performance: PerformanceMetric[];
+  tasks: StatusDistributionItem[];
+  velocity: MonthlyVelocityItem[];
+}
+
+export interface AdminAnalyticsData {
+  revenue: Array<{ month: string; amount: number }>;
+  organizations: {
+    total: number;
+    distribution: StatusDistributionItem[];
+  };
+  plans: Array<{ planName: string; count: number }>;
+}

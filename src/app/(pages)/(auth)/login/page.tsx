@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { z } from "zod";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
@@ -76,7 +76,10 @@ export default function LoginPage() {
       try {
         localStorage.setItem("accessToken", accessToken);
         // Note: For Middleware security, your backend MUST also set a 'role' cookie.
-      } catch {}
+      } catch (e) {
+        // Silently fail if storage is unavailable
+        console.error("Error setting auth in storage", e);
+      }
     }
 
     const normalizedRole = role.toUpperCase().replace(/[\s-]+/g, "_");
@@ -117,7 +120,7 @@ export default function LoginPage() {
     try {
       await login(parsed.data).unwrap();
       notifier.success(MESSAGES.AUTH.LOGIN_SUCCESS);
-    } catch (err) {
+    } catch {
       // Error handled by authSlice matcher and effect
     }
   };

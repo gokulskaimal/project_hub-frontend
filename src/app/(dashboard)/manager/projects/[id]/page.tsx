@@ -1,37 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "next/navigation";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { confirmWithAlert } from "@/utils/confirm";
-import { extractErrorMessage } from "@/utils/api";
-import {
-  Pencil,
-  Trash2,
-  ArrowLeft,
-  Calendar,
-  User as UserIcon,
-  CheckCircle2,
-  Search,
-  LayoutGrid,
-  Layout,
-  Clock,
-  AlertCircle,
-  MessageSquare,
-  Rows,
-  Layers,
-  Play,
-  PenLine,
-  PanelRight,
-  Plus,
-  BarChart3,
-} from "lucide-react";
+import { Layout, Layers, Plus, BarChart3 } from "lucide-react";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
 import BacklogList from "@/components/dashboard/BacklogList";
 import { Task, Sprint } from "@/types/project";
-import { User } from "@/types/auth";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import CreateSprintModal from "@/components/modals/CreateSprintModal";
 import ProjectChat from "@/components/chat/ProjectChat";
@@ -39,31 +17,22 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { useSocket } from "@/context/SocketContext";
 import { Button } from "@/components/ui/Button";
-import UserAvatar from "@/components/ui/UserAvatar";
-import VelocityChart from "@/components/analytics/VelocityChart";
-import MemberContributionChart from "@/components/analytics/MemberContributionChart";
-import ProjectBurnUpChart from "@/components/analytics/ProjectBurnUpChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
 import EpicListing from "@/components/dashboard/EpicListing";
-import EpicProgressTracker from "@/components/analytics/EpicProgressTracker";
-import SprintBurndownChart from "@/components/analytics/SprintBurndownChart";
-import SprintMetricsGrid from "@/components/analytics/SprintMetricsGrid";
 import StartSprintModal from "@/components/modals/StartSprintModal";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import ProjectFilters from "@/components/project/ProjectFilters";
 import { USER_ROLES } from "@/utils/constants";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
   useGetProjectMembersQuery,
   useGetProjectSprintsQuery,
-  useGetProjectVelocityQuery,
   useDeleteTaskMutation,
   useDeleteSprintMutation,
   useUpdateSprintMutation,
   useUpdateTaskMutation,
-  useCreateTaskMutation,
 } from "@/store/api/projectApiSlice";
 
 import ProjectDetailsHeader from "@/components/project/ProjectDetailsHeader";
@@ -74,10 +43,10 @@ import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
 import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
 import StrategicProjectReport from "@/components/analytics/StrategicProjectReport";
 import MeetingSection from "@/components/Meeting/MeetingSection";
+import { PaginatedResponse } from "@/types/project";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params.id as string;
 
   // Auth State
@@ -107,18 +76,12 @@ export default function ProjectDetailsPage() {
   } = useGetProjectSprintsQuery(projectId);
   const { data: projectMembers = [], isLoading: membersLoading } =
     useGetProjectMembersQuery(projectId);
-  const { data: velocityData } = useGetProjectVelocityQuery({
-    projectId,
-    days: 7,
-  });
-  const projectVelocity = velocityData?.totalPoints ?? null;
 
   // Mutations
   const [deleteTask] = useDeleteTaskMutation();
   const [deleteSprint] = useDeleteSprintMutation();
   const [updateSprint] = useUpdateSprintMutation();
   const [updateTask] = useUpdateTaskMutation();
-  const [createTask] = useCreateTaskMutation();
 
   const [activeTab, setActiveTab] = useState<
     "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS" | "EPICS"
@@ -153,7 +116,7 @@ export default function ProjectDetailsPage() {
   );
 
   // UI State: Sidebar Toggle (Professional Style)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Sprint State
   const [selectedSprintId, setSelectedSprintId] = useState<string>("ACTIVE");
@@ -660,7 +623,7 @@ export default function ProjectDetailsPage() {
                       isLoadingMore={backlogLoading}
                       totalCount={
                         backlogData && "total" in backlogData
-                          ? (backlogData as any).total
+                          ? (backlogData as PaginatedResponse<Task>).total
                           : backlogTasks.length
                       }
                     />

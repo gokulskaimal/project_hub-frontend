@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, Video, Calendar, Type } from "lucide-react";
 import { useCreateMeetingMutation } from "@/store/api/projectApiSlice";
 import { notifier } from "@/utils/notifier";
+import { Meeting } from "@/types/meeting";
 
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
         sprintId,
         projectId,
         title,
-        type,
+        type: type as Meeting["type"],
         scheduledAt: dateObj.toISOString(),
       }).unwrap();
       notifier.success("Meeting scheduled successfully!");
@@ -93,7 +94,7 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
               </label>
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value)}
+                onChange={(e) => setType(e.target.value as Meeting["type"])}
                 className="w-full bg-secondary/30 border border-border/50 rounded-2xl py-3.5 px-4 outline-none focus:border-primary/50 focus:bg-secondary/50 transition-all font-bold appearance-none cursor-pointer"
               >
                 <option value="STANDUP">Standup</option>

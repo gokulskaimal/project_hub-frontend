@@ -11,7 +11,6 @@ import {
 } from "recharts";
 import { Task, Sprint } from "@/types/project";
 import { Users } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface MemberContributionChartProps {
   tasks: Task[];

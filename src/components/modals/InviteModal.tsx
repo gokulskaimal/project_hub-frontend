@@ -20,7 +20,6 @@ import {
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { notifier } from "@/utils/notifier";
-import { MESSAGES } from "@/constants/messages";
 import { USER_ROLES } from "@/utils/constants";
 
 interface InviteModalProps {
@@ -217,9 +216,9 @@ export default function InviteModal({
                     {isBulkMode ? (
                       <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
                         <div className="space-y-2">
-                          <label className="form-label flex items-center gap-2">
+                          <label className="form-label !flex items-center gap-2">
                             <Mail className="w-3.5 h-3.5 text-primary" />
-                            Email Signature List
+                            <span>Email Id List</span>
                           </label>
                           <textarea
                             value={bulkEmails}
@@ -234,19 +233,25 @@ export default function InviteModal({
                         </div>
                         <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <label className="form-label flex items-center gap-2">
+                            <label className="form-label !flex items-center gap-2">
                               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                              Assigned Clearance
+                              <span>Roles</span>
                             </label>
                             <select
                               value={bulkRole}
                               onChange={(e) => setBulkRole(e.target.value)}
                               className="form-select"
                             >
-                              <option value={USER_ROLES.TEAM_MEMBER}>
+                              <option
+                                value={USER_ROLES.TEAM_MEMBER}
+                                className="bg-card text-foreground"
+                              >
                                 TEAM MEMBER
                               </option>
-                              <option value={USER_ROLES.ORG_MANAGER}>
+                              <option
+                                value={USER_ROLES.ORG_MANAGER}
+                                className="bg-card text-foreground"
+                              >
                                 ORG MANAGER
                               </option>
                             </select>
@@ -263,9 +268,9 @@ export default function InviteModal({
                             >
                               <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
                                 <div className="md:col-span-6 space-y-2">
-                                  <label className="form-label flex items-center gap-2">
+                                  <label className="form-label !flex items-center gap-2">
                                     <Mail className="w-3.5 h-3.5 text-primary" />
-                                    Operative Node
+                                    <span>Email Id</span>
                                   </label>
                                   <input
                                     type="email"
@@ -279,9 +284,9 @@ export default function InviteModal({
                                   />
                                 </div>
                                 <div className="md:col-span-3 space-y-2">
-                                  <label className="form-label flex items-center gap-2">
+                                  <label className="form-label !flex items-center gap-2">
                                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                                    Clearance
+                                    <span>Roles</span>
                                   </label>
                                   <select
                                     value={invite.role}
@@ -290,18 +295,24 @@ export default function InviteModal({
                                     }
                                     className="form-select"
                                   >
-                                    <option value={USER_ROLES.TEAM_MEMBER}>
+                                    <option
+                                      value={USER_ROLES.TEAM_MEMBER}
+                                      className="bg-card text-foreground"
+                                    >
                                       MEMBER
                                     </option>
-                                    <option value={USER_ROLES.ORG_MANAGER}>
+                                    <option
+                                      value={USER_ROLES.ORG_MANAGER}
+                                      className="bg-card text-foreground"
+                                    >
                                       MANAGER
                                     </option>
                                   </select>
                                 </div>
                                 <div className="md:col-span-3 space-y-2">
-                                  <label className="form-label flex items-center gap-2">
+                                  <label className="form-label !flex items-center gap-2">
                                     <Clock className="w-3.5 h-3.5 text-purple-500" />
-                                    TTL
+                                    <span>Expiry Time</span>
                                   </label>
                                   <select
                                     value={invite.expiry}
@@ -310,9 +321,24 @@ export default function InviteModal({
                                     }
                                     className="form-select"
                                   >
-                                    <option value="7 Days">7 DAYS</option>
-                                    <option value="14 Days">14 DAYS</option>
-                                    <option value="30 Days">30 DAYS</option>
+                                    <option
+                                      value="7 Days"
+                                      className="bg-card text-foreground"
+                                    >
+                                      7 DAYS
+                                    </option>
+                                    <option
+                                      value="14 Days"
+                                      className="bg-card text-foreground"
+                                    >
+                                      14 DAYS
+                                    </option>
+                                    <option
+                                      value="30 Days"
+                                      className="bg-card text-foreground"
+                                    >
+                                      30 DAYS
+                                    </option>
                                   </select>
                                 </div>
                               </div>
@@ -335,7 +361,7 @@ export default function InviteModal({
                           className="inline-flex items-center gap-2 text-[10px] font-black text-primary hover:text-primary/80 bg-primary/10 px-6 py-2.5 rounded-xl transition-all uppercase tracking-widest"
                         >
                           <Plus className="w-4 h-4" />
-                          Add Field Node
+                          Add Email
                         </button>
                       </div>
                     )}
@@ -344,24 +370,24 @@ export default function InviteModal({
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="px-10 py-3.5 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50 min-w-[200px]"
+                        className="px-10 py-3.5 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50 min-w-[200px] flex items-center justify-center gap-2"
                       >
                         {isLoading ? (
                           <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                         ) : (
                           <>
-                            <Send className="w-4 h-4 mr-2" />
-                            Dispatch Signal
+                            <Send className="w-4 h-4" />
+                            Send Invite
                           </>
                         )}
                       </button>
                       <button
                         type="button"
-                        className="px-10 py-3.5 border border-border text-foreground rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-secondary transition-all"
+                        className="px-10 py-3.5 border border-border text-foreground rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-secondary transition-all flex items-center justify-center"
                         onClick={onClose}
                         disabled={isLoading}
                       >
-                        Abort
+                        Cancel
                       </button>
                     </div>
                   </form>

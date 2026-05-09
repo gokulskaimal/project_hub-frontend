@@ -10,7 +10,6 @@ import {
   Search,
   ArrowUpDown,
   Users,
-  Filter,
   ChevronRight,
   UserPlus,
   Layout,
@@ -26,13 +25,12 @@ import {
   useDeleteManagerMemberMutation,
   useGetManagerMembersQuery,
   useUpdateManagerMemberStatusMutation,
-  useGetManagerInvitationsQuery,
   useGetManagerInvitationStatsQuery,
   useGetManagerMemberStatsQuery,
 } from "@/store/api/managerApiSlice";
-import { extractErrorMessage } from "@/utils/api";
 import { StatCard } from "@/components/ui/StatCard";
 import { EntityCard } from "@/components/ui/EntityCard";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function MembersPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -72,15 +70,6 @@ export default function MembersPage() {
     return list;
   }, [membersData]);
 
-  const { data: invitationsData } = useGetManagerInvitationsQuery({
-    page: 1,
-    limit: 100,
-  });
-  const invitations = useMemo(
-    () => invitationsData?.items || [],
-    [invitationsData],
-  );
-
   const [deleteMember] = useDeleteManagerMemberMutation();
   const [updateMemberStatus] = useUpdateManagerMemberStatusMutation();
 
@@ -88,7 +77,7 @@ export default function MembersPage() {
 
   // Sorting remains local for the current page
   const filteredMembers = useMemo(() => {
-    let result = [...members];
+    const result = [...members];
 
     // Sort
     result.sort((a, b) => {
@@ -441,29 +430,12 @@ export default function MembersPage() {
           </div>
         )}
 
-        {membersData && membersData.totalPages > 1 && (
-          <div className="px-8 py-5 bg-card border border-border/50 rounded-2xl shadow-2xl flex items-center justify-between">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              Matrix Page {page} / {membersData.totalPages}
-            </span>
-            <div className="flex gap-4">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage((p: number) => p - 1)}
-                className="px-6 py-2.5 bg-secondary/30 border border-border/50 rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-secondary disabled:opacity-30 transition-all active:scale-95"
-              >
-                Prev
-              </button>
-              <button
-                disabled={page >= membersData.totalPages}
-                onClick={() => setPage((p: number) => p + 1)}
-                className="px-6 py-2.5 bg-primary text-primary-foreground border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-30 transition-all shadow-xl shadow-primary/20 active:scale-95"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          currentPage={page}
+          totalPages={membersData?.totalPages || 1}
+          totalItems={membersData?.total || 0}
+          onPageChange={setPage}
+        />
       </div>
     </DashboardLayout>
   );

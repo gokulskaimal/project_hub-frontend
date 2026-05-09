@@ -44,7 +44,6 @@ import {
 } from "@/utils/analyticsUtils";
 import { PortfolioHealthWidget } from "@/components/analytics/PortfolioHealthWidget";
 import { WorkloadHeatmap } from "@/components/analytics/WorkloadHeatmap";
-import GlobalRoadmap from "@/components/analytics/GlobalRoadmap";
 import { Project } from "@/types/project";
 import { motion } from "framer-motion";
 import { ProgressArc } from "@/components/ui/ProgressArc";
@@ -85,17 +84,17 @@ export default function ManagerDashboardPage() {
   const velocityData = mapRevenueData(analyticsData?.velocity);
 
   const { data: projectsData, refetch: refetchProjects } =
-    useGetManagerProjectsQuery({ page: 1, limit: 10 });
+    useGetManagerProjectsQuery({ page: 1, limit: 12 });
   const projects = projectsData?.items || [];
 
   const { refetch: refetchMembers } = useGetManagerMembersQuery({
     page: 1,
-    limit: 10,
+    limit: 12,
   });
 
   const { refetch: refetchInvites } = useGetManagerInvitationsQuery({
     page: 1,
-    limit: 10,
+    limit: 12,
   });
 
   const { socket } = useSocket();
@@ -358,14 +357,16 @@ export default function ManagerDashboardPage() {
                   </div>
                   <div className="flex items-center justify-between border-t border-border/30 pt-4 mt-2">
                     <div className="flex -space-x-2">
-                      {project.members?.slice(0, 3).map((m: any, i: number) => (
-                        <div
-                          key={i}
-                          className="w-7 h-7 rounded-full bg-secondary border-2 border-card flex items-center justify-center text-[9px] font-black text-foreground shadow-sm"
-                        >
-                          {m.firstName?.[0] || "U"}
-                        </div>
-                      ))}
+                      {project.members
+                        ?.slice(0, 3)
+                        .map((m: { firstName?: string }, i: number) => (
+                          <div
+                            key={i}
+                            className="w-7 h-7 rounded-full bg-secondary border-2 border-card flex items-center justify-center text-[9px] font-black text-foreground shadow-sm"
+                          >
+                            {m.firstName?.[0] || "U"}
+                          </div>
+                        ))}
                     </div>
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
                       {project.members?.length || 0} Operators

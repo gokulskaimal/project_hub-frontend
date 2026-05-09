@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
   useGetAdminUsersQuery,
@@ -14,7 +14,6 @@ import {
   Shield,
   ShieldOff,
   RefreshCw,
-  UserCheck,
   UserX,
   Users,
   Clock,
@@ -26,7 +25,7 @@ import { notifier } from "@/utils/notifier";
 import { confirmWithAlert } from "@/utils/confirm";
 import PremiumStatGrid from "@/components/admin/PremiumStatGrid";
 import { EntityCard } from "@/components/ui/EntityCard";
-import { MoreHorizontal, Edit2 } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
@@ -42,19 +41,18 @@ export default function AdminUsersPage() {
     role: roleFilter,
     status: statusFilter,
   });
-  const { data: reportsData, isLoading: reportsLoading } =
-    useGetAdminReportsQuery();
+  const { data: reportsData } = useGetAdminReportsQuery();
   const [deleteUser] = useDeleteAdminUserMutation();
   const [updateUserStatus] = useUpdateAdminUserStatusMutation();
 
   const users = useMemo(() => {
     return data?.items ?? [];
   }, [data]);
-  const [sortBy, setSortBy] = useState("name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy] = useState("name");
+  const [sortOrder] = useState<"asc" | "desc">("asc");
 
   const filteredUsers = useMemo(() => {
-    let result = [...users];
+    const result = [...users];
     // Backend now handles search, roleFilter, and statusFilter
 
     result.sort((a, b) => {
@@ -66,15 +64,6 @@ export default function AdminUsersPage() {
     });
     return result;
   }, [users, sortBy, sortOrder]);
-
-  const toggleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
-    }
-  };
 
   const confirmDeleteUser = async (userId: string) => {
     const confirmed = await confirmWithAlert(
@@ -306,30 +295,12 @@ export default function AdminUsersPage() {
           )}
         </div>
 
-        {data && data.totalPages > 1 && (
-          <div className="p-8 bg-card border border-border/50 rounded-[2.5rem] shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6 glass-card">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">
-              Quadrant User Page {page}{" "}
-              <span className="mx-2 text-border">/</span> {data.totalPages}
-            </span>
-            <div className="flex gap-4 w-full sm:w-auto">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="flex-1 sm:flex-none px-8 py-3 bg-secondary/30 border border-border/50 rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-secondary disabled:opacity-30 transition-all active:scale-95"
-              >
-                Previous Page
-              </button>
-              <button
-                disabled={page >= data.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="flex-1 sm:flex-none px-8 py-3 bg-primary text-primary-foreground rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-30 transition-all shadow-2xl shadow-primary/20 active:scale-95"
-              >
-                Next Page
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          currentPage={page}
+          totalPages={data?.totalPages || 1}
+          totalItems={data?.total || 0}
+          onPageChange={setPage}
+        />
       </div>
     </DashboardLayout>
   );

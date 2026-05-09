@@ -17,14 +17,10 @@ import {
 import EditMeetingModal from "./EditMeetingModal";
 import { notifier } from "@/utils/notifier";
 
+import { Meeting } from "@/types/meeting";
+
 interface MeetingCardProps {
-  meeting: {
-    title: string;
-    type: string;
-    roomId: string;
-    scheduledAt: string;
-    status?: string;
-  };
+  meeting: Meeting;
   projectId: string;
   isManager?: boolean;
 }

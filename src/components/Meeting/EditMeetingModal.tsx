@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { X, Video, Calendar, Type } from "lucide-react";
 import { useUpdateMeetingMutation } from "@/store/api/projectApiSlice";
 import { notifier } from "@/utils/notifier";
+import { Meeting } from "@/types/meeting";
 
 interface EditMeetingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  meeting: any;
+  meeting: Meeting;
 }
 
 const EditMeetingModal: React.FC<EditMeetingModalProps> = ({
@@ -98,7 +99,7 @@ const EditMeetingModal: React.FC<EditMeetingModalProps> = ({
               </label>
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value)}
+                onChange={(e) => setType(e.target.value as Meeting["type"])}
                 className="w-full bg-secondary/30 border border-border/50 rounded-2xl py-3.5 px-4 outline-none focus:border-primary/50 focus:bg-secondary/50 transition-all font-bold appearance-none cursor-pointer"
               >
                 <option value="STANDUP">Standup</option>

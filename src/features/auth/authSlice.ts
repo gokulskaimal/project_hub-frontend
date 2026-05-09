@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction, isAnyOf } from "@reduxjs/toolkit";
-import { apiSlice } from "../../store/api/apiSlice";
 import { authApiSlice } from "../../store/api/authApiSlice";
 import { userApiSlice } from "../../store/api/userApiSlice";
 import { UserProfile } from "@/types/auth";
@@ -85,7 +84,9 @@ const authSlice = createSlice({
           state.accessToken = token;
           state.role = normalizeRole(role);
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error hydrating from storage", error);
+      }
     },
     logout(state) {
       state.isLoggedIn = false;
@@ -107,7 +108,9 @@ const authSlice = createSlice({
           localStorage.removeItem("accessToken");
           localStorage.removeItem("role");
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error logging out", error);
+      }
     },
   },
   extraReducers: (builder) => {
@@ -138,7 +141,9 @@ const authSlice = createSlice({
               localStorage.setItem("accessToken", action.payload.accessToken);
               localStorage.setItem("role", state.role || "");
             }
-          } catch {}
+          } catch (error) {
+            console.error("Error setting auth in storage", error);
+          }
         },
       )
       .addMatcher(

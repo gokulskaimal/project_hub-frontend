@@ -3,22 +3,17 @@
 import React, { useState } from "react";
 import { Task } from "@/types/project";
 import { useAuth } from "@/hooks/useAuth";
-import { MESSAGES } from "@/constants/messages";
-import { notifier } from "@/utils/notifier";
-import { Card } from "@/components/ui/Card";
+
 import {
   Search,
-  Filter,
   Calendar,
   CheckCircle2,
   AlertCircle,
   Clock,
   CheckSquare,
 } from "lucide-react";
-import Link from "next/link";
 import {
   useGetMyTasksQuery,
-  useUpdateTaskMutation,
   useGetOrganizationUsersQuery,
 } from "@/store/api/projectApiSlice";
 import {
@@ -30,22 +25,24 @@ import TaskDetailsModal from "@/components/modals/TaskDetailsModal";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
 import { EntityCard } from "@/components/ui/EntityCard";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function MemberTasksPage() {
   const { user } = useAuth();
+  const [page, setPage] = useState(1);
   const {
     data: tasksData,
     isLoading,
     isFetching,
     refetch,
-  } = useGetMyTasksQuery({ page: 1, limit: 100 }, { skip: !user });
+  } = useGetMyTasksQuery({ page, limit: 12 }, { skip: !user });
 
   const tasks = tasksData?.items || [];
+  const totalPages = tasksData?.totalPages || 1;
+  const totalItems = tasksData?.total || 0;
 
   const { data: orgUsers = [], isLoading: usersLoading } =
     useGetOrganizationUsersQuery(undefined, { skip: !user });
-
-  const [updateTask] = useUpdateTaskMutation();
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,26 +54,9 @@ export default function MemberTasksPage() {
 
   const loading = isLoading || isFetching || usersLoading;
 
-  const handleStatusChange = async (
-    taskId: string,
-    newStatus: string,
-    projectId: string,
-  ) => {
-    try {
-      await updateTask({
-        id: taskId,
-        data: { status: newStatus as Task["status"] },
-        projectId,
-      }).unwrap();
-      notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
-    } catch (error) {
-      notifier.error(error, MESSAGES.TASKS.SAVE_FAILED);
-    }
-  };
-
   // Stats Logic
   const stats = {
-    total: tasks.length,
+    total: totalItems,
     pending: tasks.filter(
       (t: Task) => t.status === "TODO" || t.status === "IN_PROGRESS",
     ).length,
@@ -295,6 +275,13 @@ export default function MemberTasksPage() {
             ))}
           </div>
         )}
+
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          onPageChange={setPage}
+        />
       </div>
 
       <TaskDetailsModal

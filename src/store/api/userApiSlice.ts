@@ -6,6 +6,7 @@ import type {
   ChangePasswordPayload,
 } from "@/types/auth";
 import type { Notification } from "@/types/notification";
+import type { MemberAnalyticsData } from "@/types/analytics";
 
 export const userApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -67,15 +68,16 @@ export const userApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Notifications"],
     }),
-    getMemberAnalytics: builder.query<any, string | void>({
+    getMemberAnalytics: builder.query<MemberAnalyticsData, string | void>({
       query: (filter) => ({
         url: API_ROUTES.USER.ANALYTICS,
         method: "GET",
         params: { filter: filter || "YEAR" },
         skipGlobalLoader: true,
       }),
-      transformResponse: (response: { data: any }) => response.data,
-      providesTags: ["Notifications"], // Re-using or just keep it simple
+      transformResponse: (response: { data: MemberAnalyticsData }) =>
+        response.data,
+      providesTags: ["Notifications"],
     }),
   }),
 });

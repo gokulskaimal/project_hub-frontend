@@ -12,7 +12,6 @@ import {
   Legend,
 } from "recharts";
 import { Task, Sprint } from "@/types/project";
-import { motion } from "framer-motion";
 import { TrendingDown, Info } from "lucide-react";
 
 interface SprintBurndownChartProps {

@@ -7,8 +7,6 @@ import {
   Layout,
   Type,
   AlignLeft,
-  Calendar,
-  Flag,
   User as UserIcon,
   Loader2,
   Sparkles,
@@ -28,8 +26,7 @@ import { User } from "@/types/auth";
 import { Task, CreateTaskPayload, UpdateTaskPayload } from "@/types/project";
 import { notifier } from "@/utils/notifier";
 import { MESSAGES } from "@/constants/messages";
-import { USER_ROLES, PRIORITY_LEVELS } from "@/utils/constants";
-import UserAvatar from "@/components/ui/UserAvatar";
+import { USER_ROLES } from "@/utils/constants";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -41,7 +38,6 @@ interface CreateTaskModalProps {
 }
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const TYPES = ["TASK", "BUG", "STORY", "EPIC"];
 const VALID_STORY_POINTS = [0, 1, 2, 3, 5, 8, 13];
 
 export default function CreateTaskModal({

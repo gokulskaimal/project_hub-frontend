@@ -6,14 +6,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Area,
   AreaChart,
 } from "recharts";
 import { Task, Project } from "@/types/project";
 import { TrendingUp, Target, Rocket } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface ProjectBurnUpChartProps {
   project: Project;
