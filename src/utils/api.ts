@@ -3,7 +3,9 @@ import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { startLoading, stopLoading } from "@/features/ui/uiSlice";
 
-export const API_BASE_URL = "/api";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : "/api";
 
 export const API_ROUTES = {
   AUTH: {
