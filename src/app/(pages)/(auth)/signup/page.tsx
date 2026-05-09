@@ -30,6 +30,8 @@ import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { motion, AnimatePresence } from "framer-motion";
+import { Rocket, ShieldCheck, UserPlus, Fingerprint } from "lucide-react";
 
 export default function SignUpPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -113,7 +115,6 @@ export default function SignUpPage() {
     });
     const parsed = schema.safeParse({ email, organizationName: name });
     if (!parsed.success) {
-      // Set field errors for inline display
       const errors: { [key: string]: string } = {};
       parsed.error.errors.forEach((err) => {
         if (err.path[0]) errors[err.path[0]] = err.message;
@@ -294,305 +295,392 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-900">
+    <div className="min-h-dvh flex flex-col bg-background selection:bg-primary/30">
       <Header />
 
-      <main className="flex-1 bg-gradient-to-b from-[#F8FAFC] to-[#EBEFF5]">
-        <section className="relative overflow-hidden  bg-gradient-to-b from-[#F8FAFC] to-[#EBEFF5]">
-          <div className="absolute inset-0 -z-10">
-            <div className="absolute top-0 left-0 h-[512px] w-[512px] rounded-full bg-gradient-to-br from-[#2463EB]/25 to-[#2463EB]/0 blur-[32px]" />
-            <div className="absolute top-0 right-0 h-[512px] w-[512px] rounded-full bg-gradient-to-br from-[#8D65F1]/25 to-[#8D65F1]/0 blur-[32px]" />
-          </div>
+      <main className="relative flex-1 overflow-hidden">
+        {/* Cinematic Background System */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_30%,rgba(var(--primary),0.1)_0%,transparent_50%),radial-gradient(circle_at_80%_70%,rgba(168,85,247,0.08)_0%,transparent_50%)]" />
+          <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-primary/5 rounded-full blur-[100px] animate-pulse" />
+          <div className="absolute bottom-[20%] left-[10%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px] animate-pulse delay-1000" />
+        </div>
 
-          <div className="container max-w-[1400px] mx-auto px-8 py-24">
-            <div className="flex items-start gap-12 justify-center">
-              <div className="flex-1 max-w-2xl">
-                <h1 className="text-5xl font-extrabold text-gray-900 mb-6">
-                  Great outcomes start with{" "}
-                  <span className="bg-gradient-to-r from-[#326DEC] to-[#8D65F1] bg-clip-text text-transparent">
-                    Project Hub
-                  </span>
-                </h1>
+        <div className="container max-w-[1400px] mx-auto px-6 py-20 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-16 justify-center">
+            {/* Left Content: Hero Section */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex-1 max-w-xl text-center lg:text-left"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-8">
+                <Rocket className="w-4 h-4" />
+                Phase One: Deployment
+              </div>
+              <h1 className="text-5xl lg:text-7xl font-black text-foreground mb-8 uppercase tracking-tighter leading-[0.9]">
+                Forge The <br />
+                <span className="text-gradient">Future Hub</span>
+              </h1>
 
-                <p className="text-gray-600 text-base mb-4 max-w-lg">
-                  The modern project management tool your team needs to plan and
-                  track work across every team.
-                </p>
+              <p className="text-muted-foreground text-sm mb-12 max-w-lg font-bold leading-relaxed opacity-70">
+                The high-performance neural lattice for modern project
+                architecture. Synchronize your collective, track every node, and
+                accelerate velocity.
+              </p>
 
-                <p className="text-xs text-gray-600 mb-6">
-                  Use your work email for the best experience.
-                </p>
-
-                {/* Signup form steps */}
-                {signupStep === 1 && (
-                  <div className="grid gap-3 mb-6 max-w-xl">
-                    <Input
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => {
-                        dispatch(setEmail(e.target.value));
-                        setFieldErrors((prev) => ({ ...prev, email: "" }));
-                      }}
-                      disabled={loading}
-                      error={fieldErrors.email}
-                      leftIcon={
-                        <svg
-                          className="h-4 w-4 text-gray-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 17 17"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="1.33"
-                            d="M14.9964 5.33655L9.00242 9.15455C8.79902 9.27269 8.56798 9.33492 8.33275 9.33492C8.09753 9.33492 7.86649 9.27269 7.66309 9.15455L1.66309 5.33655"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="1.33"
-                            d="M13.6631 3.33655H2.99642C2.26004 3.33655 1.66309 3.9335 1.66309 4.66988V12.6699C1.66309 13.4063 2.26004 14.0032 2.99642 14.0032H13.6631C14.3995 14.0032 14.9964 13.4063 14.9964 12.6699V4.66988C14.9964 3.9335 14.3995 3.33655 13.6631 3.33655Z"
-                          />
-                        </svg>
-                      }
-                    />
-                    <Input
-                      type="text"
-                      placeholder="Organization Name"
-                      value={name}
-                      onChange={(e) => {
-                        dispatch(setName(e.target.value));
-                        setFieldErrors((prev) => ({
-                          ...prev,
-                          organizationName: "",
-                        }));
-                      }}
-                      disabled={loading}
-                      error={fieldErrors.organizationName}
-                    />
-                    <Button
-                      onClick={onRegisterManager}
-                      disabled={loading || !email?.trim() || !name?.trim()}
-                      isLoading={loading}
-                    >
-                      {loading ? "Creating..." : "Create org & Send OTP"}
-                    </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-left">
+                {[
+                  {
+                    icon: ShieldCheck,
+                    label: "Neural Security",
+                    desc: "Enterprise grade encryption",
+                  },
+                  {
+                    icon: Fingerprint,
+                    label: "Bio-Sync",
+                    desc: "Unique operative identification",
+                  },
+                ].map((feat, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="p-2.5 bg-secondary/10 rounded-xl border border-white/5 text-primary shrink-0">
+                      <feat.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-foreground uppercase tracking-widest">
+                        {feat.label}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground font-black uppercase opacity-40">
+                        {feat.desc}
+                      </p>
+                    </div>
                   </div>
-                )}
+                ))}
+              </div>
+            </motion.div>
 
-                {signupStep === 2 && (
-                  <>
-                    <div className="flex items-center gap-3 mb-6 max-w-xl">
-                      <div className="flex-1">
+            {/* Right Content: Signup Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="w-full max-w-lg lg:max-w-xl"
+            >
+              <Card className="glass-card !p-10 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] rounded-[3rem]">
+                <div className="mb-10 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter italic">
+                      Initialize Node
+                    </h2>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-40">
+                      Form Step {signupStep} of 3
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3].map((step) => (
+                      <div
+                        key={step}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${signupStep >= step ? "w-8 bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" : "w-3 bg-white/5"}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {signupStep === 1 && (
+                    <motion.div
+                      key="step1"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-4">
+                        <Input
+                          type="email"
+                          placeholder="OPERATIVE IDENTIFIER (EMAIL)"
+                          value={email}
+                          onChange={(e) => {
+                            dispatch(setEmail(e.target.value));
+                            setFieldErrors((prev) => ({ ...prev, email: "" }));
+                          }}
+                          disabled={loading}
+                          error={fieldErrors.email}
+                          className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+                          leftIcon={
+                            <UserPlus className="h-4 w-4 text-primary" />
+                          }
+                        />
                         <Input
                           type="text"
-                          placeholder="Enter 6-digit OTP"
+                          placeholder="COLLECTIVE IDENTITY (ORG NAME)"
+                          value={name}
+                          onChange={(e) => {
+                            dispatch(setName(e.target.value));
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              organizationName: "",
+                            }));
+                          }}
+                          disabled={loading}
+                          error={fieldErrors.organizationName}
+                          className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+                        />
+                      </div>
+                      <Button
+                        onClick={onRegisterManager}
+                        disabled={loading || !email?.trim() || !name?.trim()}
+                        isLoading={loading}
+                        fullWidth
+                        className="h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30"
+                      >
+                        {loading ? "INITIALIZING..." : "GENERATE ACCESS KEY"}
+                      </Button>
+                    </motion.div>
+                  )}
+
+                  {signupStep === 2 && (
+                    <motion.div
+                      key="step2"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div className="text-center space-y-2">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 leading-relaxed italic">
+                          Intercepting signal at{" "}
+                          <span className="text-primary not-italic">
+                            {email}
+                          </span>
+                          . <br />
+                          Decryption code required.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-4 items-start">
+                        <Input
+                          type="text"
+                          placeholder="6-DIGIT CODE"
                           value={otp}
+                          maxLength={6}
                           onChange={(e) => {
                             dispatch(setOtp(e.target.value));
                             setFieldErrors((prev) => ({ ...prev, otp: "" }));
                           }}
                           disabled={loading}
                           error={fieldErrors.otp}
-                          leftIcon={
-                            <svg
-                              className="h-4 w-4 text-gray-500"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="1.5"
-                                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-                              />
-                            </svg>
-                          }
+                          className="bg-background/40 border-white/5 h-14 rounded-2xl text-center text-xl font-black tracking-[0.5em] flex-1"
                         />
-                      </div>
-                      <div className="mt-[-25px]">
                         <Button
                           onClick={onVerifyOtp}
                           disabled={loading || otp.length !== 6}
                           isLoading={loading}
+                          className="h-14 px-8 rounded-2xl bg-primary font-black uppercase tracking-widest text-[11px]"
                         >
-                          {loading ? "Verify OTP..." : "Verify OTP"}
+                          {loading ? "..." : "DECRYPT"}
                         </Button>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <span>Didn&apos;t get the code?</span>
-                      <button
-                        className="text-[#2463EB] hover:underline disabled:text-gray-400"
-                        type="button"
-                        onClick={onResendOtp}
-                        disabled={loading || isResendDisabled || !email?.trim()}
-                      >
-                        Resend OTP
-                      </button>
-                      {formattedTimer && (
-                        <span className="text-xs text-gray-500">
-                          Try again in {formattedTimer}
-                        </span>
-                      )}
-                    </div>
-                  </>
-                )}
+                      <div className="flex flex-col items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                        <div className="flex items-center gap-2">
+                          <span className="opacity-40">No Signal?</span>
+                          <button
+                            className="text-primary hover:brightness-125 disabled:opacity-30 disabled:pointer-events-none transition-all"
+                            onClick={onResendOtp}
+                            disabled={loading || isResendDisabled}
+                          >
+                            RE-BROADCAST
+                          </button>
+                        </div>
+                        {formattedTimer && (
+                          <div className="px-4 py-1 bg-secondary/10 border border-white/5 rounded-full opacity-40">
+                            Cooldown: {formattedTimer}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
 
-                {signupStep === 3 && (
-                  <div className="space-y-4 max-w-xl">
-                    <Input
-                      type="text"
-                      placeholder="First Name"
-                      value={firstName}
-                      onChange={(e) => {
-                        dispatch(setFirstName(e.target.value));
-                        setFieldErrors((prev) => ({ ...prev, firstName: "" }));
-                      }}
-                      disabled={loading}
-                      error={fieldErrors.firstName}
-                    />
-                    <Input
-                      type="text"
-                      placeholder="Last Name"
-                      value={lastName}
-                      onChange={(e) => {
-                        dispatch(setLastName(e.target.value));
-                        setFieldErrors((prev) => ({ ...prev, lastName: "" }));
-                      }}
-                      disabled={loading}
-                      error={fieldErrors.lastName}
-                    />
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => {
-                        dispatch(setPassword(e.target.value));
-                        setFieldErrors((prev) => ({ ...prev, password: "" }));
-                      }}
-                      disabled={loading}
-                      error={fieldErrors.password}
-                    />
-                    <Input
-                      type="password"
-                      placeholder="Confirm Password"
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setFieldErrors((prev) => ({
-                          ...prev,
-                          confirmPassword: "",
-                        }));
-                      }}
-                      disabled={loading}
-                      error={fieldErrors.confirmPassword}
-                    />
-                    <Button
-                      fullWidth
-                      onClick={onCompleteSignup}
-                      disabled={
-                        loading ||
-                        !firstName?.trim() ||
-                        !lastName?.trim() ||
-                        !name?.trim() ||
-                        !password?.trim() ||
-                        !confirmPassword?.trim()
-                      }
-                      isLoading={loading}
+                  {signupStep === 3 && (
+                    <motion.div
+                      key="step3"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
                     >
-                      {loading ? "Signing Up..." : "Complete Signup"}
-                    </Button>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input
+                          type="text"
+                          placeholder="DESIGNATION-01"
+                          value={firstName}
+                          onChange={(e) => {
+                            dispatch(setFirstName(e.target.value));
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              firstName: "",
+                            }));
+                          }}
+                          disabled={loading}
+                          error={fieldErrors.firstName}
+                          className="bg-background/40 border-white/5 h-12 rounded-xl text-[10px] font-black uppercase tracking-wider"
+                        />
+                        <Input
+                          type="text"
+                          placeholder="DESIGNATION-02"
+                          value={lastName}
+                          onChange={(e) => {
+                            dispatch(setLastName(e.target.value));
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              lastName: "",
+                            }));
+                          }}
+                          disabled={loading}
+                          error={fieldErrors.lastName}
+                          className="bg-background/40 border-white/5 h-12 rounded-xl text-[10px] font-black uppercase tracking-wider"
+                        />
+                      </div>
+                      <Input
+                        type="password"
+                        placeholder="NEURAL ACCESS KEY (PASSWORD)"
+                        value={password}
+                        onChange={(e) => {
+                          dispatch(setPassword(e.target.value));
+                          setFieldErrors((prev) => ({ ...prev, password: "" }));
+                        }}
+                        disabled={loading}
+                        error={fieldErrors.password}
+                        className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+                      />
+                      <Input
+                        type="password"
+                        placeholder="VERIFY KEY (CONFIRM PASSWORD)"
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setFieldErrors((prev) => ({
+                            ...prev,
+                            confirmPassword: "",
+                          }));
+                        }}
+                        disabled={loading}
+                        error={fieldErrors.confirmPassword}
+                        className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+                      />
+                      <Button
+                        fullWidth
+                        onClick={onCompleteSignup}
+                        disabled={
+                          loading ||
+                          !firstName?.trim() ||
+                          !lastName?.trim() ||
+                          !password?.trim() ||
+                          confirmPassword !== password
+                        }
+                        isLoading={loading}
+                        className="h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30"
+                      >
+                        {loading ? "FINALIZING..." : "FINALIZE ANCHORING"}
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="mt-12 flex flex-col items-center gap-8">
+                  <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                    <span className="opacity-40">Existing Node?</span>
+                    <Link
+                      href="/login"
+                      className="text-primary hover:brightness-125 transition-all"
+                    >
+                      Sign In
+                    </Link>
                   </div>
-                )}
 
-                {error && <></>}
-
-                <p className="mt-8 text-gray-600 text-xs max-w-xl">
-                  Already have an account?{" "}
-                  <Link
-                    href="/login"
-                    className="text-[#2463EB] hover:underline"
-                  >
-                    Sign in
-                  </Link>
-                </p>
-
-                <div className="relative my-6 max-w-xl">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300" />
+                  <div className="relative w-full">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full h-px bg-white/5" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <div className="bg-card px-4 text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em]">
+                        External Nexus
+                      </div>
+                    </div>
                   </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="bg-white px-2 text-gray-500">
-                      Or sign up with
-                    </span>
-                  </div>
-                </div>
 
-                <div className="flex justify-center max-w-xl">
                   <GoogleLogin
                     onSuccess={handleGoogleSignIn}
-                    onError={() => {
-                      console.error(
-                        "[GoogleLogin Error] Sign-in failed on signup page",
-                      );
-                      notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED);
-                    }}
+                    onError={() =>
+                      notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED)
+                    }
+                    theme="filled_black"
+                    shape="pill"
                     text="signup_with"
                   />
                 </div>
-              </div>
-            </div>
+              </Card>
+            </motion.div>
           </div>
-        </section>
+        </div>
       </main>
 
       {/* Organization Name Modal for Google Signup */}
       {showOrgModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md shadow-xl" noPadding={false}>
-            <h2 className="mb-2 text-xl font-bold text-gray-900">
-              Create Organization
-            </h2>
-            <p className="mb-4 text-sm text-gray-600">
-              To complete your signup via Google as an Organization Manager,
-              please enter your Organization Name.
-            </p>
-            <form onSubmit={handleGoogleOrgSubmit}>
-              <Input
-                label="Organization Name"
-                type="text"
-                value={googleOrgName}
-                onChange={(e) => setGoogleOrgName(e.target.value)}
-                placeholder="e.g. Acme Corp"
-                required
-                autoFocus
-                containerClassName="mb-4"
-              />
-              <div className="flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setShowOrgModal(false);
-                    setPendingIdToken(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading || !googleOrgName.trim()}
-                  isLoading={loading}
-                >
-                  {loading ? "Creating..." : "Complete Signup"}
-                </Button>
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-background/80 backdrop-blur-xl p-6 animate-in fade-in duration-500">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <Card
+              className="w-full max-w-md glass-card !p-10 border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] rounded-[3rem]"
+              noPadding={false}
+            >
+              <div className="mb-8 space-y-2">
+                <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter italic">
+                  Neural Origin
+                </h2>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed">
+                  Anchor your organizational collective to finalized network
+                  anchoring.
+                </p>
               </div>
-            </form>
-          </Card>
+              <form onSubmit={handleGoogleOrgSubmit} className="space-y-6">
+                <Input
+                  label="COLLECTIVE IDENTITY (ORG NAME)"
+                  type="text"
+                  value={googleOrgName}
+                  onChange={(e) => setGoogleOrgName(e.target.value)}
+                  placeholder="e.g. CORE SYSTEMS"
+                  required
+                  autoFocus
+                  className="bg-background/50 border-white/5 text-[11px] font-black uppercase tracking-wider h-14 rounded-2xl"
+                  labelClassName="!text-[9px] !font-black !uppercase !tracking-[0.2em] !text-muted-foreground !mb-2"
+                />
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setShowOrgModal(false);
+                      setPendingIdToken(null);
+                    }}
+                    className="flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest border-white/5 hover:bg-white/5"
+                  >
+                    Abort
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading || !googleOrgName.trim()}
+                    isLoading={loading}
+                    className="flex-1 h-12 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
+                  >
+                    Anchor Node
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </motion.div>
         </div>
       )}
 

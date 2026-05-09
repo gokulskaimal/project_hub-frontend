@@ -1,38 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import type { BaseQueryFn } from "@reduxjs/toolkit/query";
 import type { AxiosError, AxiosRequestConfig } from "axios";
-import api, { API_ROUTES } from "@/utils/api";
-import type { Plan } from "@/types/plan";
-import type {
-  AuthResponse,
-  LoginPayload,
-  GoogleSignInPayload,
-  RegisterManagerPayload,
-  RegisterManagerResponse,
-  VerifyOtpPayload,
-  CompleteSignupPayload,
-  AcceptInvitePayload,
-  User,
-  UserProfile,
-  UpdateProfilePayload,
-  ChangePasswordPayload,
-} from "@/types/auth";
-import type { Notification } from "@/types/notification";
-import type {
-  Project,
-  Task,
-  Sprint,
-  PaginatedResponse,
-  CreateSprintPayload,
-  UpdateSprintPayload,
-  CreateTaskPayload,
-  UpdateTaskPayload,
-  AdminOrg,
-  AdminUser,
-  VelocityResponse,
-  TaskHistory,
-} from "@/types/project";
-import type { Invoice } from "@/types/invoice";
+import api from "@/utils/api";
 
 type AxiosBaseQueryArgs = {
   url: string;
@@ -71,22 +40,6 @@ const axiosBaseQuery =
     }
   };
 
-type PlanPayload = {
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  type: "STARTER" | "PRO" | "ENTERPRISE";
-  features: string[];
-  isActive: boolean;
-  limits: {
-    projects: number;
-    members: number;
-    storage?: number;
-    messages?: number;
-  };
-};
-
 export interface ManagerMember {
   id: string;
   _id?: string;
@@ -107,18 +60,6 @@ export interface ManagerInvitation {
   createdAt?: string;
 }
 
-// Local project payload for creation/updates if different from domain model
-type ProjectPayload = Partial<Project>;
-
-const extractList = <T>(response: unknown): T[] => {
-  if (Array.isArray(response)) return response as T[];
-  const maybeObject = response as { data?: unknown; [key: string]: unknown };
-  if (Array.isArray(maybeObject?.data)) return maybeObject.data as T[];
-  const nested = maybeObject?.data as { data?: unknown } | undefined;
-  if (Array.isArray(nested?.data)) return nested.data as T[];
-  return [];
-};
-
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: axiosBaseQuery(),
@@ -129,6 +70,7 @@ export const apiSlice = createApi({
     "ManagerMembers",
     "ManagerInvites",
     "ManagerProjects",
+    "ManagerAnalytics",
     "MemberProjects",
     "MemberTasks",
     "UserVelocity",
@@ -140,6 +82,9 @@ export const apiSlice = createApi({
     "ManagerInvoices",
     "AdminReports",
     "ProjectMembers",
+    "Members",
+    "Invitations",
+    "Meetings",
   ],
   keepUnusedDataFor: 300,
   endpoints: () => ({}),

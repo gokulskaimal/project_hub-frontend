@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useParams } from "next/navigation";
 import {
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
-  useGetOrganizationUsersQuery,
   useGetProjectSprintsQuery,
+  useGetProjectMembersQuery,
   useUpdateTaskMutation,
 } from "@/store/api/projectApiSlice";
 import { Task, Sprint } from "@/types/project";
@@ -15,30 +15,29 @@ import { useSocket } from "@/context/SocketContext";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { LayoutGrid } from "lucide-react";
+import MeetingSection from "@/components/Meeting/MeetingSection";
 
 export default function MemberProjectBoardPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params.id as string;
 
-  const {
-    data: project,
-    isLoading: projectLoading,
-    isFetching: projectFetching,
-  } = useGetProjectByIdQuery(projectId);
+  const { isLoading: projectLoading, isFetching: projectFetching } =
+    useGetProjectByIdQuery(projectId);
 
   const {
-    data: tasks = [],
+    data: tasksData,
     isLoading: tasksLoading,
     isFetching: tasksFetching,
     refetch: refetchTasks,
-  } = useGetProjectTasksQuery(projectId);
+  } = useGetProjectTasksQuery({ projectId });
+
+  const tasks = Array.isArray(tasksData) ? tasksData : tasksData?.items || [];
 
   const {
-    data: orgUsers = [],
+    data: projectMembers = [],
     isLoading: usersLoading,
     isFetching: usersFetching,
-  } = useGetOrganizationUsersQuery();
+  } = useGetProjectMembersQuery(projectId);
 
   const {
     data: sprints = [],
@@ -118,13 +117,19 @@ export default function MemberProjectBoardPage() {
               </h2>
               <p className="text-sm text-gray-500">Active Sprint</p>
             </div>
+            <MeetingSection
+              sprintId={activeSprint.id}
+              projectId={projectId}
+              isManager={false}
+            />
             <KanbanBoard
               tasks={boardTasks}
-              users={orgUsers}
+              users={projectMembers}
               onStatusChange={handleStatusChange}
               onEditTask={() => {}}
               showProjectBadges={false}
               projectId={projectId}
+              isReadOnly={activeSprint.status === "COMPLETED"}
             />
           </div>
         ) : (

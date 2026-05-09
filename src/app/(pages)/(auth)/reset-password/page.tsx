@@ -1,260 +1,203 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { z } from "zod";
-import { MESSAGES } from "@/constants/messages";
+import Link from "next/link";
 import { notifier } from "@/utils/notifier";
-import api, { API_ROUTES } from "@/utils/api";
-import { getFriendlyError } from "@/utils/errors";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { useResetPasswordMutation } from "@/store/api/authApiSlice";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
-import Link from "next/link";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { Lock, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
+import { z } from "zod";
+import { motion } from "framer-motion";
 
-// --- Schemas ---
-const requestSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-});
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
 
-const resetSchema = z
-  .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+function ResetPasswordForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
 
-// --- Components ---
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-function RequestResetForm() {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | undefined>(undefined);
+  const [resetPassword, { isLoading }] = useResetPasswordMutation();
+
+  useEffect(() => {
+    if (!token) {
+      notifier.error(null, "Invalid or missing reset token.");
+      router.push("/login");
+    }
+  }, [token, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = requestSchema.safeParse({ email });
-    if (!parsed.success) {
-      setError(parsed.error.errors[0]?.message);
-      notifier.error(
-        null,
-        parsed.error.errors[0]?.message ?? MESSAGES.VALIDATION.INVALID_INPUT,
-      );
+    setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
       return;
     }
-    setError(undefined);
 
-    setLoading(true);
+    const validation = passwordSchema.safeParse(password);
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
+      return;
+    }
+
+    if (!token) return;
+
     try {
-      await api.post(API_ROUTES.AUTH.RESET_PASSWORD_REQUEST, { email });
-      setSent(true);
-      notifier.success(MESSAGES.AUTH.RESET_LINK_SENT);
+      await resetPassword({ token, password }).unwrap();
+      setIsSuccess(true);
+      notifier.success("Password reset successful!");
+
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
     } catch (err: unknown) {
-      notifier.error(err, MESSAGES.GENERAL.ERROR);
-    } finally {
-      setLoading(false);
+      notifier.error(
+        err,
+        "Failed to reset password. The link may have expired.",
+      );
     }
   };
 
-  if (sent) {
+  if (isSuccess) {
     return (
-      <div className="text-center space-y-4">
-        <div className="h-12 w-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+      <div className="text-center space-y-8 animate-in zoom-in-95 duration-500">
+        <div className="mx-auto w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(16,185,129,0.15)] border border-emerald-500/20">
+          <CheckCircle2 className="w-10 h-10 text-emerald-500" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900">Check your email</h2>
-        <p className="text-gray-600">
-          We have sent a password reset link to <strong>{email}</strong>.
+        <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter italic">
+          Success!
+        </h2>
+        <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
+          Neural access key reconfigured. <br />
+          Redirecting to primary login node...
         </p>
-        <p className="text-sm text-gray-500">
-          Didn&apos;t receive it?{" "}
-          <button
-            onClick={() => setSent(false)}
-            className="text-blue-600 hover:underline"
-          >
-            Try again
-          </button>
-        </p>
+        <div className="pt-6">
+          <Link href="/login">
+            <Button
+              variant="ghost"
+              fullWidth
+              className="h-12 rounded-xl text-[10px] font-black text-primary uppercase tracking-widest hover:bg-primary/10"
+            >
+              Access Login Node Now
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Forgot Password?</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Enter your email and we&apos;ll send you a reset link.
-        </p>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
+    >
+      <div className="space-y-4">
+        <Input
+          type="password"
+          placeholder="NEW ACCESS KEY (PASSWORD)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+          leftIcon={<Lock className="h-4 w-4 text-primary" />}
+        />
+        <Input
+          type="password"
+          placeholder="VERIFY NEW KEY"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+          leftIcon={<Lock className="h-4 w-4 text-primary" />}
+        />
       </div>
 
-      <Input
-        label="Email Address"
-        type="email"
-        placeholder="you@example.com"
-        value={email}
-        onChange={(e) => {
-          setEmail(e.target.value);
-          setError(undefined);
-        }}
-        disabled={loading}
-        error={error}
-        autoFocus
-      />
+      {error && (
+        <div className="flex items-center gap-3 p-4 bg-destructive/10 text-destructive rounded-xl text-[9px] font-black uppercase tracking-widest border border-destructive/20 animate-in shake duration-300">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <p>{error}</p>
+        </div>
+      )}
 
       <Button
         type="submit"
         fullWidth
-        disabled={loading || !email}
-        isLoading={loading}
+        isLoading={isLoading}
+        className="h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
       >
-        {loading ? "Sending Link..." : "Send Reset Link"}
-      </Button>
-
-      <div className="text-center mt-4">
-        <Link
-          href="/login"
-          className="text-sm text-gray-600 hover:text-gray-900"
-        >
-          Back to Login
-        </Link>
-      </div>
-    </form>
-  );
-}
-
-function ResetPasswordForm({ token }: { token: string }) {
-  const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{
-    password?: string;
-    confirmPassword?: string;
-  }>({});
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const parsed = resetSchema.safeParse({ password, confirmPassword });
-    if (!parsed.success) {
-      const newErrors: { password?: string; confirmPassword?: string } = {};
-      parsed.error.errors.forEach((err) => {
-        if (err.path[0])
-          newErrors[err.path[0] as "password" | "confirmPassword"] =
-            err.message;
-      });
-      setErrors(newErrors);
-      notifier.error(null, MESSAGES.VALIDATION.FIX_ERRORS);
-      return;
-    }
-    setErrors({});
-
-    setLoading(true);
-    try {
-      await api.post(API_ROUTES.AUTH.RESET_PASSWORD, {
-        token,
-        password: parsed.data.password,
-      });
-
-      notifier.success(MESSAGES.AUTH.RESET_PASSWORD_SUCCESS);
-      router.push("/login");
-    } catch (err: unknown) {
-      notifier.error(err, MESSAGES.GENERAL.ERROR);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Reset Password</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Choose a strong new password for your account.
-        </p>
-      </div>
-
-      <Input
-        label="New Password"
-        type="password"
-        placeholder="Minimum 8 characters"
-        value={password}
-        onChange={(e) => {
-          setPassword(e.target.value);
-          setErrors((prev) => ({ ...prev, password: undefined }));
-        }}
-        disabled={loading}
-        error={errors.password}
-      />
-
-      <Input
-        label="Confirm Password"
-        type="password"
-        placeholder="Re-enter new password"
-        value={confirmPassword}
-        onChange={(e) => {
-          setConfirmPassword(e.target.value);
-          setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
-        }}
-        disabled={loading}
-        error={errors.confirmPassword}
-      />
-
-      <Button
-        type="submit"
-        fullWidth
-        disabled={loading || !password}
-        isLoading={loading}
-      >
-        {loading ? "Updating..." : "Set New Password"}
+        Finalize Key Reset
       </Button>
     </form>
   );
-}
-
-function ResetPasswordContent() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-
-  // If token is present, show the Reset Password form
-  if (token) {
-    return <ResetPasswordForm token={token} />;
-  }
-
-  // Otherwise, show the Request Reset form (Forgot Password)
-  return <RequestResetForm />;
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-dvh flex flex-col bg-background selection:bg-primary/30">
       <Header />
-      <main className="relative flex-1 flex items-center justify-center py-16 bg-gradient-to-b from-[#F8FAFC] to-[#EBEFF5]">
-        <div className="w-full max-w-md">
-          <Card className="shadow-xl sm:p-8">
-            <Suspense fallback={<div>Loading...</div>}>
-              <ResetPasswordContent />
-            </Suspense>
-          </Card>
+      <main className="relative flex-1 overflow-hidden flex items-center justify-center">
+        {/* Animated Background System */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_30%,rgba(var(--primary),0.1)_0%,transparent_50%),radial-gradient(circle_at_80%_70%,rgba(99,102,241,0.08)_0%,transparent_50%)]" />
+          <div className="absolute top-[10%] right-[20%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[110px] animate-pulse" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-md px-6 py-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
+            <Card className="glass-card !p-10 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] rounded-[3rem]">
+              <div className="mb-10 text-center">
+                <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(var(--primary),0.15)] border border-primary/20">
+                  <Lock className="w-10 h-10 text-primary" />
+                </div>
+                <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter italic mb-3">
+                  Reconfigure Key
+                </h1>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
+                  Establish a new neural access key <br />
+                  to regain network connectivity.
+                </p>
+              </div>
+
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center p-12">
+                    <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary/20 border-t-primary"></div>
+                  </div>
+                }
+              >
+                <ResetPasswordForm />
+              </Suspense>
+
+              <div className="mt-10 pt-8 border-t border-white/5 text-center">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:brightness-125 transition-all group"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-3 transition-transform group-hover:-translate-x-1.5" />
+                  Abort & Return
+                </Link>
+              </div>
+            </Card>
+          </motion.div>
         </div>
       </main>
       <Footer />

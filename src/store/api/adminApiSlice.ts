@@ -4,6 +4,7 @@ import type { Plan } from "@/types/plan";
 import type { AdminOrg, AdminUser, PaginatedResponse } from "@/types/project";
 import type { Invoice } from "@/types/invoice";
 import type { AdminReport } from "@/types/stats";
+import type { AdminAnalyticsData } from "@/types/analytics";
 
 const extractList = <T>(response: unknown): T[] => {
   if (Array.isArray(response)) return response as T[];
@@ -16,7 +17,7 @@ const extractList = <T>(response: unknown): T[] => {
 
 type PlanPayload = {
   name: string;
-  description: string;
+  description?: string;
   price: number;
   currency: string;
   type: "STARTER" | "PRO" | "ENTERPRISE";
@@ -50,7 +51,10 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       transformResponse: (response: { data: Plan }) => response.data,
       invalidatesTags: [{ type: "AdminPlans", id: "LIST" }],
     }),
-    updateAdminPlan: builder.mutation<Plan, { id: string; data: PlanPayload }>({
+    updateAdminPlan: builder.mutation<
+      Plan,
+      { id: string; data: Partial<PlanPayload> }
+    >({
       query: ({ id, data }) => ({
         url: `${API_ROUTES.ADMIN.PLANS}/${id}`,
         method: "PUT",
@@ -81,28 +85,8 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         },
         skipGlobalLoader: true,
       }),
-      transformResponse: (
-        response: unknown,
-        _,
-        args,
-      ): PaginatedResponse<AdminOrg> => {
-        const payload =
-          (
-            response as {
-              data?: { organizations?: AdminOrg[]; total?: number };
-            }
-          )?.data ?? {};
-        const items = payload.organizations ?? [];
-        const total = payload.total ?? items.length;
-        const totalPages = Math.max(1, Math.ceil(total / args.limit));
-        return {
-          items,
-          total,
-          page: args.page,
-          limit: args.limit,
-          totalPages,
-        };
-      },
+      transformResponse: (response: { data: PaginatedResponse<AdminOrg> }) =>
+        response.data,
       providesTags: [{ type: "AdminOrgs", id: "LIST" }],
     }),
     updateAdminOrgStatus: builder.mutation<
@@ -147,25 +131,8 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         },
         skipGlobalLoader: true,
       }),
-      transformResponse: (
-        response: unknown,
-        _,
-        args,
-      ): PaginatedResponse<AdminUser> => {
-        const payload =
-          (response as { data?: { users?: AdminUser[]; total?: number } })
-            ?.data ?? {};
-        const items = payload.users ?? [];
-        const total = payload.total ?? items.length;
-        const totalPages = Math.max(1, Math.ceil(total / args.limit));
-        return {
-          items,
-          total,
-          page: args.page,
-          limit: args.limit,
-          totalPages,
-        };
-      },
+      transformResponse: (response: { data: PaginatedResponse<AdminUser> }) =>
+        response.data,
       providesTags: [{ type: "AdminUsers", id: "LIST" }],
     }),
     updateAdminUserStatus: builder.mutation<
@@ -235,6 +202,17 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       transformResponse: (response: { data: AdminReport }) => response.data,
       providesTags: ["AdminReports"],
     }),
+    getAdminAnalytics: builder.query<AdminAnalyticsData, string | void>({
+      query: (filter) => ({
+        url: API_ROUTES.ADMIN.ANALYTICS,
+        method: "GET",
+        params: { filter: filter || "YEAR" },
+        skipGlobalLoader: true,
+      }),
+      transformResponse: (response: { data: AdminAnalyticsData }) =>
+        response.data,
+      providesTags: ["AdminReports"],
+    }),
   }),
   overrideExisting: false,
 });
@@ -252,4 +230,5 @@ export const {
   useDeleteAdminUserMutation,
   useGetAdminInvoicesQuery,
   useGetAdminReportsQuery,
+  useGetAdminAnalyticsQuery,
 } = adminApiSlice;

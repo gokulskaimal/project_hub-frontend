@@ -1,6 +1,5 @@
 // This utility dynamically loads SweetAlert2 to replace window.confirm()
 // Uses standard window.confirm as fallback
-import { MESSAGES } from "@/constants/messages";
 
 type SwalResult = { isConfirmed?: boolean };
 type SwalModule = {

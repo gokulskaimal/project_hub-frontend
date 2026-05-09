@@ -1,8 +1,11 @@
 import { useState, useMemo } from "react";
 import { Task } from "@/types/project";
+import { useDebounce } from "./useDebounce";
 
 export function useTaskFilters(initialTasks: Task[]) {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [assigneeFilter, setAssigneeFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
@@ -16,8 +19,8 @@ export function useTaskFilters(initialTasks: Task[]) {
       const desc = task.description || "";
 
       const matchesSearch =
-        title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        desc.toLowerCase().includes(searchQuery.toLowerCase());
+        title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        desc.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
       const matchesStatus =
         statusFilter === "ALL" || task.status === statusFilter;
 
@@ -40,10 +43,12 @@ export function useTaskFilters(initialTasks: Task[]) {
         if (!task.dueDate) {
           matchesDate = false;
         } else {
+          // Use UTC to match how dates are stored in the DB, avoiding off-by-one-day
+          // bugs for users in non-UTC timezones (e.g. IST = UTC+5:30)
           const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          today.setUTCHours(0, 0, 0, 0);
           const dueDate = new Date(task.dueDate);
-          dueDate.setHours(0, 0, 0, 0);
+          dueDate.setUTCHours(0, 0, 0, 0);
 
           if (dateFilter === "OVERDUE") {
             matchesDate = dueDate < today && task.status !== "DONE";
@@ -68,7 +73,7 @@ export function useTaskFilters(initialTasks: Task[]) {
     });
   }, [
     initialTasks,
-    searchQuery,
+    debouncedSearchQuery,
     statusFilter,
     assigneeFilter,
     priorityFilter,

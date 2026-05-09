@@ -1,6 +1,9 @@
+"use client";
+
 import React from "react";
 import { LucideIcon } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 interface EntityCardProps {
   id: string;
@@ -9,7 +12,7 @@ interface EntityCardProps {
   description?: string;
   icon?: LucideIcon | React.ReactNode;
   href?: string;
-  onClick?: () => void; // Added onClick prop
+  onClick?: () => void;
   status?: string;
   statusColor?: string;
   actions?: React.ReactNode;
@@ -26,9 +29,9 @@ export const EntityCard: React.FC<EntityCardProps> = ({
   description,
   icon,
   href,
-  onClick, // Destructured onClick
+  onClick,
   status,
-  statusColor = "bg-blue-50 text-blue-700 border-blue-100",
+  statusColor = "bg-primary/10 text-primary border-primary/20",
   actions,
   footerLeft,
   footerRight,
@@ -36,111 +39,115 @@ export const EntityCard: React.FC<EntityCardProps> = ({
   className = "",
   children,
 }) => {
-  const CardWrapper = ({
-    children: wrapperChildren,
-  }: {
-    children: React.ReactNode;
-  }) => {
-    const wrapperClasses = `group relative bg-white border border-gray-50 p-2.5 sm:p-6 rounded-xl shadow-sm transition-all duration-300 ${className}`;
+  const router = useRouter();
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const isInteractive = (e.target as HTMLElement).closest(
+      'button, a, [role="button"]',
+    );
+    if (isInteractive) return;
 
     if (href) {
-      return (
-        <Link
-          href={href}
-          className={`${wrapperClasses} hover:shadow-xl hover:-translate-y-1 block`}
-        >
-          {wrapperChildren}
-        </Link>
-      );
+      router.push(href);
+    } else if (onClick) {
+      onClick();
     }
-
-    return (
-      <div
-        className={`${wrapperClasses} hover:shadow-md ${onClick ? "cursor-pointer" : ""}`}
-        onClick={onClick} // Applied onClick here
-      >
-        {wrapperChildren}
-      </div>
-    );
   };
 
   const renderIcon = () => {
     if (!icon)
-      return (
-        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 animate-pulse rounded" />
-      );
+      return <div className="w-6 h-6 bg-secondary animate-pulse rounded-lg" />;
 
-    // If it's a component (function or object with a render method/$$typeof)
     if (
       typeof icon === "function" ||
       (typeof icon === "object" && !React.isValidElement(icon))
     ) {
-      const Icon = icon as any;
-      return <Icon size={20} className="sm:w-6 sm:h-6" />;
+      const Icon = icon as LucideIcon;
+      return <Icon size={22} />;
     }
 
     return icon;
   };
 
   return (
-    <CardWrapper>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      onClick={handleCardClick}
+      className={`group relative bg-card border border-border/50 p-5 rounded-2xl shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1.5 ${href || onClick ? "cursor-pointer" : ""} ${className}`}
+    >
       {sideBorderColor && (
         <div
-          className={`absolute top-0 right-0 w-1 h-full rounded-r-xl ${sideBorderColor}`}
+          className={`absolute top-0 right-0 w-1 h-full rounded-r-2xl ${sideBorderColor} opacity-50`}
         />
       )}
 
-      <div className="flex items-start gap-3 mb-3">
-        <div className="p-1 sm:p-1 bg-gray-50 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shrink-0 overflow-hidden">
+      <div className="flex items-start gap-4 mb-4">
+        <div className="p-2.5 bg-secondary/50 rounded-xl group-hover:bg-primary/10 group-hover:text-primary transition-all duration-500 shrink-0 shadow-inner">
           {renderIcon()}
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-0.5">
-            <h3 className="text-[13px] sm:text-lg font-black text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <h3 className="flex-1 text-base font-black text-foreground group-hover:text-primary transition-colors line-clamp-1 leading-tight tracking-tight">
               {title}
             </h3>
-            <div className="flex items-center gap-1 shrink-0 overflow-hidden">
+            <div className="flex items-center gap-2 shrink-0">
               {status && (
                 <span
-                  className={`text-[8px] sm:text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border whitespace-nowrap ${statusColor}`}
+                  className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border whitespace-nowrap shadow-sm ${statusColor}`}
                 >
                   {status}
                 </span>
               )}
-              {actions && (
-                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                  {actions}
-                </div>
-              )}
             </div>
           </div>
           {subtitle && (
-            <p className="text-[8px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest truncate mb-1">
+            <p className="text-[10px] font-black text-primary uppercase tracking-[0.15em] leading-none mb-1">
               {subtitle}
             </p>
           )}
         </div>
+
+        {actions && (
+          <div
+            className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {actions}
+          </div>
+        )}
       </div>
 
       <div className="space-y-1">
         {description && (
-          <p className="text-[10px] sm:text-sm font-bold text-gray-400 group-hover:text-gray-500 transition-colors line-clamp-1 sm:line-clamp-2 leading-relaxed">
+          <p className="text-xs font-bold text-muted-foreground group-hover:text-foreground/80 transition-colors line-clamp-2 leading-normal tracking-tight">
             {description}
           </p>
         )}
       </div>
 
-      {children && <div className="mt-4">{children}</div>}
+      {children && (
+        <div
+          className="mt-4 pt-4 border-t border-border/30"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </div>
+      )}
 
       {(footerLeft || footerRight) && (
-        <div className="mt-3 sm:mt-6 pt-3 border-t border-gray-50 flex items-center justify-between gap-2">
-          <div className="flex -space-x-1.5 overflow-hidden">{footerLeft}</div>
-          <div className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest truncate max-w-[50%]">
+        <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between gap-4">
+          <div className="flex -space-x-2 overflow-hidden items-center text-xs font-black text-muted-foreground">
+            {footerLeft}
+          </div>
+          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
             {footerRight}
           </div>
         </div>
       )}
-    </CardWrapper>
+    </motion.div>
   );
 };

@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
 import { useMemo, useState, useEffect } from "react";
 import { z } from "zod";
-import { AppDispatch } from "@/store/store";
 import {
   useAcceptInviteMutation,
   useGoogleSignInMutation,
@@ -15,14 +13,17 @@ import { notifier } from "@/utils/notifier";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
+import { motion } from "framer-motion";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { UserCheck, ShieldPlus } from "lucide-react";
 
 export default function AcceptInvitePage() {
   const { token: routeToken } = useParams<{ token: string }>();
   const [inviteToken] = useState(routeToken);
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
 
-  // Mask the sensitive token in the URL bar immediately
   useEffect(() => {
     if (inviteToken) {
       window.history.replaceState({}, "", "/invite/accept/active");
@@ -80,6 +81,7 @@ export default function AcceptInvitePage() {
         firstName,
         lastName,
         password,
+        confirmPassword,
       }).unwrap();
       notifier.success(MESSAGES.TEAM.INVITE_ACCEPTED);
       router.push("/login");
@@ -94,8 +96,6 @@ export default function AcceptInvitePage() {
       notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED);
       return;
     }
-    // When accepting invite via Google, pass the invite token
-    // Backend will validate token and create user as TEAM_MEMBER
     try {
       await googleSignInMutation({
         idToken: credential,
@@ -109,109 +109,122 @@ export default function AcceptInvitePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-900">
+    <div className="min-h-dvh flex flex-col bg-background selection:bg-primary/30">
       <Header />
-      <main className="flex-1 bg-gradient-to-b from-[#F8FAFC] to-[#EBEFF5]">
-        <section className="relative overflow-hidden  bg-gradient-to-b from-[#F8FAFC] to-[#EBEFF5]">
-          <div className="absolute inset-0 -z-10">
-            <div className="absolute top-0 left-0 h-[512px] w-[512px] rounded-full bg-gradient-to-br from-[#2463EB]/25 to-[#2463EB]/0 blur-[32px]" />
-            <div className="absolute top-0 right-0 h-[512px] w-[512px] rounded-full bg-gradient-to-br from-[#8D65F1]/25 to-[#8D65F1]/0 blur-[32px]" />
-          </div>
+      <main className="relative flex-1 flex items-center justify-center px-6 py-20 overflow-hidden">
+        {/* Animated Background System */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_30%,rgba(var(--primary),0.1)_0%,transparent_50%),radial-gradient(circle_at_80%_70%,rgba(99,102,241,0.08)_0%,transparent_50%)]" />
+        </div>
 
-          <div className="container max-w-[1400px] mx-auto px-8 py-24">
-            <div className="flex items-start gap-12 justify-center">
-              <div className="flex-1 max-w-md">
-                <h1 className="text-3xl font-bold mb-2">Accept Invitation</h1>
-                <p className="text-gray-600 text-sm mb-6">
-                  Set your details to complete your account.
+        <div className="relative z-10 w-full max-w-md">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card className="glass-card !p-10 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] rounded-[3rem]">
+              <div className="mb-10 text-center">
+                <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 border border-primary/20 shadow-[0_0_30px_rgba(var(--primary),0.15)] text-primary">
+                  <UserCheck className="w-8 h-8" />
+                </div>
+                <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter italic mb-2">
+                  Accept invite
+                </h1>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
+                  Configure your node credentials <br />
+                  to join the collective matrix.
                 </p>
+              </div>
 
-                <div className="space-y-3">
-                  <input
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
                     type="text"
-                    placeholder="First Name"
-                    className="w-full h-10 px-4 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
+                    placeholder="FIRST NAME"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     disabled={loading}
+                    className="bg-background/40 border-white/5 h-12 rounded-xl text-[10px] font-black uppercase tracking-wider"
                   />
-                  <input
+                  <Input
                     type="text"
-                    placeholder="Last Name"
-                    className="w-full h-10 px-4 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
+                    placeholder="LAST NAME"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     disabled={loading}
+                    className="bg-background/40 border-white/5 h-12 rounded-xl text-[10px] font-black uppercase tracking-wider"
                   />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    className="w-full h-10 px-4 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    className="w-full h-10 px-4 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2463EB] focus:border-transparent"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={loading}
-                  />
+                </div>
+                <Input
+                  type="password"
+                  placeholder="ACCESS KEY (PASSWORD)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+                  leftIcon={<ShieldPlus className="w-4 h-4 text-primary" />}
+                />
+                <Input
+                  type="password"
+                  placeholder="VERIFY ACCESS KEY"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
+                  className="bg-background/40 border-white/5 h-14 rounded-2xl text-[11px] font-black uppercase tracking-wider"
+                />
 
-                  <button
-                    className="w-full h-10 rounded-xl bg-[#2463EB] text-white text-sm font-medium hover:bg-[#2463EB]/90"
-                    onClick={onSubmit}
-                    disabled={
-                      loading ||
-                      !firstName ||
-                      !lastName ||
-                      !password ||
-                      !confirmPassword
+                <Button
+                  fullWidth
+                  onClick={onSubmit}
+                  disabled={
+                    loading ||
+                    !firstName ||
+                    !lastName ||
+                    !password ||
+                    !confirmPassword
+                  }
+                  isLoading={loading}
+                  className="h-14 mt-4 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30 active:scale-95 transition-all"
+                >
+                  {loading ? "INITIALIZING..." : "JOIN COLLECTIVE"}
+                </Button>
+
+                <div className="my-8 flex items-center gap-4">
+                  <div className="flex-1 h-px bg-white/5" />
+                  <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em]">
+                    OR AUTO-SYNC
+                  </span>
+                  <div className="flex-1 h-px bg-white/5" />
+                </div>
+
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSignIn}
+                    onError={() =>
+                      notifier.error(null, MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED)
                     }
-                  >
-                    {loading ? "Submitting..." : "Complete Setup"}
-                  </button>
+                    theme="filled_black"
+                    shape="pill"
+                    text="signup_with"
+                  />
+                </div>
 
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="bg-white px-2 text-gray-500">
-                        Or sign up with
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-center">
-                    <GoogleLogin
-                      onSuccess={handleGoogleSignIn}
-                      onError={() => {
-                        notifier.error(
-                          null,
-                          MESSAGES.AUTH.GOOGLE_SIGNIN_FAILED,
-                        );
-                      }}
-                      text="signup_with"
-                    />
-                  </div>
-
-                  <p className="text-xs text-gray-600">
-                    Already have an account?{" "}
+                <div className="mt-8 pt-6 border-t border-white/5 text-center">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
+                    Already an active node?{" "}
                     <Link
                       href="/login"
-                      className="text-[#2463EB] hover:underline"
+                      className="text-primary hover:brightness-125 transition-all"
                     >
-                      Sign in
+                      Sign In
                     </Link>
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
+            </Card>
+          </motion.div>
+        </div>
       </main>
       <Footer />
     </div>

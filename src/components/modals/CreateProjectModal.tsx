@@ -2,25 +2,23 @@
 
 import { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
+import { motion } from "framer-motion";
 import {
   X,
   Loader2,
   ArrowRight,
   ArrowLeft,
-  Calendar,
   Users,
   Target,
   Check,
-  Search,
   Briefcase,
 } from "lucide-react";
 import {
   useCreateProjectMutation,
   useGetManagerMembersQuery,
 } from "@/store/api/managerApiSlice";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
 import { Input } from "@/components/ui/Input";
+import { Project } from "@/types/project";
 import { notifier } from "@/utils/notifier";
 import { MESSAGES } from "@/constants/messages";
 
@@ -38,22 +36,30 @@ export default function CreateProjectModal({
   const [step, setStep] = useState(1);
   const [memberSearch, setMemberSearch] = useState("");
   const [tagInput, setTagInput] = useState("");
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkEmails, setBulkEmails] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     startDate: "",
     endDate: "",
-    status: "PLANNING" as const as any, // Temporary bypass to match Partial<Project>
-    priority: "MEDIUM" as const as any,
+    status: "PLANNING" as Project["status"],
+    priority: "MEDIUM" as Project["priority"],
     tags: [] as string[],
     teamMemberIds: [] as string[],
   });
 
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
-  const { data: members = [] } = useGetManagerMembersQuery(undefined, {
-    skip: !isOpen,
-  });
+  const { data: membersData = { items: [], total: 0 } } =
+    useGetManagerMembersQuery(
+      { page: 1, limit: 1000 },
+      {
+        skip: !isOpen,
+      },
+    );
+
+  const members = membersData.items;
 
   useEffect(() => {
     if (isOpen) {
@@ -63,8 +69,8 @@ export default function CreateProjectModal({
         description: "",
         startDate: "",
         endDate: "",
-        status: "PLANNING" as any,
-        priority: "MEDIUM" as any,
+        status: "PLANNING",
+        priority: "MEDIUM",
         tags: [],
         teamMemberIds: [],
       });
@@ -128,6 +134,51 @@ export default function CreateProjectModal({
     });
   };
 
+  const handleSelectAll = () => {
+    const currentFilteredIds = filteredMembers.map((m) => m.id);
+    setFormData((prev) => ({
+      ...prev,
+      teamMemberIds: Array.from(
+        new Set([...prev.teamMemberIds, ...currentFilteredIds]),
+      ),
+    }));
+  };
+
+  const handleDeselectAll = () => {
+    const currentFilteredIds = filteredMembers.map((m) => m.id);
+    setFormData((prev) => ({
+      ...prev,
+      teamMemberIds: prev.teamMemberIds.filter(
+        (id) => !currentFilteredIds.includes(id),
+      ),
+    }));
+  };
+
+  const handleBulkAddEmails = () => {
+    const emails = bulkEmails
+      .split(/[\n,;]/)
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e);
+
+    const matchedIds = members
+      .filter((m) => emails.includes(m.email.toLowerCase()))
+      .map((m) => m.id);
+
+    if (matchedIds.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        teamMemberIds: Array.from(
+          new Set([...prev.teamMemberIds, ...matchedIds]),
+        ),
+      }));
+      notifier.success(`Selected ${matchedIds.length} members from list`);
+      setBulkEmails("");
+      setShowBulkAdd(false);
+    } else {
+      notifier.error(null, "No matching members found for those emails");
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       await createProject(formData).unwrap();
@@ -171,279 +222,337 @@ export default function CreateProjectModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
-                {/* Stepper Header */}
-                <div className="bg-gray-50/50 px-10 pt-10 pb-8 border-b border-gray-100">
-                  <div className="flex justify-between items-start mb-8">
-                    <div>
-                      <Dialog.Title
-                        as="h3"
-                        className="text-2xl font-black text-gray-900 tracking-tight"
-                      >
-                        Create New Project
-                      </Dialog.Title>
-                      <p className="text-sm font-medium text-gray-500 mt-1">
-                        Step {step} of 3:{" "}
-                        {step === 1
-                          ? "Basic Information"
-                          : step === 2
-                            ? "Project Details"
-                            : "Build Your Team"}
-                      </p>
+              <Dialog.Panel className="relative transform overflow-hidden modal-surface transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+                {/* Progress Bar */}
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-secondary">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(step / 3) * 100}%` }}
+                    className="h-full bg-primary"
+                  />
+                </div>
+
+                <div className="px-10 pt-10 pb-6">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-primary/10 rounded-xl">
+                        {step === 1 ? (
+                          <Briefcase className="w-6 h-6 text-primary" />
+                        ) : step === 2 ? (
+                          <Target className="w-6 h-6 text-primary" />
+                        ) : (
+                          <Users className="w-6 h-6 text-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <Dialog.Title
+                          as="h3"
+                          className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
+                        >
+                          {step === 1
+                            ? "Initiate Node"
+                            : step === 2
+                              ? "Parameters"
+                              : "Assemble Team"}
+                        </Dialog.Title>
+                        <p className="text-[10px] font-black text-muted-foreground mt-1 uppercase tracking-widest opacity-60">
+                          Step {step} of 3 • Operation Provisioning
+                        </p>
+                      </div>
                     </div>
                     <button
                       onClick={onClose}
-                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between relative max-w-md mx-auto">
-                    <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10 -translate-y-1/2 rounded-full" />
-                    <div
-                      className="absolute top-1/2 left-0 h-1 bg-blue-600 -z-10 -translate-y-1/2 rounded-full transition-all duration-500"
-                      style={{ width: `${((step - 1) / 2) * 100}%` }}
-                    />
-                    {[1, 2, 3].map((num) => (
-                      <div
-                        key={num}
-                        className="flex flex-col items-center gap-2"
-                      >
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black transition-all duration-500 ${
-                            step >= num
-                              ? "bg-blue-600 text-white shadow-xl shadow-blue-200"
-                              : "bg-white border-2 border-gray-200 text-gray-400"
-                          }`}
-                        >
-                          {step > num ? <Check className="w-5 h-5" /> : num}
+                  <div className="min-h-[400px]">
+                    {step === 1 && (
+                      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <Input
+                          label="Node Identifier"
+                          placeholder="PROJECT QUANTUM"
+                          required
+                          value={formData.name}
+                          onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                          }
+                          labelClassName="uppercase tracking-[0.2em]"
+                        />
+                        <div className="space-y-2">
+                          <label className="form-label uppercase tracking-[0.2em]">
+                            Mission Briefing
+                          </label>
+                          <textarea
+                            rows={4}
+                            placeholder="DEFINE THE STRATEGIC OBJECTIVES..."
+                            value={formData.description}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                description: e.target.value,
+                              })
+                            }
+                            className="form-input min-h-[120px] resize-none"
+                          />
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {step === 2 && (
+                      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="grid grid-cols-2 gap-6">
+                          <Input
+                            label="Activation"
+                            type="date"
+                            required
+                            value={formData.startDate}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                startDate: e.target.value,
+                              })
+                            }
+                            labelClassName="uppercase tracking-[0.2em]"
+                          />
+                          <Input
+                            label="Target Completion"
+                            type="date"
+                            required
+                            value={formData.endDate}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                endDate: e.target.value,
+                              })
+                            }
+                            labelClassName="uppercase tracking-[0.2em]"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="form-label uppercase tracking-[0.2em]">
+                              Priority Tier
+                            </label>
+                            <select
+                              value={formData.priority}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  priority: e.target
+                                    .value as Project["priority"],
+                                })
+                              }
+                              className="form-select"
+                            >
+                              <option value="LOW">LOW PRIORITY</option>
+                              <option value="MEDIUM">MEDIUM PRIORITY</option>
+                              <option value="HIGH">HIGH PRIORITY</option>
+                              <option value="CRITICAL">CRITICAL</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="form-label uppercase tracking-[0.2em]">
+                              Initial Protocol
+                            </label>
+                            <select
+                              value={formData.status}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  status: e.target.value as Project["status"],
+                                })
+                              }
+                              className="form-select"
+                            >
+                              <option value="PLANNING">PLANNING</option>
+                              <option value="ACTIVE">ACTIVE</option>
+                              <option value="ON_HOLD">ON HOLD</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <label className="form-label">Operational Tags</label>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {formData.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest border border-primary/20"
+                              >
+                                {tag}
+                                <button
+                                  onClick={() => removeTag(tag)}
+                                  className="hover:text-rose-500 transition-colors"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              placeholder="ADD SIGNAL TAGS..."
+                              value={tagInput}
+                              onChange={(e) => setTagInput(e.target.value)}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" &&
+                                (e.preventDefault(), addTag())
+                              }
+                              className="form-input"
+                            />
+                            <button
+                              type="button"
+                              onClick={addTag}
+                              className="px-6 bg-secondary text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary/80 transition-all"
+                            >
+                              Pin
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {step === 3 && (
+                      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <input
+                              placeholder="SCAN FOR OPERATIVES..."
+                              className="form-input flex-1"
+                              value={memberSearch}
+                              onChange={(e) => setMemberSearch(e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowBulkAdd(!showBulkAdd)}
+                              className={`p-3 rounded-xl border transition-all ${
+                                showBulkAdd
+                                  ? "bg-primary/20 border-primary text-primary"
+                                  : "border-border text-muted-foreground hover:text-primary"
+                              }`}
+                            >
+                              <Target className="w-5 h-5" />
+                            </button>
+                          </div>
+
+                          {showBulkAdd && (
+                            <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                              <label className="text-[10px] font-black text-primary uppercase tracking-widest">
+                                Bulk Signal Entry
+                              </label>
+                              <textarea
+                                rows={3}
+                                className="form-input !text-xs !bg-card"
+                                placeholder="EMAILS SEPARATED BY COMMAS..."
+                                value={bulkEmails}
+                                onChange={(e) => setBulkEmails(e.target.value)}
+                              />
+                              <div className="flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={handleBulkAddEmails}
+                                  className="bg-primary text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
+                                >
+                                  Identify
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between px-1">
+                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
+                              {formData.teamMemberIds.length} AUTHORIZED
+                            </p>
+                            <div className="flex gap-4">
+                              <button
+                                type="button"
+                                onClick={handleSelectAll}
+                                className="text-[9px] font-black text-primary hover:text-primary/80 uppercase tracking-widest transition-colors"
+                              >
+                                Authorize All
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleDeselectAll}
+                                className="text-[9px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest transition-colors"
+                              >
+                                Prune
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                          {filteredMembers.map((member) => {
+                            const isSelected = formData.teamMemberIds.includes(
+                              member.id,
+                            );
+                            return (
+                              <div
+                                key={member.id}
+                                onClick={() => toggleMember(member.id)}
+                                className={`group flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border/30 bg-secondary/10 hover:border-border/60 hover:bg-secondary/20"
+                                }`}
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-black uppercase ${
+                                      isSelected
+                                        ? "bg-primary text-white shadow-md shadow-primary/20"
+                                        : "bg-background text-muted-foreground border border-border/30"
+                                    }`}
+                                  >
+                                    {(member.firstName || "U").charAt(0)}
+                                  </div>
+                                  <div>
+                                    <h4
+                                      className={`text-[13px] font-black uppercase tracking-tight ${
+                                        isSelected
+                                          ? "text-primary"
+                                          : "text-foreground"
+                                      }`}
+                                    >
+                                      {member.firstName} {member.lastName}
+                                    </h4>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
+                                      {member.email}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div
+                                  className={`w-6 h-6 rounded-xl border-2 flex items-center justify-center transition-all ${
+                                    isSelected
+                                      ? "bg-primary border-primary shadow-md shadow-primary/20"
+                                      : "border-border/50 group-hover:border-primary/50"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <Check className="w-4 h-4 text-white" />
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="px-10 py-10">
-                  {step === 1 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                      <Input
-                        label="Project Name"
-                        required
-                        size="lg"
-                        placeholder="e.g. Q3 Marketing Blitz"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                      />
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-900">
-                          Description
-                        </label>
-                        <textarea
-                          rows={4}
-                          className="block w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 p-4 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 focus:bg-white transition-all resize-none"
-                          placeholder="What's the mission?"
-                          value={formData.description}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              description: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 2 && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                      <div className="grid grid-cols-2 gap-6">
-                        <Input
-                          label="Start Date"
-                          type="date"
-                          size="lg"
-                          value={formData.startDate}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              startDate: e.target.value,
-                            })
-                          }
-                        />
-                        <Input
-                          label="Target End Date"
-                          type="date"
-                          size="lg"
-                          value={formData.endDate}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              endDate: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-gray-900">
-                            Priority Level
-                          </label>
-                          <select
-                            className="block w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm"
-                            value={formData.priority}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                priority: e.target.value,
-                              })
-                            }
-                          >
-                            <option value="LOW">Low</option>
-                            <option value="MEDIUM">Medium</option>
-                            <option value="HIGH">High</option>
-                            <option value="CRITICAL">Critical</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-gray-900">
-                            Initial Status
-                          </label>
-                          <select
-                            className="block w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm"
-                            value={formData.status}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                status: e.target.value,
-                              })
-                            }
-                          >
-                            <option value="PLANNING">Planning</option>
-                            <option value="ACTIVE">Active</option>
-                            <option value="ON_HOLD">On Hold</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <label className="text-sm font-bold text-gray-900">
-                          Project Tags
-                        </label>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {formData.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-black ring-1 ring-blue-100"
-                            >
-                              {tag}
-                              <button
-                                onClick={() => removeTag(tag)}
-                                className="hover:text-red-500 transition-colors"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Add tags (Frontend, SEO...)"
-                            value={tagInput}
-                            onChange={(e) => setTagInput(e.target.value)}
-                            onKeyDown={(e) =>
-                              e.key === "Enter" &&
-                              (e.preventDefault(), addTag())
-                            }
-                            containerClassName="flex-1"
-                          />
-                          <button
-                            type="button"
-                            onClick={addTag}
-                            className="px-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm rounded-xl transition-all"
-                          >
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 3 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                      <Input
-                        placeholder="Search for team members..."
-                        leftIcon={<Search className="w-5 h-5" />}
-                        size="lg"
-                        value={memberSearch}
-                        onChange={(e) => setMemberSearch(e.target.value)}
-                      />
-
-                      <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                        {filteredMembers.map((member) => {
-                          const isSelected = formData.teamMemberIds.includes(
-                            member.id,
-                          );
-                          return (
-                            <div
-                              key={member.id}
-                              onClick={() => toggleMember(member.id)}
-                              className={`group flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                                isSelected
-                                  ? "border-blue-500 bg-blue-50/50"
-                                  : "border-gray-50 hover:border-blue-200 hover:bg-gray-50"
-                              }`}
-                            >
-                              <div className="flex items-center gap-4">
-                                <div
-                                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black ${
-                                    isSelected
-                                      ? "bg-blue-600 text-white"
-                                      : "bg-white text-gray-400 border border-gray-100"
-                                  }`}
-                                >
-                                  {(member.firstName || "U").charAt(0)}
-                                </div>
-                                <div>
-                                  <h4
-                                    className={`text-sm font-black ${isSelected ? "text-blue-900" : "text-gray-900"}`}
-                                  >
-                                    {member.firstName || "Unknown"}{" "}
-                                    {member.lastName || ""}
-                                  </h4>
-                                  <p className="text-xs font-medium text-gray-600">
-                                    {member.email}
-                                  </p>
-                                </div>
-                              </div>
-                              <div
-                                className={`w-6 h-6 rounded-xl border-2 flex items-center justify-center transition-all ${
-                                  isSelected
-                                    ? "bg-blue-600 border-blue-600"
-                                    : "border-gray-200 group-hover:border-blue-300"
-                                }`}
-                              >
-                                {isSelected && (
-                                  <Check className="w-4 h-4 text-white" />
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-gray-50 px-10 py-8 flex items-center justify-between">
+                <div className="bg-secondary/10 px-10 py-8 flex items-center justify-between border-t border-border/50">
                   {step > 1 ? (
                     <button
                       onClick={handleBack}
-                      className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-all"
+                      className="flex items-center gap-2 text-[10px] font-black text-muted-foreground hover:text-foreground uppercase tracking-widest transition-all"
                     >
-                      <ArrowLeft className="w-5 h-5" /> Back
+                      <ArrowLeft className="w-4 h-4" /> Go Back
                     </button>
                   ) : (
                     <div />
@@ -452,20 +561,23 @@ export default function CreateProjectModal({
                   {step < 3 ? (
                     <button
                       onClick={handleNext}
-                      className="inline-flex items-center gap-2 bg-blue-600 px-8 py-3.5 rounded-xl text-sm font-black text-white shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all"
+                      className="inline-flex items-center gap-2 bg-primary px-8 py-3.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all"
                     >
-                      Continue <ArrowRight className="w-5 h-5" />
+                      Proceed <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
                     <button
                       onClick={handleSubmit}
                       disabled={isCreating}
-                      className="inline-flex items-center justify-center gap-2 bg-gray-900 px-10 py-3.5 rounded-xl text-sm font-black text-white shadow-2xl shadow-gray-200 hover:bg-black transition-all disabled:opacity-50 min-w-[180px]"
+                      className="inline-flex items-center justify-center gap-2 bg-foreground px-10 py-3.5 rounded-xl text-[10px] font-black text-background uppercase tracking-widest hover:bg-foreground/90 shadow-2xl shadow-foreground/10 transition-all disabled:opacity-50 min-w-[200px]"
                     >
                       {isCreating ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        "Deploy Project"
+                        <>
+                          <Check className="w-4 h-4 mr-1" />
+                          Initialize Node
+                        </>
                       )}
                     </button>
                   )}

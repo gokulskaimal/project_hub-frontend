@@ -1,37 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "next/navigation";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { confirmWithAlert } from "@/utils/confirm";
-import { extractErrorMessage } from "@/utils/api";
-import {
-  Pencil,
-  Trash2,
-  ArrowLeft,
-  Calendar,
-  User as UserIcon,
-  CheckCircle2,
-  Search,
-  LayoutGrid,
-  Layout,
-  Clock,
-  AlertCircle,
-  MessageSquare,
-  Rows,
-  Layers,
-  Play,
-  PenLine,
-  PanelRight,
-  Plus,
-  BarChart3,
-} from "lucide-react";
+import { Layout, Layers, Plus, BarChart3 } from "lucide-react";
 import TaskCalendar from "@/components/dashboard/TaskCalendar";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
 import BacklogList from "@/components/dashboard/BacklogList";
 import { Task, Sprint } from "@/types/project";
-import { User } from "@/types/auth";
 import CreateTaskModal from "@/components/modals/CreateTaskModal";
 import CreateSprintModal from "@/components/modals/CreateSprintModal";
 import ProjectChat from "@/components/chat/ProjectChat";
@@ -39,35 +17,36 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { useSocket } from "@/context/SocketContext";
 import { Button } from "@/components/ui/Button";
-import UserAvatar from "@/components/ui/UserAvatar";
-import VelocityChart from "@/components/analytics/VelocityChart";
 import SprintCapacity from "@/components/analytics/SprintCapacity";
-import SprintBurndownChart from "@/components/analytics/SprintBurndownChart";
+import EpicListing from "@/components/dashboard/EpicListing";
 import StartSprintModal from "@/components/modals/StartSprintModal";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import ProjectFilters from "@/components/project/ProjectFilters";
 import { USER_ROLES } from "@/utils/constants";
+import { AnimatePresence } from "framer-motion";
 import {
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
   useGetProjectMembersQuery,
   useGetProjectSprintsQuery,
-  useGetProjectVelocityQuery,
   useDeleteTaskMutation,
   useDeleteSprintMutation,
   useUpdateSprintMutation,
   useUpdateTaskMutation,
-  useCreateTaskMutation,
 } from "@/store/api/projectApiSlice";
 
 import ProjectDetailsHeader from "@/components/project/ProjectDetailsHeader";
 import ProjectDetailsSidebar from "@/components/project/ProjectDetailsSidebar";
 import ProjectStatsCards from "@/components/project/ProjectStatsCards";
 import SprintSelectorHeader from "@/components/project/SprintSelectorHeader";
+import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
+import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
+import StrategicProjectReport from "@/components/analytics/StrategicProjectReport";
+import MeetingSection from "@/components/Meeting/MeetingSection";
+import { PaginatedResponse } from "@/types/project";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params.id as string;
 
   // Auth State
@@ -81,10 +60,15 @@ export default function ProjectDetailsPage() {
   const { data: project, isLoading: projectLoading } =
     useGetProjectByIdQuery(projectId);
   const {
-    data: tasks = [],
+    data: rawTasks = [],
     isLoading: tasksLoading,
     refetch: refetchTasks,
-  } = useGetProjectTasksQuery(projectId);
+  } = useGetProjectTasksQuery({ projectId });
+
+  const tasks = useMemo(() => {
+    if (Array.isArray(rawTasks)) return rawTasks;
+    return rawTasks?.items || [];
+  }, [rawTasks]);
   const {
     data: sprints = [],
     isLoading: sprintsLoading,
@@ -92,21 +76,15 @@ export default function ProjectDetailsPage() {
   } = useGetProjectSprintsQuery(projectId);
   const { data: projectMembers = [], isLoading: membersLoading } =
     useGetProjectMembersQuery(projectId);
-  const { data: velocityData } = useGetProjectVelocityQuery({
-    projectId,
-    days: 7,
-  });
-  const projectVelocity = velocityData?.totalPoints ?? null;
 
   // Mutations
   const [deleteTask] = useDeleteTaskMutation();
   const [deleteSprint] = useDeleteSprintMutation();
   const [updateSprint] = useUpdateSprintMutation();
   const [updateTask] = useUpdateTaskMutation();
-  const [createTask] = useCreateTaskMutation();
 
   const [activeTab, setActiveTab] = useState<
-    "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS"
+    "TASKS" | "CHAT" | "CALENDAR" | "ANALYTICS" | "EPICS"
   >("TASKS");
 
   // Filter & Search State via Custom Hook
@@ -132,12 +110,47 @@ export default function ProjectDetailsPage() {
   const [isStartSprintOpen, setIsStartSprintOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
+  const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
+  const [analyticsView, setAnalyticsView] = useState<"SPRINT" | "STRATEGIC">(
+    "SPRINT",
+  );
 
   // UI State: Sidebar Toggle (Professional Style)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Sprint State
   const [selectedSprintId, setSelectedSprintId] = useState<string>("ACTIVE");
+
+  // Backlog Pagination State
+  const [backlogPage, setBacklogPage] = useState(1);
+  const [allBacklogTasks, setAllBacklogTasks] = useState<Task[]>([]);
+
+  // Fetch paginated backlog specifically
+  const { data: backlogData, isFetching: backlogLoading } =
+    useGetProjectTasksQuery({
+      projectId,
+      page: backlogPage,
+      limit: 12,
+      isInBacklog: true,
+    });
+
+  // Accumulate backlog tasks
+  useEffect(() => {
+    if (backlogData && "items" in backlogData) {
+      if (backlogPage === 1) {
+        setAllBacklogTasks(backlogData.items);
+      } else {
+        setAllBacklogTasks((prev) => {
+          const newItems = backlogData.items.filter(
+            (nt: Task) => !prev.find((pt) => pt.id === nt.id),
+          );
+          return [...prev, ...newItems];
+        });
+      }
+    } else if (Array.isArray(backlogData) && backlogPage === 1) {
+      setAllBacklogTasks(backlogData);
+    }
+  }, [backlogData, backlogPage]);
 
   // Calculate stats
   const totalTasks = tasks.length;
@@ -164,7 +177,7 @@ export default function ProjectDetailsPage() {
 
   // Split into Active Board vs Backlog
   const backlogTasks = useMemo(
-    () => filteredTasks.filter((t: Task) => !t.sprintId),
+    () => filteredTasks.filter((t: Task) => !t.sprintId && t.type !== "EPIC"),
     [filteredTasks],
   );
   const boardTasks = useMemo(
@@ -172,6 +185,7 @@ export default function ProjectDetailsPage() {
       filteredTasks.filter(
         (t: Task) =>
           t.sprintId &&
+          t.type !== "EPIC" &&
           selectedSprint &&
           String(t.sprintId) === String(selectedSprint.id),
       ),
@@ -232,7 +246,12 @@ export default function ProjectDetailsPage() {
     setIsSprintModalOpen(true);
   };
 
-  const handleModalSuccess = () => refetchTasks();
+  const handleModalSuccess = (type?: Task["type"]) => {
+    refetchTasks();
+    if (type === "EPIC") {
+      setActiveTab("EPICS");
+    }
+  };
   const handleSprintSuccess = () => {
     refetchSprints();
     refetchTasks();
@@ -269,20 +288,24 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  const handleCompleteSprint = async () => {
+  const handleCompleteSprint = async (destination?: string) => {
     if (!activeSprint) return;
     const confirmed = await confirmWithAlert(
       "Complete Sprint?",
-      `Are you sure you want to complete ${activeSprint.name}? All unfinished tasks will move to backlog.`,
+      `Are you sure you want to complete ${activeSprint.name}? Any unfinished tasks will be migrated to ${destination === "BACKLOG" ? "backlog" : "the next cycle"}.`,
     );
     if (confirmed) {
       try {
         await updateSprint({
           id: activeSprint.id,
           projectId,
-          data: { status: "COMPLETED" },
+          data: {
+            status: "COMPLETED",
+            spilloverDestination: destination,
+          },
         }).unwrap();
         notifier.success(MESSAGES.SPRINTS.COMPLETE_SUCCESS);
+        refetchTasks();
       } catch (err) {
         notifier.error(err, MESSAGES.SPRINTS.UPDATE_FAILED);
       }
@@ -359,12 +382,35 @@ export default function ProjectDetailsPage() {
         setIsSidebarOpen={setIsSidebarOpen}
       />
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div
-          className={`transition-all duration-300 ${isSidebarOpen ? "lg:w-3/4" : "w-full"}`}
-        >
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <div className="flex-1 min-w-0 transition-all duration-500 ease-in-out">
           {activeTab === "CHAT" ? (
             <ProjectChat projectId={projectId} />
+          ) : activeTab === "EPICS" ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2">
+                  <Layers className="w-6 h-6 text-primary" />
+                  Epic Management
+                </h2>
+                <Button
+                  onClick={() => {
+                    setEditingTask(null);
+                    setIsModalOpen(true);
+                  }}
+                  className="bg-primary hover:bg-primary/90 h-10 px-6 flex items-center gap-2 shadow-lg shadow-primary/20 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                >
+                  <Plus size={16} />
+                  Assemble New Epic
+                </Button>
+              </div>
+              <EpicListing
+                projectId={projectId}
+                onEditEpic={openEditModal}
+                onEditTask={openEditModal}
+                onCreateEpic={openCreateModal}
+              />
+            </div>
           ) : activeTab === "CALENDAR" ? (
             <TaskCalendar
               tasks={tasks}
@@ -373,44 +419,73 @@ export default function ProjectDetailsPage() {
               onTaskUpdate={refetchTasks}
             />
           ) : activeTab === "ANALYTICS" ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase mb-2">
-                    Weekly Velocity
-                  </h3>
-                  <div className="text-3xl font-bold text-gray-900">
-                    {projectVelocity ?? 0}{" "}
-                    <span className="text-sm font-normal text-gray-400">
-                      pts
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                  {activeSprint ? (
-                    <SprintBurndownChart sprint={activeSprint} tasks={tasks} />
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 py-10">
-                      <BarChart3 className="w-10 h-10 mb-2 opacity-50" />
-                      <p>Start a sprint to view the burndown chart</p>
-                    </div>
-                  )}
+            <div className="space-y-8">
+              {/* Analytics Strategy Toggle */}
+              <div className="flex items-center justify-center">
+                <div className="bg-slate-950 p-1 rounded-2xl border border-white/10 flex items-center shadow-2xl">
+                  <button
+                    onClick={() => setAnalyticsView("SPRINT")}
+                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "SPRINT" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
+                  >
+                    Tactical Sprint
+                  </button>
+                  <button
+                    onClick={() => setAnalyticsView("STRATEGIC")}
+                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "STRATEGIC" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
+                  >
+                    Strategic Project
+                  </button>
                 </div>
               </div>
-              <VelocityChart sprints={sprints} tasks={tasks} />
+
+              <AnimatePresence mode="wait">
+                {analyticsView === "SPRINT" ? (
+                  selectedSprint ? (
+                    <SprintAnalysisReport
+                      key="sprint-report"
+                      sprint={selectedSprint}
+                      tasks={tasks}
+                      sprints={sprints}
+                      members={projectMembers}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 bg-secondary/10 rounded-[3rem] border border-dashed border-border/50">
+                      <div className="w-16 h-16 bg-card rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl border border-border/50">
+                        <BarChart3 className="w-8 h-8 text-muted-foreground/30" />
+                      </div>
+                      <h3 className="text-xl font-black text-foreground tracking-tighter uppercase mb-2">
+                        No Sprint Selected
+                      </h3>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[260px] text-center leading-relaxed">
+                        Select an active or completed operational node to
+                        generate a performance audit.
+                      </p>
+                    </div>
+                  )
+                ) : (
+                  <StrategicProjectReport
+                    key="strategic-report"
+                    project={project!}
+                    tasks={tasks}
+                    sprints={sprints}
+                  />
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Real-time Analytics Header */}
               <div className="flex items-center justify-between px-1">
-                <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                  <Layout className="w-6 h-6 text-blue-600" />
-                  Real-time Analytics
+                <h2 className="text-xl font-black text-foreground tracking-tighter flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <Layout className="w-5 h-5 text-primary" />
+                  </div>
+                  System Intelligence
                 </h2>
-                <div className="flex gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    Live Sync
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Syncing Live
                   </span>
                 </div>
               </div>
@@ -441,26 +516,28 @@ export default function ProjectDetailsPage() {
                   />
                 </div>
                 <div className="flex gap-3">
-                  <Button
-                    onClick={openCreateModal}
-                    className="bg-blue-600 h-10 px-6 flex items-center gap-2 shadow-sm"
-                  >
-                    <Plus size={18} />
-                    Create Task
-                  </Button>
                   {isManager && (
-                    <Button
-                      onClick={() => setIsSprintModalOpen(true)}
-                      className="bg-blue-600 h-10 px-6 flex items-center gap-2 shadow-sm"
-                    >
-                      <Plus size={18} />
-                      Create Sprint
-                    </Button>
+                    <>
+                      <Button
+                        onClick={openCreateModal}
+                        className="bg-primary hover:bg-primary/90 h-10 px-6 flex items-center gap-2 shadow-lg shadow-primary/20 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                      >
+                        <Plus size={16} />
+                        Add Task
+                      </Button>
+                      <Button
+                        onClick={() => setIsSprintModalOpen(true)}
+                        className="bg-secondary text-foreground hover:bg-secondary/80 h-10 px-6 flex items-center gap-2 border border-border/50 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                      >
+                        <Plus size={16} />
+                        New Sprint
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-6">
+              <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-6">
                 <SprintSelectorHeader
                   selectedSprintId={selectedSprintId}
                   setSelectedSprintId={setSelectedSprintId}
@@ -477,6 +554,7 @@ export default function ProjectDetailsPage() {
                   onCompleteSprint={handleCompleteSprint}
                   onStartSprint={() => setIsStartSprintOpen(true)}
                   onDeleteSprint={handleDeleteSprint}
+                  tasks={tasks}
                 />
 
                 {selectedSprint && (
@@ -486,51 +564,85 @@ export default function ProjectDetailsPage() {
                       tasks={tasks}
                       activeSprintId={selectedSprint.id}
                     />
+                    <MeetingSection
+                      sprintId={selectedSprint.id}
+                      projectId={projectId}
+                      isManager={isManager}
+                    />
                     <KanbanBoard
                       tasks={boardTasks}
                       users={projectMembers}
                       onStatusChange={handleStatusChange}
                       onDeleteTask={handleDeleteTask}
                       onEditTask={openEditModal}
+                      showProjectBadges={false}
                       projectId={projectId}
+                      isReadOnly={selectedSprint?.status === "COMPLETED"}
                     />
                   </>
                 )}
 
-                <div className="pt-6 border-t border-gray-50">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                      <Layers size={18} className="text-gray-400" />
-                      Backlog
-                      <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px]">
-                        {backlogTasks.length}
-                      </span>
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={openCreateModal}
-                      className="text-blue-600 hover:bg-blue-50 text-xs"
-                    >
-                      + Add Item
-                    </Button>
+                {(!selectedSprint || selectedSprint.status !== "COMPLETED") && (
+                  <div className="pt-6 border-t border-border">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-foreground flex items-center gap-2">
+                        <Layers size={18} className="text-muted-foreground" />
+                        Backlog
+                        <span className="bg-secondary text-muted-foreground px-2 py-0.5 rounded text-[10px]">
+                          {backlogTasks.length}
+                        </span>
+                      </h3>
+                      {isManager && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingTask(null);
+                            setIsModalOpen(true);
+                          }}
+                          className="text-blue-600 hover:bg-blue-50 text-xs"
+                        >
+                          + Add Item
+                        </Button>
+                      )}
+                    </div>
+                    <BacklogList
+                      tasks={allBacklogTasks}
+                      users={projectMembers}
+                      onMoveToBoard={handleMoveToSprint}
+                      onEditTask={openEditModal}
+                      onDeleteTask={handleDeleteTask}
+                      isSidebarOpen={isSidebarOpen}
+                      projectId={projectId}
+                      hasMore={
+                        backlogData && "page" in backlogData
+                          ? backlogData.page < backlogData.totalPages
+                          : false
+                      }
+                      onLoadMore={() => setBacklogPage((prev) => prev + 1)}
+                      isLoadingMore={backlogLoading}
+                      totalCount={
+                        backlogData && "total" in backlogData
+                          ? (backlogData as PaginatedResponse<Task>).total
+                          : backlogTasks.length
+                      }
+                    />
                   </div>
-                  <BacklogList
-                    tasks={backlogTasks}
-                    users={projectMembers}
-                    onMoveToBoard={handleMoveToSprint}
-                    onEditTask={openEditModal}
-                    onDeleteTask={handleDeleteTask}
-                    isSidebarOpen={isSidebarOpen}
-                    projectId={projectId}
-                  />
-                </div>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {isSidebarOpen && <ProjectDetailsSidebar teamMembers={teamMembers} />}
+        {isSidebarOpen && (
+          <div className="w-full lg:w-[320px] shrink-0 sticky top-6 animate-in slide-in-from-right duration-500">
+            <ProjectDetailsSidebar
+              teamMembers={teamMembers}
+              isManager={isManager}
+              onAddMembers={() => setIsManageMembersOpen(true)}
+            />
+          </div>
+        )}
       </div>
 
       <CreateTaskModal
@@ -558,6 +670,16 @@ export default function ProjectDetailsPage() {
         sprintName={selectedSprint?.name || ""}
         taskCount={boardTasks.length}
       />
+      {project && (
+        <AddProjectMemberModal
+          isOpen={isManageMembersOpen}
+          onClose={() => setIsManageMembersOpen(false)}
+          project={project}
+          onSuccess={() => {
+            // Tag invalidation in managerApiSlice handles the refetch
+          }}
+        />
+      )}
     </div>
   );
 }

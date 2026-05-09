@@ -1,11 +1,14 @@
+"use client";
+
 import React from "react";
 import { LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface StatCardProps {
   label: string;
   value: string | number;
   icon: LucideIcon;
-  color?: string; // e.g. "blue", "green", "red", "purple"
+  color?: string; // e.g. "indigo", "emerald", "rose", "amber", "violet"
   loading?: boolean;
   trend?: {
     value: number;
@@ -18,98 +21,144 @@ export const StatCard: React.FC<StatCardProps> = ({
   label,
   value,
   icon: Icon,
-  color = "blue",
+  color = "indigo",
   loading = false,
   trend,
 }) => {
   const colorMap: Record<
     string,
-    { bg: string; text: string; iconBg: string; shadow: string }
+    {
+      bg: string;
+      text: string;
+      iconBg: string;
+      glow: string;
+      line: string;
+    }
   > = {
-    blue: {
-      bg: "bg-blue-50",
-      text: "text-blue-600",
-      iconBg: "bg-blue-600",
-      shadow: "shadow-blue-200",
-    },
-    green: {
-      bg: "bg-green-50",
-      text: "text-green-600",
-      iconBg: "bg-green-600",
-      shadow: "shadow-green-200",
-    },
-    red: {
-      bg: "bg-red-50",
-      text: "text-red-600",
-      iconBg: "bg-red-600",
-      shadow: "shadow-red-200",
-    },
-    purple: {
-      bg: "bg-purple-50",
-      text: "text-purple-600",
-      iconBg: "bg-purple-600",
-      shadow: "shadow-purple-200",
-    },
-    orange: {
-      bg: "bg-orange-50",
-      text: "text-orange-600",
-      iconBg: "bg-orange-600",
-      shadow: "shadow-orange-200",
+    indigo: {
+      bg: "bg-indigo-500/10",
+      text: "text-indigo-500",
+      iconBg: "bg-indigo-500",
+      glow: "shadow-indigo-500/20",
+      line: "bg-indigo-500",
     },
     emerald: {
-      bg: "bg-emerald-50",
-      text: "text-emerald-600",
-      iconBg: "bg-emerald-600",
-      shadow: "shadow-emerald-200",
+      bg: "bg-emerald-500/10",
+      text: "text-emerald-500",
+      iconBg: "bg-emerald-500",
+      glow: "shadow-emerald-500/20",
+      line: "bg-emerald-500",
+    },
+    rose: {
+      bg: "bg-rose-500/10",
+      text: "text-rose-500",
+      iconBg: "bg-rose-500",
+      glow: "shadow-rose-500/20",
+      line: "bg-rose-500",
+    },
+    violet: {
+      bg: "bg-violet-500/10",
+      text: "text-violet-500",
+      iconBg: "bg-violet-500",
+      glow: "shadow-violet-500/20",
+      line: "bg-violet-500",
+    },
+    amber: {
+      bg: "bg-amber-500/10",
+      text: "text-amber-500",
+      iconBg: "bg-amber-500",
+      glow: "shadow-amber-500/20",
+      line: "bg-amber-500",
     },
   };
 
-  const colors = colorMap[color] || colorMap.blue;
+  const colors = colorMap[color] || colorMap.indigo;
 
   return (
-    <div className="relative group bg-white overflow-hidden rounded-xl border border-gray-50 p-2.5 sm:p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-      {/* Decorative Glow - Reduced on mobile */}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="relative group bg-card overflow-hidden rounded-2xl border border-border/50 p-4 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 ease-out cursor-default"
+    >
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05] pointer-events-none group-hover:opacity-[0.04] dark:group-hover:opacity-[0.08] transition-opacity duration-700">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern
+              id={`grid-${label}`}
+              width="24"
+              height="24"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 24 0 L 0 0 0 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+              />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#grid-${label})`} />
+        </svg>
+      </div>
+
+      {/* Decorative Glow */}
       <div
-        className={`absolute -right-8 -top-8 sm:-right-6 sm:-top-6 w-20 h-20 sm:w-32 sm:h-32 rounded-full ${colors.bg} opacity-20 sm:opacity-50 group-hover:opacity-100 transition-all duration-500 scale-100 group-hover:scale-150 blur-2xl`}
+        className={`absolute -right-12 -top-12 w-48 h-48 rounded-full ${colors.bg} opacity-20 group-hover:opacity-40 transition-all duration-700 blur-3xl group-hover:scale-125`}
       />
 
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-2 sm:mb-6">
+      <div className="relative z-10 flex flex-col h-full gap-4">
+        <div className="flex items-center justify-between">
           <div
-            className={`p-1.5 sm:p-3 ${colors.bg} ${colors.text} rounded-lg sm:rounded-xl group-hover:${colors.iconBg} group-hover:text-white transition-all duration-300 shadow-sm`}
+            className={`p-3 rounded-xl ${colors.bg} ${colors.text} shadow-inner group-hover:scale-110 transition-transform duration-500`}
           >
-            <Icon size={14} className="sm:w-6 sm:h-6" />
+            <Icon size={20} />
           </div>
-          <span
-            className={`text-[8px] sm:text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border ${colors.bg} ${colors.text} border-opacity-30 whitespace-nowrap`}
-          >
-            {label}
-          </span>
+          <div className="text-right">
+            <span
+              className={`text-[10px] font-black uppercase tracking-[0.1em] px-2.5 py-1 rounded-lg border border-border/50 bg-secondary/30 text-muted-foreground whitespace-nowrap shadow-sm`}
+            >
+              {label}
+            </span>
+          </div>
         </div>
 
-        <div>
-          <h3 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">
+        <div className="space-y-1">
+          <h3 className="text-3xl font-black text-foreground tracking-tighter select-all">
             {loading ? (
-              <div className="h-6 sm:h-9 w-16 sm:w-24 bg-gray-100 animate-pulse rounded-lg" />
+              <div className="h-10 w-24 bg-secondary/50 animate-pulse rounded-lg" />
             ) : (
               value
             )}
           </h3>
-          <div className="flex items-center justify-between mt-0.5 sm:mt-2">
-            <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">
-              Stat
-            </p>
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 h-1 rounded-full bg-secondary/50 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                whileInView={{ width: "33%" }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className={`h-full ${colors.line} opacity-40 group-hover:opacity-100 transition-all duration-700 group-hover:w-full`}
+              />
+            </div>
             {trend && (
-              <span
-                className={`text-[9px] sm:text-[10px] font-black ${trend.isPositive ? "text-green-600" : "text-red-600"}`}
+              <div
+                className={`flex items-center gap-1.5 shrink-0 ${trend.isPositive ? "text-emerald-500" : "text-rose-500"}`}
               >
-                {trend.isPositive ? "+" : ""}
-                {trend.value}%
-              </span>
+                <span className="text-[10px] font-black tracking-widest tabular-nums font-mono">
+                  {trend.isPositive ? "+" : ""}
+                  {trend.value}%
+                </span>
+                <div
+                  className={`w-1.5 h-1.5 rounded-full ${trend.isPositive ? "bg-emerald-500 shadow-emerald-500/50" : "bg-rose-500 shadow-rose-500/50"} shadow-lg animate-pulse`}
+                />
+              </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

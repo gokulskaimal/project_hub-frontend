@@ -1,14 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import { MESSAGES } from "../../../../constants/messages";
-import { notifier } from "../../../../utils/notifier";
-import api, { API_ROUTES } from "../../../../utils/api";
-import { Plan } from "../../../../types/plan";
+import React, { useMemo } from "react";
+import { MESSAGES } from "@/constants/messages";
+import { notifier } from "@/utils/notifier";
+import api, { API_ROUTES } from "@/utils/api";
+import { Plan } from "@/types/plan";
 import {
   CheckCircle,
-  CreditCard,
-  RefreshCw,
   Zap,
   Shield,
   Star,
@@ -16,9 +14,11 @@ import {
   Layout,
   Target,
   Activity,
+  ArrowRight,
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { StatCard } from "@/components/ui/StatCard";
+import { Button } from "@/components/ui/Button";
 
 // ... Razorpay interfaces (Keep existing)
 interface RazorpayResponse {
@@ -30,9 +30,9 @@ interface RazorpayResponse {
 
 interface RazorpayOptions {
   key: string | undefined;
-  amount: number; // Required for Standard Checkout display (sometimes) or good practice
+  amount: number;
   currency: string;
-  order_id: string; // Changed back to order_id for One-time payment
+  order_id: string;
   name: string;
   description: string;
   handler: (response: RazorpayResponse) => Promise<void>;
@@ -105,11 +105,8 @@ export default function ManagerPlansPage() {
         { planId },
       );
 
-      // Backend now returns an Order object (for One-Time payment)
-      // id is now order_id
       const { id: order_id, amount, currency } = response.data.data;
 
-      // Mock Handler for Free Plans or Dev Environment
       if (
         order_id.startsWith("sub_free_") ||
         order_id.startsWith("sub_mock_") ||
@@ -133,9 +130,9 @@ export default function ManagerPlansPage() {
 
       const options: RazorpayOptions & { subscription_id?: string } = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amount, // Required for Orders
+        amount: amount,
         currency: currency,
-        order_id: order_id, // Required for Orders
+        order_id: order_id,
         name: "Project Hub",
         description: "Subscription",
         handler: async function (response: RazorpayResponse) {
@@ -145,7 +142,6 @@ export default function ManagerPlansPage() {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
               planId: planId,
-              // No subscription_id needed for One-Time
             });
             notifier.success(MESSAGES.AUTH.PLAN_UPGRADE_SUCCESS);
             fetchData();
@@ -168,124 +164,155 @@ export default function ManagerPlansPage() {
   const getPlanIcon = (type: string) => {
     switch (type) {
       case "ENTERPRISE":
-        return <Rocket className="w-6 h-6 text-orange-600" />;
+        return <Rocket className="w-6 h-6" />;
       case "PRO":
-        return <Zap className="w-6 h-6 text-purple-600" />;
+        return <Zap className="w-6 h-6" />;
       default:
-        return <Star className="w-6 h-6 text-blue-600" />;
-    }
-  };
-
-  const getPlanColor = (type: string) => {
-    switch (type) {
-      case "ENTERPRISE":
-        return "bg-orange-50 border-orange-100 ring-orange-100";
-      case "PRO":
-        return "bg-purple-50 border-purple-100 ring-purple-100";
-      default:
-        return "bg-blue-50 border-blue-100 ring-blue-100";
+        return <Star className="w-6 h-6" />;
     }
   };
 
   return (
     <DashboardLayout title="Subscription Plans">
-      <div className="space-y-8">
-        {/* Real-time Analytics Header */}
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <Layout className="w-6 h-6 text-blue-600" />
-            Plan Analytics
-          </h2>
-          <div className="flex gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Live Sync
+      <div className="space-y-12">
+        {/* Cinematic Header System */}
+        <div className="flex items-center justify-between px-2">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter italic flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
+                <Layout className="w-6 h-6 text-primary" />
+              </div>
+              Plan Matrix
+            </h2>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-40">
+              Synchronizing with Global Billing Hub
+            </p>
+          </div>
+          <div className="flex items-center gap-4 px-4 py-2 bg-secondary/10 border border-white/5 rounded-2xl">
+            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em]">
+              Primary Link Active
             </span>
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Standardized to Midnight Slate */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            label="Current Plan"
+            label="Current Prototype"
             value={stats.currentPlan}
             icon={Zap}
             color="blue"
           />
           <StatCard
-            label="Tier Status"
+            label="Tier Protocol"
             value={stats.isPremium ? "Premium" : "Standard"}
             icon={Shield}
             color={stats.isPremium ? "purple" : "blue"}
           />
           <StatCard
-            label="Available Plans"
+            label="Active Logic Paths"
             value={stats.planCount}
             icon={Target}
             color="green"
           />
           <StatCard
-            label="Org Status"
-            value="Active"
+            label="Nexus Status"
+            value="Anchored"
             icon={Activity}
             color="blue"
           />
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[1, 2, 3].map((i: number) => (
               <div
                 key={i}
-                className="bg-white rounded-xl p-6 h-96 animate-pulse border border-gray-100"
+                className="bg-card/30 rounded-[2.5rem] h-[500px] animate-pulse border border-white/5 shadow-2xl shadow-black/20"
               ></div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative pb-20">
             {activePlans.map((plan: Plan) => {
               const isCurrentPlan = currentOrg?.planId === plan.id;
-              const colorClass = getPlanColor(plan.type);
+              const isPro = plan.type === "PRO";
+              const isEnterprise = plan.type === "ENTERPRISE";
 
               return (
                 <div
                   key={plan.id}
-                  className={`relative bg-white rounded-xl border transition-all duration-300 flex flex-col ${isCurrentPlan ? `border-blue-500 ring-2 ring-blue-100 shadow-lg scale-[1.02] z-10` : "border-gray-200 hover:shadow-xl hover:-translate-y-1"}`}
+                  className={`relative group bg-card rounded-[3rem] border transition-all duration-500 flex flex-col overflow-hidden ${
+                    isCurrentPlan
+                      ? "border-primary shadow-[0_30px_70px_-20px_rgba(var(--primary),0.2)] scale-[1.03] z-20"
+                      : "border-white/5 hover:border-white/10 shadow-2xl shadow-black/40 hover:-translate-y-2"
+                  }`}
                 >
                   {isCurrentPlan && (
-                    <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
-                      CURRENT PLAN
+                    <div className="absolute top-0 right-0 bg-primary px-6 py-2 rounded-bl-3xl">
+                      <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
+                        Active Matrix
+                      </span>
                     </div>
                   )}
 
-                  <div className="p-6 flex-1">
+                  {isPro && (
+                    <div className="absolute -left-20 -top-20 w-40 h-40 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
+                  )}
+
+                  <div className="p-10 flex-1 relative z-10">
                     <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${colorClass}`}
+                      className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-8 border transition-all duration-500 ${
+                        isPro
+                          ? "bg-primary/10 border-primary/20 text-primary"
+                          : isEnterprise
+                            ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                            : "bg-secondary/10 border-white/10 text-muted-foreground"
+                      }`}
                     >
                       {getPlanIcon(plan.type)}
                     </div>
 
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    <h3 className="text-3xl font-black text-foreground uppercase tracking-tighter italic mb-3">
                       {plan.name}
                     </h3>
-                    <p className="text-gray-500 text-sm mb-6 min-h-[40px]">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-10 opacity-70 leading-relaxed min-h-[48px]">
                       {plan.description}
                     </p>
 
-                    <div className="flex items-baseline gap-1 mb-6">
-                      <span className="text-3xl font-bold text-gray-900">
-                        {plan.currency} {plan.price}
+                    <div className="flex items-baseline gap-2 mb-10">
+                      <span className="text-5xl font-black text-foreground tracking-tighter">
+                        {plan.price}
                       </span>
-                      <span className="text-gray-500 font-medium">/month</span>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">
+                          {plan.currency}
+                        </span>
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
+                          / Month
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="space-y-3 mb-6">
+                    <div className="space-y-4 mb-10">
+                      <p className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em] mb-2">
+                        Capabilities
+                      </p>
                       {plan.features.map((feature: string, i: number) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <div className="mt-0.5 p-0.5 rounded-full bg-green-100 text-green-600">
-                            <CheckCircle size={12} />
+                        <div
+                          key={i}
+                          className="flex items-start gap-4 group/feature"
+                        >
+                          <div
+                            className={`mt-1 p-1 rounded-full transition-colors ${isCurrentPlan ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"}`}
+                          >
+                            <CheckCircle
+                              size={10}
+                              className="group-hover/feature:scale-110 transition-transform"
+                            />
                           </div>
-                          <span className="text-sm text-gray-600 leading-snug">
+                          <span className="text-[11px] font-bold text-muted-foreground group-hover/feature:text-foreground transition-colors leading-snug">
                             {feature}
                           </span>
                         </div>
@@ -293,39 +320,45 @@ export default function ManagerPlansPage() {
                     </div>
                   </div>
 
-                  <div className="p-6 pt-0 mt-auto">
+                  <div className="p-10 pt-0 relative z-10">
                     {(() => {
                       if (isCurrentPlan) {
                         return (
-                          <button
-                            disabled
-                            className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-gray-100 text-gray-400 cursor-not-allowed"
-                          >
-                            Active Plan
-                          </button>
+                          <div className="w-full py-5 rounded-[1.5rem] bg-secondary/10 border border-white/5 flex items-center justify-center gap-3">
+                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">
+                              Neural Node Synced
+                            </span>
+                          </div>
                         );
                       }
 
-                      const currentPlanPrice = currentOrg?.planId
-                        ? plans.find((p: Plan) => p.id === currentOrg.planId)
-                            ?.price || 0
-                        : 0;
-
-                      const isDowngrade = plan.price < currentPlanPrice;
+                      const currentPlanPrice =
+                        (currentOrg?.metadata?.planPrice as number) || 0;
+                      const isUpgrade = plan.price > currentPlanPrice;
 
                       return (
-                        <button
+                        <Button
                           onClick={() => handleSubscribe(plan.id)}
-                          className={`w-full py-3 rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-xl ${
-                            isDowngrade
-                              ? "bg-white text-gray-900 border border-gray-300 hover:bg-gray-50"
-                              : "bg-gray-900 text-white hover:bg-gray-800"
+                          fullWidth
+                          className={`h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] transition-all overflow-hidden relative group/btn ${
+                            isUpgrade
+                              ? "bg-primary text-white shadow-2xl shadow-primary/30"
+                              : "bg-secondary text-foreground hover:bg-secondary/80 border border-white/5 shadow-xl shadow-black/20"
                           }`}
                         >
-                          {isDowngrade
-                            ? `Downgrade to ${plan.name}`
-                            : `Upgrade to ${plan.name}`}
-                        </button>
+                          <span className="relative z-10 flex items-center justify-center gap-2">
+                            {isUpgrade ? (
+                              <Zap className="w-4 h-4" />
+                            ) : (
+                              <ArrowRight className="w-4 h-4" />
+                            )}
+                            {isUpgrade
+                              ? `Evolve to ${plan.name}`
+                              : `Switch to ${plan.name}`}
+                          </span>
+                          <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
+                        </Button>
                       );
                     })()}
                   </div>

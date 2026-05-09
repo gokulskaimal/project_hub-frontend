@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+
 import { useRouter } from "next/navigation";
-import { AppDispatch, RootState } from "@/store/store";
+
 import {
   useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
@@ -21,9 +21,8 @@ import {
 
 export default function NotificationBell() {
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
 
-  const { data: items = [], isLoading: loading } = useGetNotificationsQuery();
+  const { data: items = [] } = useGetNotificationsQuery();
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
 
@@ -112,92 +111,110 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded hover:bg-gray-50 focus:ring-2 focus:ring-gray-300 transition-colors"
-        aria-label="View notifications"
+        className={`relative p-2.5 rounded-xl transition-all duration-300 ${isOpen ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)]" : "text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/10 shadow-lg"}`}
+        aria-label="Access Intelligence Stream"
       >
-        <Bell className="w-5 h-5 text-gray-600" />
+        <Bell
+          className={`w-5 h-5 ${isOpen ? "animate-none" : "group-hover:animate-bounce"}`}
+        />
         {unreadCount > 0 && (
-          <div className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full border-2 border-white min-w-[20px]">
+          <div className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[9px] font-black leading-none text-white transform bg-destructive rounded-full border-2 border-background shadow-[0_0_10px_rgba(var(--destructive),0.5)] animate-pulse">
             {unreadCount > 99 ? "99+" : unreadCount}
           </div>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden transform origin-top-right transition-all">
-          <div className="p-4 border-b border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Notifications</h3>
+        <div className="absolute right-0 mt-4 w-80 md:w-[420px] bg-card rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-border/20 z-50 overflow-hidden transform origin-top-right transition-all animate-in zoom-in-95 duration-300 glass-card">
+          <div className="p-6 border-b border-border/10 bg-secondary/20">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-black text-foreground uppercase tracking-[0.3em]">
+                Intelligence Feed
+              </h3>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors flex items-center gap-1.5"
                 >
-                  Mark all as read
+                  <Check className="w-3 h-3" /> Mark All Read
                 </button>
               )}
             </div>
 
-            <div className="flex space-x-2 bg-gray-100 p-1 rounded-xl">
+            <div className="flex gap-2 bg-background/50 p-1.5 rounded-2xl border border-border/10 shadow-inner">
               <button
                 onClick={() => setActiveTab("unread")}
-                className={`flex-1 py-1 text-xs font-medium rounded-xl transition-all ${
+                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-500 ${
                   activeTab === "unread"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-primary text-primary-foreground shadow-2xl"
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                 }`}
               >
-                Unread ({unreadItems.length})
+                UNREAD ({unreadItems.length})
               </button>
               <button
                 onClick={() => setActiveTab("read")}
-                className={`flex-1 py-1 text-xs font-medium rounded-xl transition-all ${
+                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-500 ${
                   activeTab === "read"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-primary text-primary-foreground shadow-2xl"
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                 }`}
               >
-                Read ({readItems.length})
+                READ ({readItems.length})
               </button>
             </div>
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
             {displayedItems.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <p className="text-sm">No {activeTab} notifications</p>
+              <div className="p-12 text-center text-muted-foreground/30">
+                <div className="mb-4 flex justify-center">
+                  <div className="p-4 bg-secondary/30 rounded-full border border-border/10">
+                    <Bell size={24} className="opacity-20" />
+                  </div>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest">
+                  No Intelligence Data Available
+                </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-border/10">
                 {displayedItems.map((notification: Notification) => (
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 hover:bg-gray-50 transition-colors flex gap-3 cursor-pointer ${!notification.isRead ? "bg-blue-50/30" : ""}`}
+                    className={`p-5 hover:bg-secondary/30 transition-all duration-300 flex gap-4 cursor-pointer relative group/item ${!notification.isRead ? "bg-primary/5" : ""}`}
                   >
+                    {!notification.isRead && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                    )}
                     <div className="mt-1 shrink-0">
-                      {getIcon(notification.type)}
+                      <div
+                        className={`p-2 rounded-xl bg-background shadow-inner border border-border/10 group-hover/item:scale-110 transition-transform`}
+                      >
+                        {getIcon(notification.type)}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 py-0.5">
                       <p
-                        className={`text-sm ${!notification.isRead ? "font-medium text-gray-900" : "text-gray-700"}`}
+                        className={`text-sm tracking-tight ${!notification.isRead ? "font-black text-foreground" : "font-bold text-muted-foreground/70"}`}
                       >
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                      <p className="text-[11px] text-muted-foreground/50 mt-1.5 leading-relaxed line-clamp-2 italic font-medium">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-gray-400 mt-1.5">
+                      <p className="text-[9px] font-black text-border mt-3 uppercase tracking-widest">
                         {formatTime(notification.createdAt)}
                       </p>
                     </div>
                     {!notification.isRead && (
                       <button
                         onClick={(e) => handleMarkRead(notification.id, e)}
-                        className="shrink-0 p-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 group/mark flex items-center justify-center border border-blue-100 shadow-sm"
-                        title="Mark as read"
+                        className="shrink-0 w-8 h-8 rounded-xl bg-card border border-border/20 text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 flex items-center justify-center self-center shadow-xl opacity-0 group-hover/item:opacity-100"
+                        title="Authorize Read State"
                       >
-                        <Check size={12} strokeWidth={3} />
+                        <Check size={14} strokeWidth={3} />
                       </button>
                     )}
                   </div>

@@ -71,11 +71,12 @@ export interface CompleteSignupPayload {
 export interface AcceptInvitePayload {
   token: string;
   password?: string;
+  confirmPassword?: string;
   firstName: string;
   lastName: string;
 }
 
-export interface UpdateProfilePayload extends Partial<UserProfile> {}
+export type UpdateProfilePayload = Partial<UserProfile>;
 
 export interface ChangePasswordPayload {
   currentPassword?: string;

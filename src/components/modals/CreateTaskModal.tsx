@@ -7,8 +7,6 @@ import {
   Layout,
   Type,
   AlignLeft,
-  Calendar,
-  Flag,
   User as UserIcon,
   Loader2,
   Sparkles,
@@ -20,6 +18,7 @@ import {
   useUpdateTaskMutation,
   useGetProjectSprintsQuery,
   useGetProjectByIdQuery,
+  useGetProjectTasksQuery,
 } from "@/store/api/projectApiSlice";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
@@ -27,20 +26,18 @@ import { User } from "@/types/auth";
 import { Task, CreateTaskPayload, UpdateTaskPayload } from "@/types/project";
 import { notifier } from "@/utils/notifier";
 import { MESSAGES } from "@/constants/messages";
-import { USER_ROLES, PRIORITY_LEVELS } from "@/utils/constants";
-import UserAvatar from "@/components/ui/UserAvatar";
+import { USER_ROLES } from "@/utils/constants";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (type?: Task["type"]) => void;
   projectId: string;
   projectMembers: User[];
   task?: Task | null; // If provided, we are in Edit mode
 }
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const TYPES = ["TASK", "BUG", "STORY"];
 const VALID_STORY_POINTS = [0, 1, 2, 3, 5, 8, 13];
 
 export default function CreateTaskModal({
@@ -67,6 +64,8 @@ export default function CreateTaskModal({
   const [assignedTo, setAssignedTo] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [sprintId, setSprintId] = useState("");
+  const [epicId, setEpicId] = useState("");
+  const [parentTaskId, setParentTaskId] = useState("");
 
   const [createTask, { isLoading: isCreating }] = useCreateTaskMutation();
   const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
@@ -77,6 +76,24 @@ export default function CreateTaskModal({
     skip: !projectId || !isOpen,
   });
 
+  const { data: rawTasks = [] } = useGetProjectTasksQuery(
+    { projectId },
+    { skip: !projectId || !isOpen },
+  );
+
+  const allTasks = useMemo(() => {
+    if (Array.isArray(rawTasks)) return rawTasks;
+    return rawTasks?.items || [];
+  }, [rawTasks]);
+
+  const epic = useMemo(
+    () => allTasks.filter((t: Task) => t.type == "EPIC"),
+    [allTasks],
+  );
+  const potentialParents = useMemo(
+    () => allTasks.filter((t: Task) => t.type !== "EPIC"),
+    [allTasks],
+  );
   const isEdit = !!task;
   const isLoading = isCreating || isUpdating;
 
@@ -105,6 +122,8 @@ export default function CreateTaskModal({
         task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
       );
       setSprintId(task.sprintId || "");
+      setEpicId(task.epicId || "");
+      setParentTaskId(task.parentTaskId || "");
     } else {
       resetForm();
     }
@@ -120,6 +139,8 @@ export default function CreateTaskModal({
     setAssignedTo("");
     setDueDate("");
     setSprintId("");
+    setEpicId("");
+    setParentTaskId("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -134,10 +155,13 @@ export default function CreateTaskModal({
           status,
           priority,
           type,
+          epicId: type === "STORY" ? epicId || null : null,
+          parentTaskId:
+            type === "TASK" || type === "BUG" ? parentTaskId || null : null,
+          sprintId: type === "EPIC" ? null : sprintId || null,
           storyPoints: Number(storyPoints),
           assignedTo: assignedTo || undefined,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-          sprintId: sprintId || undefined,
+          dueDate: dueDate ? new Date(dueDate) : undefined,
         };
         await updateTask({ id: task.id, data: updateData, projectId }).unwrap();
         notifier.success(MESSAGES.TASKS.UPDATE_SUCCESS);
@@ -147,15 +171,20 @@ export default function CreateTaskModal({
           title,
           description: description || undefined,
           priority,
-          type,
+          type: type as "STORY" | "BUG" | "TASK" | "EPIC",
+          epicId: type === "STORY" ? epicId || undefined : undefined,
+          parentTaskId:
+            type === "TASK" || type === "BUG"
+              ? parentTaskId || undefined
+              : undefined,
           storyPoints: Number(storyPoints),
           assignedTo: assignedTo || undefined,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          dueDate: dueDate ? new Date(dueDate) : undefined,
         };
         await createTask({ projectId, data: createData }).unwrap();
         notifier.success(MESSAGES.TASKS.CREATE_SUCCESS);
       }
-      onSuccess();
+      onSuccess(type);
       onClose();
     } catch (err) {
       notifier.error(
@@ -177,7 +206,7 @@ export default function CreateTaskModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity" />
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -191,41 +220,41 @@ export default function CreateTaskModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-[2rem] bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl">
+              <Dialog.Panel className="relative transform overflow-hidden modal-surface text-left transition-all sm:my-8 sm:w-full sm:max-w-3xl">
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
-                <div className="bg-white px-8 pt-8 pb-4">
+                <div className="px-8 pt-8 pb-4">
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-50 rounded-xl shadow-inner">
-                        <Layout className="w-6 h-6 text-blue-600" />
+                      <div className="p-3 bg-primary/10 rounded-xl shadow-inner">
+                        <Layout className="w-6 h-6 text-primary" />
                       </div>
                       <div>
                         <Dialog.Title
                           as="h3"
-                          className="text-2xl font-black text-gray-900 tracking-tight leading-none"
+                          className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
                           {isEdit ? "Refine Task" : "Launch New Task"}
                         </Dialog.Title>
-                        <p className="text-xs font-medium text-gray-600 mt-1">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
                           Every great project starts with a single step
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={onClose}
-                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
                   </div>
 
                   {isLocked && (
-                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm flex items-center gap-3">
-                      <Lock size={18} />
+                    <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                      <Lock size={14} />
                       {isDone
-                        ? "This task is completed and locked for edits."
-                        : "This task is currently under manager review and cannot be modified."}
+                        ? "Task final & locked"
+                        : "Under managerial review"}
                     </div>
                   )}
 
@@ -233,83 +262,132 @@ export default function CreateTaskModal({
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-2 space-y-2">
-                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <Type className="w-4 h-4 text-blue-500" />
-                            Task Title
+                          <label className="form-label flex items-center gap-2">
+                            <Type className="w-3.5 h-3.5 text-primary" />
+                            Task Identifier
                           </label>
                           <input
                             type="text"
                             required
                             disabled={isLocked}
-                            className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-blue-500 focus:bg-white transition-all text-base px-4 py-3 font-medium text-gray-800 disabled:opacity-50"
-                            placeholder="what needs to be done?"
+                            className="form-input"
+                            placeholder="WHAT NEEDS TO BE DONE?"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-purple-500" />
-                            Task Type
+                          <label className="form-label flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                            Classification
                           </label>
                           <select
                             disabled={isLocked}
-                            className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-purple-500 focus:bg-white transition-all text-sm px-4 py-3 font-bold text-gray-900"
+                            className="form-select"
                             value={type}
-                            onChange={(e) => setType(e.target.value as any)}
+                            onChange={(e) =>
+                              setType(e.target.value as Task["type"])
+                            }
                           >
-                            <option value="STORY">Story 📘</option>
-                            <option value="BUG">Bug 🐞</option>
-                            <option value="TASK">Task 📋</option>
+                            <option value="STORY">STORY 📘</option>
+                            <option value="BUG">BUG 🐞</option>
+                            <option value="TASK">TASK 📋</option>
+                            <option value="EPIC">EPIC 🏆</option>
                           </select>
                         </div>
                       </div>
 
+                      {/* Link to Epic (Only for Stories) */}
+                      {type === "STORY" && (
+                        <div className="space-y-2">
+                          <label className="form-label flex items-center gap-2">
+                            <Layout className="w-3.5 h-3.5 text-primary" />
+                            Parent Epic
+                          </label>
+                          <select
+                            disabled={isLocked}
+                            className="form-select"
+                            value={epicId}
+                            onChange={(e) => setEpicId(e.target.value)}
+                          >
+                            <option value="">No Epic (Backlog Story)</option>
+                            {epic.map((e: Task) => (
+                              <option key={e.id} value={e.id}>
+                                {e.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Parent Task (Only for Tasks/Bugs) */}
+                      {(type === "TASK" || type === "BUG") && (
+                        <div className="space-y-2">
+                          <label className="form-label flex items-center gap-2">
+                            <AlignLeft className="w-3.5 h-3.5 text-indigo-500" />
+                            Parent Objective
+                          </label>
+                          <select
+                            disabled={isLocked}
+                            className="form-select"
+                            value={parentTaskId}
+                            onChange={(e) => setParentTaskId(e.target.value)}
+                          >
+                            <option value="">No Parent (Root Task)</option>
+                            {potentialParents.map((t: Task) => (
+                              <option key={t.id} value={t.id}>
+                                {t.title} ({t.type})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                          <AlignLeft className="w-4 h-4 text-indigo-500" />
-                          Description
+                        <label className="form-label flex items-center gap-2">
+                          <AlignLeft className="w-3.5 h-3.5 text-indigo-500" />
+                          Mission Briefing
                         </label>
                         <textarea
                           rows={4}
                           disabled={isLocked}
-                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-indigo-500 focus:bg-white transition-all text-sm p-4 text-gray-600 leading-relaxed disabled:opacity-50"
-                          placeholder="add context, details, or steps..."
+                          className="form-input min-h-[120px] resize-none"
+                          placeholder="ADD OPERATIONAL CONTEXT..."
                           value={description}
                           onChange={(e) => setDescription(e.target.value)}
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-secondary/10 rounded-[2rem] border border-border/50">
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-black tracking-widest text-gray-400">
-                          Status
-                        </label>
+                        <label className="form-label">Status</label>
                         <select
                           disabled={isLocked}
-                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-blue-500 transition-all text-xs font-bold py-2 px-3"
+                          className="form-select text-[10px] font-black uppercase"
                           value={status}
-                          onChange={(e) => setStatus(e.target.value as any)}
+                          onChange={(e) =>
+                            setStatus(e.target.value as Task["status"])
+                          }
                         >
-                          <option value="TODO">Backlog</option>
-                          <option value="IN_PROGRESS">Active</option>
-                          <option value="REVIEW">Quality Check</option>
-                          <option value="DONE">Completed</option>
+                          <option value="TODO">BACKLOG</option>
+                          <option value="IN_PROGRESS">ACTIVE</option>
+                          <option value="REVIEW">QUALITY CHECK</option>
+                          <option value="DONE">COMPLETED</option>
                         </select>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-black tracking-widest text-gray-400">
-                          Priority
-                        </label>
+                        <label className="form-label">Priority</label>
                         <select
                           disabled={isLocked}
-                          className={`block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-orange-500 transition-all text-xs font-black py-2 px-3
-                            ${priority === "CRITICAL" ? "text-red-600" : priority === "HIGH" ? "text-orange-600" : "text-gray-600"}
+                          className={`form-select text-[10px] font-black uppercase
+                            ${priority === "CRITICAL" ? "text-rose-500" : priority === "HIGH" ? "text-amber-500" : "text-foreground"}
                           `}
                           value={priority}
-                          onChange={(e) => setPriority(e.target.value as any)}
+                          onChange={(e) =>
+                            setPriority(e.target.value as Task["priority"])
+                          }
                         >
                           {PRIORITIES.map((p) => (
                             <option key={p} value={p}>
@@ -320,12 +398,10 @@ export default function CreateTaskModal({
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-black tracking-widest text-gray-400">
-                          Story Points
-                        </label>
+                        <label className="form-label">Points</label>
                         <select
                           disabled={isLocked}
-                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-green-500 transition-all text-xs font-bold py-2 px-3"
+                          className="form-select text-[10px] font-black"
                           value={storyPoints}
                           onChange={(e) =>
                             setStoryPoints(Number(e.target.value))
@@ -333,22 +409,20 @@ export default function CreateTaskModal({
                         >
                           {VALID_STORY_POINTS.map((v) => (
                             <option key={v} value={v}>
-                              {v}
+                              {v} PTS
                             </option>
                           ))}
                         </select>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-black tracking-widest text-gray-400">
-                          Due Date
-                        </label>
+                        <label className="form-label">Deadline</label>
                         <input
                           type="date"
                           disabled={isLocked}
                           min={projectStart}
                           max={projectEnd}
-                          className="block w-full rounded-xl border-white bg-white shadow-sm outline-none border-2 focus:border-purple-500 transition-all text-xs font-bold py-2 px-3 disabled:opacity-50"
+                          className="form-input text-xs font-black"
                           value={dueDate}
                           onChange={(e) => setDueDate(e.target.value)}
                         />
@@ -364,11 +438,11 @@ export default function CreateTaskModal({
                         <div className="grid grid-cols-1 gap-2">
                           <select
                             disabled={isLocked}
-                            className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-medium py-2.5 disabled:opacity-50"
+                            className="form-select"
                             value={assignedTo}
                             onChange={(e) => setAssignedTo(e.target.value)}
                           >
-                            <option value="">Unassigned</option>
+                            <option value="">UNASSIGNED</option>
                             {projectMembers.map((member) => (
                               <option key={member.id} value={member.id}>
                                 {member.firstName} {member.lastName}
@@ -378,51 +452,53 @@ export default function CreateTaskModal({
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          Sprint
-                        </label>
-                        <select
-                          disabled={isLocked}
-                          className="block w-full rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-0 text-sm font-medium py-2.5 disabled:opacity-50"
-                          value={sprintId}
-                          onChange={(e) => setSprintId(e.target.value)}
-                        >
-                          <option value="">Backlog (No Sprint)</option>
-                          {sprints.map((sprint) => (
-                            <option key={sprint.id} value={sprint.id}>
-                              {sprint.name}{" "}
-                              {sprint.status === "ACTIVE" ? "(Current)" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {type !== "EPIC" && (
+                        <div className="space-y-3">
+                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            Sprint
+                          </label>
+                          <select
+                            disabled={isLocked}
+                            className="form-select"
+                            value={sprintId}
+                            onChange={(e) => setSprintId(e.target.value)}
+                          >
+                            <option value="">BACKLOG (NO SPRINT)</option>
+                            {sprints.map((sprint) => (
+                              <option key={sprint.id} value={sprint.id}>
+                                {sprint.name}{" "}
+                                {sprint.status === "ACTIVE" ? "(CURRENT)" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="bg-gray-50 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4">
+                    <div className="bg-secondary/10 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4 border-t border-border/50">
                       {!isLocked && (
                         <button
                           type="submit"
                           disabled={isLoading}
-                          className="inline-flex justify-center items-center rounded-xl bg-gray-900 px-8 py-3.5 text-sm font-black text-white shadow-2xl shadow-gray-200 hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[160px]"
+                          className="px-8 py-3.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50"
                         >
                           {isLoading ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                           ) : isEdit ? (
-                            "Update Changes"
+                            "Commit Changes"
                           ) : (
-                            "Create Task"
+                            "Launch Task"
                           )}
                         </button>
                       )}
                       <button
                         type="button"
-                        className="inline-flex justify-center rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all"
+                        className="px-8 py-3.5 border border-border text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary transition-all"
                         onClick={onClose}
                         disabled={isLoading}
                       >
-                        {isLocked ? "Close" : "Discard"}
+                        {isLocked ? "Close" : "Abort"}
                       </button>
                     </div>
                   </form>

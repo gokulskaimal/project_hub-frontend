@@ -6,6 +6,7 @@ import { ReceiptText, Calendar, Search, Eye } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import InvoiceViewModal from "@/components/modals/InvoiceViewModal";
 import { Invoice } from "@/types/invoice";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 export default function AdminInvoicesPage() {
   const [page, setPage] = useState(1);
@@ -19,7 +20,7 @@ export default function AdminInvoicesPage() {
 
   const { data, isLoading } = useGetAdminInvoicesQuery({
     page,
-    limit: 10,
+    limit: 12,
     search: debouncedSearch,
     status,
     sort,
@@ -27,208 +28,278 @@ export default function AdminInvoicesPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            Payments & Invoices
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Global ledger of all purchases and subscriptions across the
-            platform.
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Filters Header */}
-        <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between bg-gray-50/50">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by organization name..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-500 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-          </div>
-          <div className="flex flex-wrap gap-3 w-full md:w-auto">
-            <select
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white min-w-[130px]"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="PAID">Paid</option>
-              <option value="PENDING">Pending</option>
-              <option value="FAILED">Failed</option>
-            </select>
-            <select
-              value={planType}
-              onChange={(e) => {
-                setPlanType(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white min-w-[130px]"
-            >
-              <option value="ALL">All Plans</option>
-              <option value="STARTER">Starter</option>
-              <option value="PRO">Pro</option>
-              <option value="ENTERPRISE">Enterprise</option>
-            </select>
-            <select
-              value={sort}
-              onChange={(e) => {
-                setSort(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white min-w-[130px]"
-            >
-              <option value="latest">Latest First</option>
-              <option value="amount_desc">Amount: High to Low</option>
-              <option value="amount_asc">Amount: Low to High</option>
-            </select>
+    <DashboardLayout title="Financial Ledger">
+      <div className="space-y-8 pb-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-foreground tracking-tighter">
+              Revenue <span className="text-primary">&</span> Ledger
+            </h1>
+            <p className="text-xs font-black text-muted-foreground mt-1 uppercase tracking-widest">
+              Global synchronization of all transactional nodes across the
+              platform.
+            </p>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-white">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Organization
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Plan
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Razorpay Ref
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {isLoading ? (
+        <div className="bg-card rounded-3xl shadow-2xl border border-border/50 overflow-hidden">
+          {/* Filters Header */}
+          <div className="p-5 border-b border-border/30 flex flex-col md:flex-row gap-5 items-center justify-between bg-secondary/10">
+            <div className="relative w-full md:w-96 group">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <input
+                type="text"
+                placeholder="Search organization identity..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-11 pr-4 py-3 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground placeholder-muted-foreground font-bold focus:outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
+              />
+            </div>
+            <div className="flex flex-wrap gap-4 w-full md:w-auto">
+              <select
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(1);
+                }}
+                className="px-4 py-2.5 bg-secondary/30 border border-transparent rounded-xl text-xs text-foreground font-black uppercase tracking-wider outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all appearance-none cursor-pointer min-w-[140px] hover:bg-secondary/40"
+              >
+                <option value="ALL" className="bg-card">
+                  Status: All
+                </option>
+                <option value="PAID" className="bg-card">
+                  Paid
+                </option>
+                <option value="PENDING" className="bg-card">
+                  Pending
+                </option>
+                <option value="FAILED" className="bg-card">
+                  Failed
+                </option>
+              </select>
+              <select
+                value={planType}
+                onChange={(e) => {
+                  setPlanType(e.target.value);
+                  setPage(1);
+                }}
+                className="px-4 py-2.5 bg-secondary/30 border border-transparent rounded-xl text-xs text-foreground font-black uppercase tracking-wider outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all appearance-none cursor-pointer min-w-[140px] hover:bg-secondary/40"
+              >
+                <option value="ALL" className="bg-card">
+                  Tier: All
+                </option>
+                <option value="STARTER" className="bg-card">
+                  Starter
+                </option>
+                <option value="PRO" className="bg-card">
+                  Pro
+                </option>
+                <option value="ENTERPRISE" className="bg-card">
+                  Enterprise
+                </option>
+              </select>
+              <select
+                value={sort}
+                onChange={(e) => {
+                  setSort(e.target.value);
+                  setPage(1);
+                }}
+                className="px-4 py-2.5 bg-secondary/30 border border-transparent rounded-xl text-xs text-foreground font-black uppercase tracking-wider outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all appearance-none cursor-pointer min-w-[140px] hover:bg-secondary/40"
+              >
+                <option value="latest" className="bg-card">
+                  Recent First
+                </option>
+                <option value="amount_desc" className="bg-card">
+                  Value: High-Low
+                </option>
+                <option value="amount_asc" className="bg-card">
+                  Value: Low-High
+                </option>
+              </select>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-border/30">
+              <thead className="bg-secondary/10">
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
-                    <div className="flex justify-center items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent flex-shrink-0 rounded-full animate-spin"></div>
-                      <span>Loading ledger...</span>
-                    </div>
-                  </td>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Timestamp
+                  </th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Source Entity
+                  </th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Service Tier
+                  </th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    System Status
+                  </th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Metric Value
+                  </th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Razorpay ID
+                  </th>
+                  <th className="px-8 py-5 text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Inspect
+                  </th>
                 </tr>
-              ) : data?.items?.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <ReceiptText className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-900 font-medium">
-                      No transactions found
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Try adjusting your search or filters.
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                data?.items?.map((invoice) => (
-                  <tr
-                    key={invoice.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-700">
-                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                        {new Date(invoice.billingDate).toLocaleDateString()}
+              </thead>
+              <tbody className="divide-y divide-border/10">
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-8 py-16 text-center text-muted-foreground font-black uppercase tracking-widest"
+                    >
+                      <div className="flex justify-center items-center gap-3">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_10px_rgba(var(--primary),0.3)]"></div>
+                        <span>Syncing Financial Cloud...</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {invoice.orgName || "Unknown Org"}
-                        </span>
-                        <span className="text-xs text-gray-500 font-mono mt-0.5">
-                          {invoice.orgId.slice(0, 8)}...
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700 font-medium">
-                          {invoice.planName || invoice.planId}
-                        </span>
-                        {invoice.planType && (
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${
-                              invoice.planType === "STARTER"
-                                ? "bg-gray-100 text-gray-600"
-                                : invoice.planType === "PRO"
-                                  ? "bg-purple-100 text-purple-700"
-                                  : "bg-blue-100 text-blue-700"
-                            }`}
-                          >
-                            {invoice.planType}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
-                          invoice.status === "PAID"
-                            ? "bg-green-100 text-green-800"
-                            : invoice.status === "PENDING"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                      {invoice.currency} {invoice.amount?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                      {invoice.razorpayPaymentId || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedInvoice(invoice);
-                          setIsModalOpen(true);
-                        }}
-                        className="p-1 px-3 text-sm font-medium text-blue-600 bg-blue-50/50 hover:bg-blue-600 hover:text-white rounded-lg transition-all border border-blue-100/50 flex items-center gap-1.5 ml-auto group"
-                      >
-                        <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                        View
-                      </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : data?.items?.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-8 py-20 text-center">
+                      <ReceiptText className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                      <p className="text-foreground font-black text-lg tracking-tight">
+                        Null Result Matrix
+                      </p>
+                      <p className="text-xs text-muted-foreground font-black uppercase tracking-widest mt-2">
+                        No transactions detected in current query scope.
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  data?.items?.map((invoice) => (
+                    <tr
+                      key={invoice.id}
+                      className="hover:bg-secondary/20 transition-all duration-300 group"
+                    >
+                      <td className="px-8 py-5 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-foreground font-bold">
+                          <Calendar className="w-4 h-4 mr-3 text-primary/60 group-hover:text-primary transition-colors" />
+                          {new Date(invoice.billingDate).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight">
+                            {invoice.orgName || "Unknown Node"}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-tighter opacity-70">
+                            {invoice.orgId.slice(0, 10)}...
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-black text-foreground">
+                            {invoice.planName?.toUpperCase() || "CUSTOM"}
+                          </span>
+                          {invoice.planType && (
+                            <span
+                              className={`px-3 py-1 rounded text-[9px] font-black tracking-widest uppercase border ${
+                                invoice.planType === "STARTER"
+                                  ? "bg-secondary/30 text-muted-foreground border-border/30"
+                                  : invoice.planType === "PRO"
+                                    ? "bg-primary/10 text-primary border-primary/20"
+                                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              }`}
+                            >
+                              {invoice.planType}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap">
+                        <div
+                          className={`flex items-center gap-2 group-hover:translate-x-1 transition-transform`}
+                        >
+                          <div
+                            className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                              invoice.status === "PAID"
+                                ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                                : invoice.status === "PENDING"
+                                  ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
+                                  : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+                            }`}
+                          />
+                          <span
+                            className={`text-[10px] font-black uppercase tracking-widest ${
+                              invoice.status === "PAID"
+                                ? "text-emerald-500"
+                                : invoice.status === "PENDING"
+                                  ? "text-amber-500"
+                                  : "text-rose-500"
+                            }`}
+                          >
+                            {invoice.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap text-sm font-black text-foreground tabular-nums tracking-tight">
+                        {invoice.currency} {invoice.amount?.toLocaleString()}
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
+                        {invoice.razorpayPaymentId || "VOID"}
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setIsModalOpen(true);
+                          }}
+                          className="px-5 py-2.5 bg-secondary/30 text-foreground border border-border/50 rounded-2xl hover:text-primary hover:border-primary/30 hover:bg-secondary transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-xl group/btn active:scale-95"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Eye className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
+                            Analyze
+                          </div>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {data && data.totalPages > 1 && (
+            <div className="px-8 py-5 bg-card border-t border-border/30 flex items-center justify-between">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-6 py-2.5 bg-secondary/30 border border-border/50 rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+              >
+                Previous
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                  Page
+                </span>
+                <span className="w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground rounded-lg font-black text-[10px] shadow-lg shadow-primary/20">
+                  {page}
+                </span>
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                  of {data.totalPages}
+                </span>
+              </div>
+              <button
+                onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
+                disabled={page === data.totalPages}
+                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl shadow-primary/20 active:scale-95"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
 
         <InvoiceViewModal
@@ -236,30 +307,7 @@ export default function AdminInvoicesPage() {
           onClose={() => setIsModalOpen(false)}
           invoice={selectedInvoice}
         />
-
-        {/* Pagination */}
-        {data && data.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-white">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-            >
-              Previous
-            </button>
-            <span className="text-sm font-medium text-gray-600">
-              Page {page} of {data.totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
-              disabled={page === data.totalPages}
-              className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-            >
-              Next
-            </button>
-          </div>
-        )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

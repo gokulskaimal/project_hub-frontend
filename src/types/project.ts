@@ -26,7 +26,8 @@ export interface Task {
   description: string;
   status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE" | "BACKLOG";
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  type?: "STORY" | "BUG" | "TASK";
+  type?: "STORY" | "BUG" | "TASK" | "EPIC";
+  epicId?: string | null;
   assignedTo?: string;
   assignedUser?: {
     firstName: string;
@@ -36,8 +37,8 @@ export interface Task {
   dueDate?: string;
   completedAt?: string;
   storyPoints?: number;
-  sprintId?: string;
-  parentTaskId?: string;
+  sprintId?: string | null;
+  parentTaskId?: string | null;
   dependencies?: TaskDependency[];
   attachments?: Array<{
     name: string;
@@ -54,10 +55,12 @@ export interface Task {
   subtasks?: Task[];
   timeLogs?: TimeLog[];
   totalTimeSpent?: number;
+  createdAt?: string;
   updatedAt?: string;
   project?: {
     name: string;
   };
+  progress?: number;
 }
 
 export interface TaskDependency {
@@ -86,6 +89,7 @@ export interface AdminOrg {
   status?: string;
   createdAt?: string;
   currentUserCount?: number;
+  planName?: string;
 }
 
 export interface AdminUser {
@@ -97,6 +101,7 @@ export interface AdminUser {
   role?: string;
   status?: string;
   orgId?: string;
+  organizationName?: string;
 }
 
 export interface VelocityResponse {
@@ -113,7 +118,7 @@ export interface Sprint {
   description?: string;
   startDate: string;
   endDate: string;
-  status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED" | "PLANNING";
   goal?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -143,6 +148,7 @@ export interface UpdateSprintPayload {
   startDate?: string | Date;
   endDate?: string | Date;
   goal?: string;
+  spilloverDestination?: string;
 }
 
 export interface CreateTaskPayload {
@@ -150,11 +156,12 @@ export interface CreateTaskPayload {
   title: string;
   description?: string;
   priority: Task["priority"];
-  type: Task["type"];
+  type: "STORY" | "BUG" | "TASK" | "EPIC";
+  epicId?: string | null;
+  parentTaskId?: string | null;
   dueDate?: string | Date;
   assignedTo?: string;
   storyPoints?: number;
-  parentTaskId?: string;
   dependencies?: TaskDependency[];
 }
 
@@ -164,12 +171,13 @@ export interface UpdateTaskPayload {
   status?: Task["status"];
   priority?: Task["priority"];
   type?: Task["type"];
+  epicId?: string | null;
   dueDate?: string | Date;
   assignedTo?: string;
   storyPoints?: number;
-  parentTaskId?: string;
+  parentTaskId?: string | null;
   dependencies?: TaskDependency[];
-  sprintId?: string;
+  sprintId?: string | null;
 }
 
 export interface TaskHistory {
@@ -181,10 +189,21 @@ export interface TaskHistory {
     | "STATUS_CHANGED"
     | "ASSIGNEE_CHANGED"
     | "SPRINT_CHANGED"
-    | "UPDATED";
+    | "UPDATED"
+    | "DELETED";
   details?: string;
   previousValue?: string;
   newValue?: string;
   createdAt: string;
   timestamp?: string;
+}
+
+export interface EpicAnalytics {
+  id: string;
+  title: string;
+  description?: string;
+  progress: number;
+  totalStories: number;
+  completedStories: number;
+  status?: string;
 }

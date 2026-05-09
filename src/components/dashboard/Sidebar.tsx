@@ -1,7 +1,10 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { LogOut, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 interface SidebarLink {
   name: string;
@@ -28,31 +31,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
   links,
   pathname,
   handleLogout,
-  role,
+  role: _role,
 }) => {
   return (
     <>
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300"
+          className="fixed inset-0 z-40 bg-black/60 md:hidden backdrop-blur-sm transition-opacity duration-300"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out md:relative md:translate-x-0 
+        className={`fixed inset-y-0 left-0 z-[60] bg-card border-r border-border transform transition-all duration-300 ease-in-out md:relative md:translate-x-0 w-64 max-w-[85vw]
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} 
           ${isCollapsed ? "md:w-20" : "md:w-64"}`}
       >
-        <div className="h-16 px-6 border-b border-gray-200 flex items-center justify-between overflow-hidden">
+        <div className="h-20 px-6 border-b border-border flex items-center justify-between overflow-hidden">
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-blue-200">
-              <span className="text-white text-sm font-bold">PH</span>
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
+              <span className="text-white text-sm font-black">PH</span>
             </div>
             {!isCollapsed && (
-              <span className="text-gray-900 font-bold text-lg tracking-tight whitespace-nowrap animate-in fade-in duration-300">
+              <span className="text-foreground font-black text-xl tracking-tighter whitespace-nowrap animate-in fade-in duration-300">
                 ProjectHub
               </span>
             )}
@@ -61,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Desktop Toggle Button */}
           <button
             onClick={toggleSidebar}
-            className="hidden md:flex items-center justify-center w-6 h-6 rounded-full border border-gray-200 bg-white text-gray-500 hover:text-blue-600 hover:border-blue-200 transition-all absolute -right-3 top-8 z-10 shadow-sm"
+            className="hidden md:flex items-center justify-center w-6 h-6 rounded-full border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/50 transition-all absolute -right-3 top-10 z-10 shadow-xl"
           >
             {isCollapsed ? (
               <ChevronRight size={14} />
@@ -72,61 +75,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden text-gray-400 hover:text-gray-600 transition-colors"
+            className="md:hidden text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="p-4 space-y-1.5 overflow-y-auto h-[calc(100vh-140px)] scrollbar-hide">
-          {links.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                title={isCollapsed ? item.name : ""}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
-                  ${
-                    isActive
-                      ? "text-blue-600 bg-blue-50/50 font-semibold shadow-sm ring-1 ring-blue-100/50"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }
-                  ${isCollapsed ? "justify-center" : ""}`}
-              >
-                <Icon
-                  className={`shrink-0 transition-transform duration-200 group-hover:scale-110
-                    ${isCollapsed ? "w-6 h-6" : "w-5 h-5"}
-                    ${isActive ? "text-blue-600" : "text-gray-400"}`}
-                />
-                {!isCollapsed && (
-                  <span className="text-sm tracking-wide whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-300">
-                    {item.name}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="p-4 flex flex-col h-[calc(100vh-80px)]">
+          <nav className="flex-1 space-y-1.5 overflow-y-auto scrollbar-hide">
+            {links.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  title={isCollapsed ? item.name : ""}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 group
+                    ${
+                      isActive
+                        ? "text-primary backgroundColor: bg-primary/10 font-black shadow-inner ring-1 ring-primary/20"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    }
+                    ${isCollapsed ? "justify-center" : ""}`}
+                >
+                  <Icon
+                    className={`shrink-0 transition-transform duration-300 group-hover:scale-110
+                      ${isCollapsed ? "w-6 h-6" : "w-5 h-5"}
+                      ${isActive ? "text-primary glow-indigo" : "text-muted-foreground"}`}
+                  />
+                  {!isCollapsed && (
+                    <span className="text-[13px] font-bold tracking-tight whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-400">
+                      {item.name}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
-          <button
-            onClick={handleLogout}
-            title={isCollapsed ? "Logout" : ""}
-            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-red-500 hover:bg-red-50 transition-all duration-200 group
-              ${isCollapsed ? "justify-center" : ""}`}
-          >
-            <LogOut
-              className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${isCollapsed ? "w-6 h-6" : "w-5 h-5"}`}
-            />
+          <div className="mt-auto space-y-4 pt-4 border-t border-border">
             {!isCollapsed && (
-              <span className="text-sm font-semibold tracking-wide whitespace-nowrap animate-in fade-in duration-300">
-                Logout
-              </span>
+              <div className="px-2">
+                <ThemeToggle />
+              </div>
             )}
-          </button>
+
+            <button
+              onClick={handleLogout}
+              title={isCollapsed ? "Logout" : ""}
+              className={`flex items-center gap-3 px-3 py-3 w-full rounded-xl text-destructive hover:bg-destructive/10 transition-all duration-300 group
+                ${isCollapsed ? "justify-center" : ""}`}
+            >
+              <LogOut
+                className={`shrink-0 transition-transform duration-300 group-hover:scale-110 ${isCollapsed ? "w-6 h-6" : "w-5 h-5"}`}
+              />
+              {!isCollapsed && (
+                <span className="text-[13px] font-black tracking-widest uppercase whitespace-nowrap animate-in fade-in duration-300">
+                  Logout
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </aside>
     </>

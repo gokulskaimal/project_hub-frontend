@@ -1,22 +1,55 @@
 "use client";
 
 import {
-  useGetAdminReportsQuery,
-  useGetAdminInvoicesQuery,
-} from "@/store/api/adminApiSlice";
-import {
   Users,
   Building2,
-  CreditCard,
-  ReceiptText,
   Banknote,
   Activity,
+  ShieldCheck,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react";
+import React, { useState } from "react";
+import {
+  useGetAdminReportsQuery,
+  useGetAdminInvoicesQuery,
+  useGetAdminAnalyticsQuery,
+} from "@/store/api/adminApiSlice";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import PremiumStatGrid from "@/components/ui/PremiumStatGrid";
-import { StatCard } from "@/components/ui/StatCard";
+import { RoleBanner } from "@/components/ui/RoleBanner";
+import {
+  AnalyticsFilter,
+  TimeFrame,
+} from "@/components/analytics/AnalyticsFilter";
+import {
+  AnalyticsBarChart,
+  StatusDistribution,
+} from "@/components/analytics/AnalyticsCharts";
+import {
+  mapRevenueData,
+  mapStatusDistribution,
+  mapPlanDistribution,
+} from "@/utils/analyticsUtils";
+import { motion } from "framer-motion";
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+};
 
 export default function AdminDashboardPage() {
+  const [timeframe, setTimeframe] = useState<TimeFrame>("YEAR");
   const { data: reportsData, isLoading: reportsLoading } =
     useGetAdminReportsQuery();
   const { data: invoicesData, isLoading: invoicesLoading } =
@@ -24,75 +57,236 @@ export default function AdminDashboardPage() {
       limit: 1,
       page: 1,
     });
+  const {
+    data: analyticsData,
+    isLoading: analyticsLoading,
+    isError: analyticsError,
+  } = useGetAdminAnalyticsQuery(timeframe);
 
-  const loading = reportsLoading || invoicesLoading;
+  const loading = reportsLoading || invoicesLoading || analyticsLoading;
 
-  return (
-    <DashboardLayout title="Admin Dashboard">
-      <div className="p-6 space-y-8">
-        {/* Main Stats Overview using PremiumStatGrid */}
-        {reportsData ? (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-600" />
-              System Overview
-            </h2>
-            <PremiumStatGrid
-              stats={{
-                total:
-                  reportsData.overview.totalUsers +
-                  reportsData.overview.totalOrganizations,
-                active:
-                  reportsData.users.active + reportsData.organizations.active,
-                suspended:
-                  reportsData.users.inactive +
-                  reportsData.organizations.inactive,
-              }}
-            />
-          </div>
-        ) : loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  const revenueData = mapRevenueData(analyticsData?.revenue);
+  const orgData = mapStatusDistribution(
+    analyticsData?.organizations?.distribution,
+  );
+  const planData = mapPlanDistribution(analyticsData?.plans);
+
+  if (loading) {
+    return (
+      <DashboardLayout title="Admin Command">
+        <div className="p-6 space-y-10">
+          <div className="h-48 bg-secondary/30 rounded-3xl animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-32 bg-white rounded-xl animate-pulse border border-gray-100 shadow-sm"
+                className="h-32 bg-secondary/30 rounded-2xl animate-pulse"
               />
             ))}
           </div>
-        ) : null}
-
-        {/* Financial & Entity Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            label="Organizations"
-            value={reportsData?.overview.totalOrganizations || 0}
-            icon={Building2}
-            color="blue"
-            loading={loading}
-          />
-          <StatCard
-            label="Users"
-            value={reportsData?.overview.totalUsers || 0}
-            icon={Users}
-            color="green"
-            loading={loading}
-          />
-          <StatCard
-            label="Revenue"
-            value={`₹${(invoicesData?.totalRevenue || 0).toLocaleString()}`}
-            icon={Banknote}
-            color="emerald"
-            loading={loading}
-          />
-          <StatCard
-            label="Invoices"
-            value={invoicesData?.total || 0}
-            icon={ReceiptText}
-            color="orange"
-            loading={loading}
-          />
         </div>
-      </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout title="Admin Command">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="p-6 space-y-10 pb-12"
+      >
+        {/* Welcome Banner */}
+        <motion.div variants={item}>
+          <RoleBanner
+            roleName="Super Admin"
+            badgeText="System Authority"
+            welcomeMessage={
+              <>
+                Central <span className="text-white">Command</span>
+              </>
+            }
+            description={
+              <>
+                Operational oversight for{" "}
+                <span className="text-white border-b border-white/30 pb-0.5">
+                  {reportsData?.overview.totalOrganizations || 0} organizations
+                </span>{" "}
+                across the primary ecosystem fabric.
+              </>
+            }
+            gradientFrom="#6366F1"
+            gradientTo="#8B5CF6"
+          />
+        </motion.div>
+
+        {/* Status Section */}
+        <motion.div variants={item} className="space-y-6">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Activity className="w-5 h-5 text-primary" />
+              </div>
+              Global Analytics
+            </h2>
+            <div className="flex items-center gap-4">
+              <AnalyticsFilter value={timeframe} onChange={setTimeframe} />
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+                  Active System
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <PremiumStatGrid
+            items={[
+              {
+                label: "Total Entities",
+                value:
+                  (reportsData?.overview.totalUsers || 0) +
+                  (reportsData?.overview.totalOrganizations || 0),
+                icon: ShieldCheck,
+                color: "blue",
+              },
+              {
+                label: "Active Users",
+                value: reportsData?.users.active || 0,
+                icon: Users,
+                color: "emerald",
+              },
+              {
+                label: "Active Orgs",
+                value: reportsData?.organizations.active || 0,
+                icon: Building2,
+                color: "violet",
+              },
+              {
+                label: "System Health",
+                value: `${Math.round((((reportsData?.users.active || 0) + (reportsData?.organizations.active || 0)) / ((reportsData?.overview.totalUsers || 0) + (reportsData?.overview.totalOrganizations || 0) || 1)) * 100)}%`,
+                icon: Activity,
+                color: "blue",
+              },
+            ]}
+          />
+        </motion.div>
+
+        {/* Visual Analytics */}
+        <motion.div
+          variants={item}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+        >
+          <div className="lg:col-span-2 glass-card rounded-3xl p-8 border border-border/50">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">
+                  Revenue Trajectory
+                </h3>
+                <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
+                  Financial velocity across the grid
+                </p>
+              </div>
+              <TrendingUp className="w-5 h-5 text-emerald-500" />
+            </div>
+
+            <div className="h-[320px]">
+              {analyticsError ? (
+                <div className="h-full flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-2xl bg-secondary/10">
+                  <AlertCircle className="w-8 h-8 text-muted-foreground mb-2" />
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                    Data Stream Offline
+                  </p>
+                </div>
+              ) : (
+                <AnalyticsBarChart
+                  data={revenueData}
+                  dataKey="value"
+                  xKey="name"
+                  color="var(--primary)"
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            {/* Org Distribution */}
+            <div className="glass-card rounded-3xl p-8 border border-border/50">
+              <div className="mb-6">
+                <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest mb-1">
+                  Org Status Distribution
+                </h3>
+                <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">
+                  System Access Levels
+                </p>
+              </div>
+              <div className="h-[280px]">
+                <StatusDistribution data={orgData} />
+              </div>
+            </div>
+
+            {/* Plan Distribution */}
+            <div className="glass-card rounded-3xl p-8 border border-border/50">
+              <div className="mb-6">
+                <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest mb-1">
+                  Subscription Tiers
+                </h3>
+                <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">
+                  Plan distribution metrics
+                </p>
+              </div>
+              <div className="h-[280px]">
+                <StatusDistribution data={planData} />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Financial Oversight Detail */}
+        <motion.div variants={item} className="space-y-6">
+          <h2 className="text-xl font-black text-foreground tracking-tight px-1 flex items-center gap-2">
+            <div className="p-2 bg-emerald-500/10 rounded-lg">
+              <Banknote className="w-5 h-5 text-emerald-500" />
+            </div>
+            Fiscal Monitoring
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Revenue
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-1">
+                ₹{(invoicesData?.totalRevenue || 0).toLocaleString()}
+              </h4>
+            </div>
+            <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Invoices
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-1">
+                {invoicesData?.total || 0}
+              </h4>
+            </div>
+            <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Users
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-1">
+                {reportsData?.overview.totalUsers || 0}
+              </h4>
+            </div>
+            <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Orgs
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-1">
+                {reportsData?.overview.totalOrganizations || 0}
+              </h4>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
     </DashboardLayout>
   );
 }

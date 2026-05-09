@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
 import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
 import { useGetProfileQuery } from "@/store/api/userApiSlice";
-import Link from "next/link";
 import UserModal from "@/components/modals/UserModal";
 import InviteModal from "@/components/modals/InviteModal";
 import CreateProjectModal from "@/components/modals/CreateProjectModal";
@@ -17,13 +15,12 @@ import {
   Users,
   Mail,
   CreditCard,
-  LogOut,
   Menu,
-  X,
   KanbanSquare,
   CalendarDays,
   ReceiptText,
   Briefcase,
+  Video,
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import SocketNotification from "@/components/notifications/SocketNotification";
@@ -31,18 +28,25 @@ import ChatNotificationListener from "@/components/chat/ChatNotificationListener
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useSidebar } from "@/hooks/useSidebar";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import {
+  ManagerModalProvider,
+  useManagerModals,
+} from "@/context/ManagerModalContext";
 
-export default function ManagerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function ManagerLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isLoggedIn, role, accessToken } = useSelector(
     (state: RootState) => state.auth,
   );
+
+  const {
+    isInviteModalOpen,
+    closeInviteModal,
+    isCreateProjectModalOpen,
+    closeCreateProjectModal,
+  } = useManagerModals();
 
   const {
     isCollapsed,
@@ -55,29 +59,12 @@ export default function ManagerLayout({
   const [userModalMode, setUserModalMode] = useState<"view" | "edit">("view");
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
-  // Modal states for Dashboard Quick Actions
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
-    useState(false);
-
   useEffect(() => {
     dispatch(hydrateFromStorage());
     setIsReady(true);
   }, [dispatch]);
 
-  // Expose modal opening functions to the window object so Dashboard buttons can trigger them
-  useEffect(() => {
-    (window as any).openInviteModal = () => setIsInviteModalOpen(true);
-    (window as any).openCreateProjectModal = () =>
-      setIsCreateProjectModalOpen(true);
-
-    return () => {
-      delete (window as any).openInviteModal;
-      delete (window as any).openCreateProjectModal;
-    };
-  }, []);
-
-  const { isLoading: profileLoading } = useGetProfileQuery(undefined, {
+  useGetProfileQuery(undefined, {
     skip: !isLoggedIn || !!user,
   });
 
@@ -112,6 +99,7 @@ export default function ManagerLayout({
     { name: "Plans", href: "/manager/plans", icon: CreditCard },
     { name: "Projects", href: "/manager/projects", icon: Briefcase },
     { name: "Boards", href: "/manager/boards", icon: KanbanSquare },
+    { name: "Meetings", href: "/manager/meetings", icon: Video },
     { name: "Calendar", href: "/manager/calendar", icon: CalendarDays },
     { name: "Billing", href: "/manager/billing", icon: ReceiptText },
   ];
@@ -125,7 +113,7 @@ export default function ManagerLayout({
     return null;
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-background overflow-hidden font-sans transition-colors duration-500">
       <ChatNotificationListener />
 
       <Sidebar
@@ -142,10 +130,10 @@ export default function ManagerLayout({
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 px-4 md:px-8 flex items-center justify-between gap-4">
+        <header className="h-16 bg-card border-b border-border px-4 md:px-8 flex items-center justify-between gap-4">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden text-gray-500 hover:text-blue-600 transition-colors shrink-0"
+            className="md:hidden text-muted-foreground hover:text-primary transition-colors shrink-0"
             aria-label="Open menu"
             title="Open menu"
           >
@@ -156,20 +144,20 @@ export default function ManagerLayout({
             <SocketNotification />
             <NotificationBell />
 
-            <div className="h-8 w-px bg-gray-200 hidden md:block mx-1"></div>
+            <div className="h-8 w-px bg-border hidden md:block mx-1"></div>
 
             <button
               onClick={openProfile}
-              className="group flex items-center gap-3 hover:bg-white hover:shadow-sm rounded-full pl-1 pr-3 py-1 transition-all border border-transparent hover:border-gray-200"
+              className="group flex items-center gap-3 hover:bg-background hover:shadow-sm rounded-full pl-1 pr-3 py-1 transition-all border border-transparent hover:border-border"
             >
               <UserAvatar user={user} size="sm" />
               <div className="hidden md:block text-left">
-                <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate max-w-[150px]">
+                <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate max-w-[150px]">
                   {user?.firstName && user?.lastName
                     ? `${user.firstName} ${user.lastName}`
                     : user?.name || user?.firstName || "Manager"}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold truncate max-w-[150px]">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold truncate max-w-[150px]">
                   {role?.replace("_", " ") || "Manager"}
                 </p>
               </div>
@@ -177,7 +165,7 @@ export default function ManagerLayout({
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-4 md:p-8 bg-gray-50/50">
+        <main className="flex-1 overflow-auto p-4 md:p-8 bg-background">
           {children}
         </main>
       </div>
@@ -190,19 +178,28 @@ export default function ManagerLayout({
         profile={profileHook}
       />
 
-      {/* Global Dashboard Modals */}
-      <InviteModal
-        isOpen={isInviteModalOpen}
-        onClose={() => setIsInviteModalOpen(false)}
-      />
+      {/* Global Dashboard Modals provided by context */}
+      <InviteModal isOpen={isInviteModalOpen} onClose={closeInviteModal} />
 
       <CreateProjectModal
         isOpen={isCreateProjectModalOpen}
-        onClose={() => setIsCreateProjectModalOpen(false)}
+        onClose={closeCreateProjectModal}
         onSuccess={() => {
           // Optional: refresh logic
         }}
       />
     </div>
+  );
+}
+
+export default function ManagerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <ManagerModalProvider>
+      <ManagerLayoutContent>{children}</ManagerLayoutContent>
+    </ManagerModalProvider>
   );
 }

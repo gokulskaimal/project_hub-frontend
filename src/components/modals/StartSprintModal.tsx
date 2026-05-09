@@ -2,10 +2,7 @@
 
 import { useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { X, PlayCircle, Calendar, Target, Loader2, Zap } from "lucide-react";
-import { useCreateSprintMutation } from "@/store/api/projectApiSlice";
-import { notifier } from "@/utils/notifier";
-import { MESSAGES } from "@/constants/messages";
+import { X, PlayCircle, Calendar, Target, Zap } from "lucide-react";
 
 interface StartSprintModalProps {
   isOpen: boolean;
@@ -57,7 +54,7 @@ export default function StartSprintModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" />
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -71,28 +68,28 @@ export default function StartSprintModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl">
-                <div className="bg-white px-8 pt-8 pb-4">
+              <Dialog.Panel className="relative transform overflow-hidden modal-surface transition-all sm:my-8 sm:w-full sm:max-w-xl">
+                <div className="px-8 pt-8 pb-4">
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-orange-50 rounded-xl">
-                        <Zap className="w-6 h-6 text-orange-600" />
+                      <div className="p-3 bg-amber-500/10 rounded-xl">
+                        <Zap className="w-6 h-6 text-amber-500" />
                       </div>
                       <div>
                         <Dialog.Title
                           as="h3"
-                          className="text-2xl font-black text-gray-900 leading-none"
+                          className="text-2xl font-black text-foreground leading-none uppercase tracking-tight"
                         >
                           Initialize Sprint
                         </Dialog.Title>
-                        <p className="text-sm font-medium text-gray-400 mt-1">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
                           Accelerate your team&apos;s momentum
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={onClose}
-                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
@@ -100,27 +97,27 @@ export default function StartSprintModal({
 
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                        <PlayCircle className="w-4 h-4 text-orange-500" />
-                        Sprint Name
+                      <label className="form-label flex items-center gap-2">
+                        <PlayCircle className="w-3.5 h-3.5 text-amber-500" />
+                        Sprint Identifier
                       </label>
                       <input
                         type="text"
                         readOnly
-                        className="block w-full rounded-xl border-gray-100 bg-gray-100 outline-none border-2 px-4 py-3 font-medium text-gray-500 cursor-not-allowed"
+                        className="form-input opacity-50 cursor-not-allowed bg-secondary/20"
                         value={sprintName}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                        <Target className="w-4 h-4 text-orange-500" />
-                        Primary Goal
+                      <label className="form-label flex items-center gap-2">
+                        <Target className="w-3.5 h-3.5 text-amber-500" />
+                        Mission Goal
                       </label>
                       <textarea
                         rows={3}
-                        className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-orange-500 focus:bg-white transition-all p-4 text-sm text-gray-900 font-bold leading-relaxed"
-                        placeholder="What's the main focus of this sprint?"
+                        className="form-input"
+                        placeholder="DEFINE TARGET OBJECTIVE..."
                         value={goal}
                         onChange={(e) => setGoal(e.target.value)}
                       />
@@ -128,24 +125,22 @@ export default function StartSprintModal({
 
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-orange-400" />
-                          Start Date
+                        <label className="form-label flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                          Start Node
                         </label>
                         <input
                           type="date"
                           required
-                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-orange-500 focus:bg-white transition-all px-4 py-2.5 text-sm text-gray-900 font-bold"
+                          className="form-input"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-700">
-                          Sprint Duration
-                        </label>
+                        <label className="form-label">Timeline Focus</label>
                         <select
-                          className="block w-full rounded-xl border-gray-100 bg-gray-50/50 outline-none border-2 focus:border-orange-500 focus:bg-white transition-all px-4 py-2.5 text-sm font-bold text-gray-900"
+                          className="form-select"
                           value={duration}
                           onChange={(e) => setDuration(e.target.value)}
                         >
@@ -157,27 +152,29 @@ export default function StartSprintModal({
                       </div>
                     </div>
 
-                    <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-100">
-                      <p className="text-xs text-orange-800 font-medium leading-relaxed">
-                        <strong>Note:</strong> Starting this sprint will move it
-                        to the active state. Currently{" "}
-                        <strong>{taskCount}</strong> tasks are assigned.
+                    <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/20">
+                      <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest leading-relaxed">
+                        <strong className="text-amber-400">WARNING:</strong>{" "}
+                        INITIALIZING THIS SPRINT WILL SHIFT THE TIMELINE TO
+                        ACTIVE STATE. CURRENTLY{" "}
+                        <strong className="text-amber-400">{taskCount}</strong>{" "}
+                        TASKS ARE ASSIGNED.
                       </p>
                     </div>
 
-                    <div className="bg-gray-50 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4">
+                    <div className="bg-secondary/10 -mx-8 -mb-4 px-8 py-6 mt-8 flex flex-row-reverse gap-4 border-t border-border/50">
                       <button
                         type="submit"
-                        className="inline-flex justify-center items-center rounded-xl bg-orange-600 px-8 py-3.5 text-sm font-black text-white shadow-xl shadow-orange-100 hover:bg-orange-700 transition-all min-w-[140px]"
+                        className="px-8 py-3.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all min-w-[140px]"
                       >
                         Launch Sprint
                       </button>
                       <button
                         type="button"
-                        className="inline-flex justify-center rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all"
+                        className="px-8 py-3.5 border border-border text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary transition-all"
                         onClick={onClose}
                       >
-                        Discard
+                        Abort
                       </button>
                     </div>
                   </form>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useEffect, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import {
   X,
@@ -172,7 +172,7 @@ export default function CreateSprintModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity" />
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -186,30 +186,28 @@ export default function CreateSprintModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl">
+              <Dialog.Panel className="relative transform overflow-hidden modal-surface transition-all sm:my-8 sm:w-full sm:max-w-xl">
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
                 <div className="px-10 pt-10 pb-6">
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-50 rounded-xl shadow-inner">
-                        <Sparkles className="w-6 h-6 text-blue-600" />
+                      <div className="p-3 bg-primary/10 rounded-xl shadow-inner">
+                        <Sparkles className="w-6 h-6 text-primary" />
                       </div>
                       <div>
                         <Dialog.Title
                           as="h3"
-                          className="text-2xl font-black text-gray-900 tracking-tight leading-none"
+                          className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
-                          {isEdit ? "Refine Sprint" : "Inaugurate Sprint"}
+                          {isEdit ? "Refine Sprint" : "Launch Sprint"}
                         </Dialog.Title>
-                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
-                          Chronos Engine
-                        </p>
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1"></p>
                       </div>
                     </div>
                     <button
                       onClick={onClose}
-                      className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
@@ -218,16 +216,16 @@ export default function CreateSprintModal({
                   <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                          <Flag className="w-4 h-4 text-blue-500" />
-                          Sprint Name
+                        <label className="form-label flex items-center gap-2">
+                          <Flag className="w-3.5 h-3.5 text-primary" />
+                          Identifier
                         </label>
                         <input
                           type="text"
                           required
                           {...register("name")}
-                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm font-bold text-gray-900"
-                          placeholder="e.g. Sprint 1: Foundation"
+                          className="form-input"
+                          placeholder="E.G. SPRINT 1: FOUNDATION"
                         />
                         {errors.name && (
                           <p className="text-xs font-bold text-red-500 ml-1">
@@ -238,9 +236,9 @@ export default function CreateSprintModal({
 
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-indigo-500" />
-                            Start Date
+                          <label className="form-label flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                            Start Node
                           </label>
                           <input
                             type="date"
@@ -248,7 +246,7 @@ export default function CreateSprintModal({
                             min={projectStart}
                             max={projectEnd}
                             {...register("startDate")}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-indigo-500 focus:bg-white transition-all text-sm font-bold text-gray-900"
+                            className="form-input"
                           />
                           {errors.startDate && (
                             <p className="text-xs font-bold text-red-500 ml-1">
@@ -257,9 +255,9 @@ export default function CreateSprintModal({
                           )}
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-purple-500" />
-                            Target End Date
+                          <label className="form-label flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-purple-500" />
+                            Target End
                           </label>
                           <input
                             type="date"
@@ -267,7 +265,7 @@ export default function CreateSprintModal({
                             min={projectStart}
                             max={projectEnd}
                             {...register("endDate")}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-purple-500 focus:bg-white transition-all text-sm font-bold text-gray-900"
+                            className="form-input"
                           />
                           {errors.endDate && (
                             <p className="text-xs font-bold text-red-500 ml-1">
@@ -278,53 +276,53 @@ export default function CreateSprintModal({
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                          <Target className="w-4 h-4 text-green-500" />
-                          Sprint Goal
+                        <label className="form-label flex items-center gap-2">
+                          <Target className="w-3.5 h-3.5 text-emerald-500" />
+                          Mission Objective
                         </label>
                         <textarea
                           rows={2}
                           {...register("goal")}
-                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-green-500 focus:bg-white transition-all text-sm font-medium text-gray-600 leading-relaxed"
-                          placeholder="What must be achieved?"
+                          className="form-input min-h-[80px]"
+                          placeholder="WHAT MUST BE ACHIEVED?"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                          <AlignLeft className="w-4 h-4 text-orange-500" />
-                          Description
+                        <label className="form-label flex items-center gap-2">
+                          <AlignLeft className="w-3.5 h-3.5 text-amber-500" />
+                          Briefing
                         </label>
                         <textarea
                           rows={2}
                           {...register("description")}
-                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50/50 outline-none focus:border-orange-500 focus:bg-white transition-all text-sm font-medium text-gray-600 leading-relaxed"
-                          placeholder="Optional context..."
+                          className="form-input min-h-[80px]"
+                          placeholder="OPERATIONAL CONTEXT..."
                         />
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 -mx-10 -mb-6 px-10 py-8 mt-10 flex flex-row-reverse gap-4">
+                    <div className="bg-secondary/10 -mx-10 -mb-6 px-10 py-8 mt-10 flex flex-row-reverse gap-4 border-t border-border/50">
                       <button
                         type="submit"
                         disabled={loading}
-                        className="inline-flex justify-center items-center gap-2 rounded-xl bg-gray-900 px-10 py-3.5 text-sm font-black text-white shadow-2xl shadow-gray-200 hover:bg-black transition-all disabled:opacity-50 min-w-[180px]"
+                        className="px-8 py-3.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50"
                       >
                         {loading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                         ) : isEdit ? (
-                          "Update Sprint"
+                          "Commit Changes"
                         ) : (
-                          "Commence Sprint"
+                          "Launch Sprint"
                         )}
                       </button>
                       <button
                         type="button"
-                        className="inline-flex justify-center rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all"
+                        className="px-8 py-3.5 border border-border text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary transition-all"
                         onClick={onClose}
                         disabled={loading}
                       >
-                        Discard
+                        Abort
                       </button>
                     </div>
                   </form>

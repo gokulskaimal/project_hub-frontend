@@ -7,7 +7,7 @@ interface PremiumStatGridProps {
     total: number;
     active: number;
     suspended: number;
-    [key: string]: any;
+    [key: string]: number | undefined;
   };
 }
 

@@ -8,24 +8,26 @@ export default function InvoiceTemplate({ invoice }: { invoice: Invoice }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white border border-gray-200 shadow-xl rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
+    <div className="max-w-4xl mx-auto bg-card border border-border shadow-xl rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
       {/* Action Bar - Hidden during print */}
-      <div className="bg-gray-50 border-b border-gray-200 p-4 flex justify-end gap-3 print:hidden">
+      <div className="bg-secondary/50 border-b border-border p-4 flex justify-end gap-3 print:hidden">
         <button
           onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-background text-foreground font-bold rounded-xl border border-border hover:bg-secondary transition-all shadow-sm text-xs uppercase tracking-widest"
         >
           <Printer size={16} /> Print Full Invoice
         </button>
       </div>
 
       {/* Printable Area */}
-      <div className="relative p-10 md:p-14 space-y-8 print:p-0 print:border-none print:shadow-none bg-white min-h-[600px]">
+      <div className="relative p-10 md:p-14 space-y-8 print:p-0 print:border-none print:shadow-none bg-card min-h-[600px] print:bg-white">
         {/* Status Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden pr-20">
           <span
-            className={`text-[120px] font-black uppercase tracking-[0.2em] -rotate-12 opacity-[0.03] select-none ${
-              invoice.status === "PAID" ? "text-green-600" : "text-gray-400"
+            className={`text-[120px] font-black uppercase tracking-[0.2em] -rotate-12 opacity-[0.05] select-none ${
+              invoice.status === "PAID"
+                ? "text-emerald-500"
+                : "text-muted-foreground"
             }`}
           >
             {invoice.status}
@@ -33,25 +35,25 @@ export default function InvoiceTemplate({ invoice }: { invoice: Invoice }) {
         </div>
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-4xl font-black text-blue-600 tracking-tight">
+            <h1 className="text-4xl font-black text-primary tracking-tight uppercase">
               Project Hub
             </h1>
-            <p className="text-sm text-gray-500 mt-1 font-medium">
+            <p className="text-[10px] text-muted-foreground mt-1 font-black uppercase tracking-widest opacity-60">
               Enterprise Subscription Services
             </p>
           </div>
           <div className="text-right">
-            <h2 className="text-xl font-bold text-gray-900 tracking-wide">
+            <h2 className="text-xl font-black text-foreground tracking-tighter uppercase">
               INVOICE
             </h2>
-            <p className="text-gray-500 font-mono text-sm mt-1">
+            <p className="text-muted-foreground font-mono text-xs mt-1 uppercase tracking-widest opacity-60">
               #{invoice.id.slice(-8).toUpperCase()}
             </p>
             <span
-              className={`inline-block mt-3 px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-full border ${
+              className={`inline-block mt-3 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border ${
                 invoice.status === "PAID"
-                  ? "bg-green-50 text-green-600 border-green-200"
-                  : "bg-red-50 text-red-600 border-red-200"
+                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                  : "bg-rose-500/10 text-rose-500 border-rose-500/20"
               }`}
             >
               {invoice.status}
@@ -59,34 +61,37 @@ export default function InvoiceTemplate({ invoice }: { invoice: Invoice }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-12 pt-8 border-t border-gray-100">
+        <div className="grid grid-cols-2 gap-12 pt-8 border-t border-border/50">
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 opacity-40">
               Billed To
             </p>
-            <h3 className="text-lg font-bold text-gray-900">
+            <h3 className="text-lg font-black text-foreground uppercase tracking-tight">
               {invoice.orgName || "Your Organization"}
             </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Plan: <span className="font-semibold">{invoice.planName}</span>
+            <p className="text-[11px] text-muted-foreground mt-1 font-bold uppercase tracking-wide">
+              Plan:{" "}
+              <span className="font-black text-primary">
+                {invoice.planName}
+              </span>
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 opacity-40">
               Invoice Details
             </p>
-            <div className="space-y-1.5 text-sm">
+            <div className="space-y-2 text-[11px] font-bold uppercase tracking-wider">
               <p className="flex justify-end gap-3">
-                <span className="text-gray-500">Date Issued:</span>{" "}
-                <span className="font-medium text-gray-900">
+                <span className="text-muted-foreground">Date Issued:</span>{" "}
+                <span className="font-black text-foreground">
                   {invoice.createdAt
                     ? new Date(invoice.createdAt).toLocaleDateString()
                     : "N/A"}
                 </span>
               </p>
               <p className="flex justify-end gap-3">
-                <span className="text-gray-500">Due Date:</span>{" "}
-                <span className="font-medium text-gray-900">
+                <span className="text-muted-foreground">Due Date:</span>{" "}
+                <span className="font-black text-foreground">
                   {invoice.createdAt
                     ? new Date(
                         new Date(invoice.createdAt).setDate(
@@ -100,24 +105,24 @@ export default function InvoiceTemplate({ invoice }: { invoice: Invoice }) {
           </div>
         </div>
 
-        <div className="mt-10 overflow-hidden rounded-xl border border-gray-200">
+        <div className="mt-10 overflow-hidden rounded-xl border border-border/50">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50">
+            <thead className="bg-secondary/30">
               <tr>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <th className="py-4 px-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-60">
                   Description
                 </th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">
+                <th className="py-4 px-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] text-right opacity-60">
                   Amount
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white">
+            <tbody className="divide-y divide-border/30">
               <tr>
-                <td className="py-6 px-6 text-sm text-gray-900 font-medium">
+                <td className="py-6 px-6 text-xs text-foreground font-black uppercase tracking-tight">
                   Project Hub - {invoice.planName} Platform Subscription
                 </td>
-                <td className="py-6 px-6 text-sm font-bold text-gray-900 text-right">
+                <td className="py-6 px-6 text-sm font-black text-foreground text-right">
                   ₹{invoice.amount.toLocaleString()}
                 </td>
               </tr>
@@ -127,13 +132,13 @@ export default function InvoiceTemplate({ invoice }: { invoice: Invoice }) {
 
         <div className="flex justify-end pt-6">
           <div className="w-80 space-y-4">
-            <div className="flex justify-between text-sm text-gray-500 px-2">
+            <div className="flex justify-between text-xs font-black text-muted-foreground px-2 uppercase tracking-widest opacity-60">
               <span>Subtotal</span>
-              <span className="font-medium text-gray-900">
+              <span className="text-foreground">
                 ₹{invoice.amount.toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between text-xl font-black text-blue-600 bg-blue-50/50 border border-blue-100 p-4 rounded-xl">
+            <div className="flex justify-between text-xl font-black text-primary bg-primary/10 border border-primary/20 p-4 rounded-xl uppercase tracking-tighter">
               <span>Total Due</span>
               <span>₹{invoice.amount.toLocaleString()}</span>
             </div>

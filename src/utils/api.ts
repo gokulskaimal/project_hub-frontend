@@ -1,9 +1,4 @@
-import axios, {
-  InternalAxiosRequestConfig,
-  AxiosResponse,
-  AxiosError,
-} from "axios";
-import { toast } from "react-hot-toast"; // Still used for internal fallback but preferred to use notifier
+import axios from "axios";
 import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { startLoading, stopLoading } from "@/features/ui/uiSlice";
@@ -28,6 +23,7 @@ export const API_ROUTES = {
     PROFILE: "/user/profile",
     CHANGE_PASSWORD: "/user/change-password",
     VELOCITY: "/user/velocity",
+    ANALYTICS: "/user/analytics",
   },
   ADMIN: {
     ORGANIZATIONS: "/admin/organizations",
@@ -35,15 +31,20 @@ export const API_ROUTES = {
     PLANS: "/admin/plans",
     REPORTS: "/admin/reports",
     INVOICES: "/admin/invoices",
+    ANALYTICS: "/admin/analytics",
   },
   MANAGER: {
     MEMBERS: "/manager/members",
     PLANS: "/plans",
     INVITATIONS: "/manager/invitations",
+    MEMBERS_STATS: "/manager/members/stats",
+    INVITATIONS_STATS: "/manager/invitations/stats",
     ORGANIZATION: "/manager/organization",
     INVITE: "/manager/invite-member",
     BULK_INVITE: "/manager/bulk-invite",
     INVOICES: "/manager/invoices",
+    DASHBOARD_STATS: "/manager/dashboard/stats",
+    ANALYTICS: "/manager/analytics",
   },
   PLANS: {
     GET_ALL: "/plans",
@@ -67,6 +68,8 @@ export const API_ROUTES = {
     SPRINT_DELETE: (sprintId: string) => `/projects/sprints/${sprintId}`,
     VELOCITY: (projectId: string) => `/projects/${projectId}/velocity`,
     MEMBERS: (projectId: string) => `/projects/${projectId}/members`,
+    EPIC_ANALYTICS: (projectId: string) =>
+      `/projects/${projectId}/epic-analytics`,
   },
   ORGANIZATION: {
     USERS: "/organization/users",
@@ -87,6 +90,16 @@ export const API_ROUTES = {
   PAYMENTS: {
     SUBSCRIPTION: "/payments/subscription",
     VERIFY: "/payments/verify",
+  },
+  MEETINGS: {
+    SPRINT_MEETINGS: (sprintId: string) =>
+      `/projects/meetings/sprint/${sprintId}`,
+    CREATE_MEETING: "/projects/meetings",
+    MY_MEETINGS: "/projects/meetings/my-meetings",
+    MEETINGS_COMPLETE: (roomId: string) =>
+      `/projects/meetings/${roomId}/complete`,
+    MEETINGS_UPDATE: (roomId: string) => `/projects/meetings/${roomId}`,
+    MEETINGS_DELETE: (roomId: string) => `/projects/meetings/${roomId}`,
   },
 } as const;
 
@@ -186,7 +199,6 @@ api.interceptors.response.use(
     try {
       const data = error?.response?.data;
       const statusCode = error?.response?.status;
-      const errorCode = data?.code;
 
       // Handle JWT token expiration
       if (statusCode === 401) {
@@ -266,7 +278,9 @@ api.interceptors.response.use(
       if (extracted && typeof extracted === "string") {
         error.message = extracted;
       }
-    } catch {}
+    } catch {
+      // Ignore extraction errors and fallback to default
+    }
 
     return Promise.reject(error);
   },

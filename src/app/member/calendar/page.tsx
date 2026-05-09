@@ -11,15 +11,22 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 export default function GlobalCalendarPage() {
   const {
-    data: tasks = [],
+    data: tasksData,
     isLoading: tasksLoading,
     refetch: refetchTasks,
   } = useGetMyTasksQuery();
+
   const {
-    data: projects = [],
+    data: projectsData,
     isLoading: projectsLoading,
     refetch: refetchProjects,
   } = useGetMyProjectsQuery();
+
+  const tasks = React.useMemo(() => tasksData?.items || [], [tasksData]);
+  const projects = React.useMemo(
+    () => projectsData?.items || [],
+    [projectsData],
+  );
 
   const loading = tasksLoading || projectsLoading;
 
