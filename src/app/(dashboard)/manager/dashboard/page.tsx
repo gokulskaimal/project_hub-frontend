@@ -128,7 +128,7 @@ export default function ManagerDashboardPage() {
         variants={container}
         initial="hidden"
         animate="show"
-        className="space-y-6 sm:space-y-8 pb-12"
+        className="space-y-6 sm:space-y-8 pb-12 min-h-screen mesh-gradient"
       >
         {/* Welcome Banner */}
         <motion.div variants={item}>
@@ -213,6 +213,7 @@ export default function ManagerDashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="glass-card rounded-3xl p-8 border border-border/50">
+              <div className="noise-overlay" />
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
@@ -240,6 +241,7 @@ export default function ManagerDashboardPage() {
             </div>
 
             <div className="glass-card rounded-3xl p-8 border border-border/50">
+              <div className="noise-overlay" />
               <div className="mb-8">
                 <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
                   Global Velocity
@@ -259,6 +261,7 @@ export default function ManagerDashboardPage() {
             </div>
 
             <div className="glass-card rounded-3xl p-8 border border-border/50">
+              <div className="noise-overlay" />
               <div className="mb-8">
                 <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
                   Task Distribution
@@ -335,6 +338,7 @@ export default function ManagerDashboardPage() {
                     (window.location.href = `/manager/projects/${project.id}`)
                   }
                 >
+                  <div className="noise-overlay" />
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-black text-foreground tracking-tight line-clamp-1 group-hover:text-primary transition-colors uppercase">
