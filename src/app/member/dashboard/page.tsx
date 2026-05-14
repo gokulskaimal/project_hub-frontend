@@ -111,7 +111,7 @@ export default function MemberDashboard() {
 
   if (loading) {
     return (
-      <DashboardLayout title="Member Hub">
+      <DashboardLayout title="My Dashboard">
         <div className="p-6 space-y-10">
           <div className="h-48 bg-secondary/30 rounded-3xl animate-pulse" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -139,7 +139,7 @@ export default function MemberDashboard() {
   ).length;
 
   return (
-    <DashboardLayout title="Member Hub">
+    <DashboardLayout title="My Dashboard">
       <motion.div
         variants={container}
         initial="hidden"
@@ -150,7 +150,7 @@ export default function MemberDashboard() {
         <motion.div variants={item}>
           <RoleBanner
             roleName="Member"
-            badgeText="Mission Control"
+            badgeText="Tasks"
             welcomeMessage={
               <>
                 Welcome,{" "}
@@ -163,13 +163,13 @@ export default function MemberDashboard() {
               <>
                 You have{" "}
                 <span className="text-white border-b border-white/30 pb-0.5">
-                  {pendingTasks} pending tasks
+                  {pendingTasks} tasks to do
                 </span>{" "}
                 and{" "}
                 <span className="text-white/90">
-                  {criticalTasks} critical issues
+                  {criticalTasks} urgent tasks
                 </span>{" "}
-                requiring your attention today.
+                that need your help today.
               </>
             }
           />
@@ -192,13 +192,13 @@ export default function MemberDashboard() {
                 color: "orange",
               },
               {
-                label: "Critical",
+                label: "Urgent",
                 value: criticalTasks,
                 icon: AlertCircle,
                 color: "red",
               },
               {
-                label: "Done",
+                label: "Completed",
                 value: completedTasks,
                 icon: CheckCircle2,
                 color: "emerald",
@@ -214,7 +214,7 @@ export default function MemberDashboard() {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
-              Performance Insight
+              Stats
             </h2>
             <AnalyticsFilter value={timeframe} onChange={setTimeframe} />
           </div>
@@ -224,16 +224,16 @@ export default function MemberDashboard() {
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">
-                    Velocity Trajectory
+                    My Progress
                   </h3>
                   <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                    Points delivered across {timeframe.toLowerCase()}
+                    Tasks completed
                   </p>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
-                    Live System
+                    Online
                   </span>
                 </div>
               </div>
@@ -242,7 +242,7 @@ export default function MemberDashboard() {
                   <div className="h-full flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-2xl bg-secondary/10">
                     <AlertCircle className="w-8 h-8 text-muted-foreground mb-2" />
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-relaxed">
-                      Analytics Temporarily <br /> Offline
+                      Stats Not Available
                     </p>
                   </div>
                 ) : (
@@ -259,10 +259,10 @@ export default function MemberDashboard() {
             <div className="glass-card rounded-3xl p-8 border border-border/50 flex flex-col">
               <div className="mb-8">
                 <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">
-                  Task Ecosystem
+                  Task Status
                 </h3>
                 <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                  Lifecycle distribution
+                  Task Status
                 </p>
               </div>
               <div className="flex-1 flex flex-col items-center justify-center">
@@ -289,7 +289,7 @@ export default function MemberDashboard() {
                 className="group flex items-center gap-2 transition-all"
               >
                 <span className="text-[10px] font-black text-muted-foreground group-hover:text-primary uppercase tracking-widest transition-colors">
-                  View Repository
+                  View All
                 </span>
                 <div className="w-6 h-6 rounded-full bg-secondary/50 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
                   <ArrowRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -304,7 +304,7 @@ export default function MemberDashboard() {
                     <CheckSquare className="w-8 h-8 text-muted-foreground/30" />
                   </div>
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    System Nominal: No Active Tasks
+                    You&apos;re all done!
                   </p>
                 </div>
               ) : (
@@ -338,7 +338,7 @@ export default function MemberDashboard() {
                                         : "text-muted-foreground"
                                     }`}
                                   >
-                                    Expires{" "}
+                                    Due on{" "}
                                     {new Date(task.dueDate).toLocaleDateString(
                                       [],
                                       { month: "short", day: "numeric" },
@@ -369,13 +369,13 @@ export default function MemberDashboard() {
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Briefcase className="w-5 h-5 text-primary" />
                 </div>
-                Assigned
+                My Projects
               </h2>
               <Link
                 href="/member/projects"
                 className="text-[10px] font-black text-muted-foreground hover:text-primary uppercase tracking-widest transition-colors"
               >
-                All Systems
+                View All
               </Link>
             </div>
 
@@ -383,7 +383,7 @@ export default function MemberDashboard() {
               {projects.length === 0 ? (
                 <div className="p-8 text-center glass-card rounded-3xl border border-border/50">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-relaxed">
-                    No nodes connected to your <br /> current profile.
+                    No projects found <br /> in your account.
                   </p>
                 </div>
               ) : (

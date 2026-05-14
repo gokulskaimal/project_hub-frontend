@@ -17,15 +17,14 @@ export default function HeroSection() {
           Production Core Active • v4.2.0
         </div>
 
-        <h1 className="text-6xl lg:text-8xl font-black text-foreground mb-8 uppercase tracking-tighter leading-[0.9] italic">
-          Forge The <br />
-          <span className="text-gradient">Future Nexus</span>
+        <h1 className="text-hero font-black text-foreground mb-8 uppercase italic">
+          Build Your <br />
+          <span className="text-gradient">Projects Faster</span>
         </h1>
 
         <p className="text-muted-foreground text-sm lg:text-lg mb-12 max-w-2xl font-bold leading-relaxed opacity-70 uppercase tracking-widest italic">
-          Professional-grade project management suite for high-performance
-          teams. Synchronize your organization, track every milestone, and
-          accelerate project velocity.
+          The easiest way for teams to manage work, chat, and hit deadlines. No
+          complex setup. Just clear results.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-6 mb-24">
@@ -40,7 +39,7 @@ export default function HeroSection() {
             href="#features"
             className="px-10 py-5 bg-secondary text-foreground font-black uppercase tracking-[0.2em] text-[11px] rounded-2xl border border-white/5 shadow-xl hover:bg-secondary/80 transition-all active:scale-95"
           >
-            Decipher Specs
+            How it Works
           </a>
         </div>
 
@@ -75,10 +74,10 @@ export default function HeroSection() {
                 <div className="w-8 h-8 rounded-full bg-primary shadow-[0_0_20px_rgba(var(--primary),0.8)]" />
               </div>
               <h4 className="text-lg font-black text-foreground uppercase tracking-tighter italic mb-2">
-                Live Status Aggregate
+                Team Progress
               </h4>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em]">
-                98.4% Efficiency
+                98% Completed
               </p>
             </div>
           </div>

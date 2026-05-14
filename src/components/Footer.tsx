@@ -13,8 +13,8 @@ export default function Footer() {
               </span>
             </div>
             <p className="max-w-md text-xs font-black text-muted-foreground uppercase tracking-widest opacity-60 leading-relaxed italic">
-              Advanced neural infrastructure for high-velocity project
-              architecture. Synchronize your collective, dominate the matrix.
+              Simple and powerful tools for faster project management. Work
+              together and finish your projects faster.
             </p>
           </div>
           <div className="flex flex-wrap gap-x-12 gap-y-6">
@@ -24,7 +24,7 @@ export default function Footer() {
               "Security",
               "Pricing",
               "Enterprise",
-              "Nexus",
+              "Help Center",
             ].map((item) => (
               <a
                 key={item}
@@ -38,14 +38,14 @@ export default function Footer() {
         </div>
         <div className="mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
           <p className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em]">
-            © 2025 Project Hub. Network Core v4.0.0. All sectors reserved.
+            © 2025 Project Hub. Version 4.0.0. All rights reserved.
           </p>
           <div className="flex gap-8">
             <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em] hover:text-primary cursor-pointer transition-all">
               Privacy Policy
             </span>
             <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em] hover:text-primary cursor-pointer transition-all">
-              Terms of Matrix
+              Terms of Service
             </span>
           </div>
         </div>

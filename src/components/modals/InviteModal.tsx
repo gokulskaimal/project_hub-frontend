@@ -106,9 +106,7 @@ export default function InviteModal({
           expiresIn: 7, // Default for bulk for simplicity, can be expanded
         }).unwrap();
 
-        notifier.success(
-          `Successfully dispatched ${emails.length} invitations`,
-        );
+        notifier.success(`Successfully sent ${emails.length} invites`);
       } else {
         await Promise.all(
           validInvites.map((invite) =>
@@ -130,7 +128,7 @@ export default function InviteModal({
         { email: "", role: USER_ROLES.TEAM_MEMBER, expiry: "7 Days" },
       ]);
     } catch (err) {
-      notifier.error(err, "Failed to send some invitations");
+      notifier.error(err, "Failed to send some invites");
     }
   };
 
@@ -174,10 +172,10 @@ export default function InviteModal({
                           as="h3"
                           className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
-                          Assemble Your Team
+                          Invite Your Team
                         </Dialog.Title>
                         <p className="text-[10px] font-black text-muted-foreground mt-1 uppercase tracking-widest opacity-60">
-                          Expansion Protocol • Initializing Node Access
+                          Add Members • Give Access
                         </p>
                       </div>
                     </div>
@@ -198,7 +196,7 @@ export default function InviteModal({
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      Individual
+                      Single Invite
                     </button>
                     <button
                       onClick={() => setIsBulkMode(true)}
@@ -208,7 +206,7 @@ export default function InviteModal({
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      Bulk Entry
+                      Bulk Invite
                     </button>
                   </div>
 
@@ -218,12 +216,12 @@ export default function InviteModal({
                         <div className="space-y-2">
                           <label className="form-label !flex items-center gap-2">
                             <Mail className="w-3.5 h-3.5 text-primary" />
-                            <span>Email Id List</span>
+                            <span>Emails</span>
                           </label>
                           <textarea
                             value={bulkEmails}
                             onChange={(e) => setBulkEmails(e.target.value)}
-                            placeholder="OPERATOR1@SYSTEM.IO, OPERATOR2@SYSTEM.IO..."
+                            placeholder="EMAIL1@GMAIL.COM, EMAIL2@GMAIL.COM..."
                             rows={8}
                             className="form-input !text-xs !font-black uppercase tracking-widest placeholder:opacity-40"
                           />
@@ -270,7 +268,7 @@ export default function InviteModal({
                                 <div className="md:col-span-6 space-y-2">
                                   <label className="form-label !flex items-center gap-2">
                                     <Mail className="w-3.5 h-3.5 text-primary" />
-                                    <span>Email Id</span>
+                                    <span>Email Address</span>
                                   </label>
                                   <input
                                     type="email"
@@ -279,7 +277,7 @@ export default function InviteModal({
                                     onChange={(e) =>
                                       updateRow(index, "email", e.target.value)
                                     }
-                                    placeholder="OPERATOR@SYSTEM.IO"
+                                    placeholder="FRIEND@GMAIL.COM"
                                     className="form-input"
                                   />
                                 </div>
@@ -312,7 +310,7 @@ export default function InviteModal({
                                 <div className="md:col-span-3 space-y-2">
                                   <label className="form-label !flex items-center gap-2">
                                     <Clock className="w-3.5 h-3.5 text-purple-500" />
-                                    <span>Expiry Time</span>
+                                    <span>Link Expires In</span>
                                   </label>
                                   <select
                                     value={invite.expiry}

@@ -81,10 +81,10 @@ export default function SprintCapacity({
           </div>
           <div>
             <h3 className="text-base font-black text-foreground tracking-tight">
-              System Load Analysis
+              Workload Stats
             </h3>
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
-              Real-time Sprint Capacity Balance
+              How much work your team is doing.
             </p>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function SprintCapacity({
             <span
               className={`text-[10px] font-black uppercase tracking-widest ${config.text}`}
             >
-              {Math.round(percentage)}% Node Utilization
+              {Math.round(percentage)}% Workload
             </span>
           </div>
           <span className="text-[11px] font-black text-foreground uppercase">
@@ -136,20 +136,20 @@ export default function SprintCapacity({
               <div className="flex items-center gap-2 bg-rose-500/10 px-3 py-1.5 rounded-xl border border-rose-500/20 animate-pulse">
                 <AlertTriangle className="w-3 h-3 text-rose-500" />
                 <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest leading-none">
-                  Resource Critical Level
+                  Team is Overworked
                 </span>
               </div>
             ) : (
               <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
                 <ShieldCheck className="w-3 h-3 text-emerald-500" />
                 <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest leading-none">
-                  Optimal Load Profile
+                  Workload is Good
                 </span>
               </div>
             )}
           </div>
           <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">
-            Based on last 3 runs
+            Based on last 3 sprints
           </span>
         </div>
       </div>

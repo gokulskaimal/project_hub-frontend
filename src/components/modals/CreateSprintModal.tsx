@@ -200,7 +200,7 @@ export default function CreateSprintModal({
                           as="h3"
                           className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
-                          {isEdit ? "Refine Sprint" : "Launch Sprint"}
+                          {isEdit ? "Edit Sprint" : "Create Sprint"}
                         </Dialog.Title>
                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1"></p>
                       </div>
@@ -218,7 +218,7 @@ export default function CreateSprintModal({
                       <div className="space-y-2">
                         <label className="form-label flex items-center gap-2">
                           <Flag className="w-3.5 h-3.5 text-primary" />
-                          Identifier
+                          Name
                         </label>
                         <input
                           type="text"
@@ -238,7 +238,7 @@ export default function CreateSprintModal({
                         <div className="space-y-2">
                           <label className="form-label flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                            Start Node
+                            Start Date
                           </label>
                           <input
                             type="date"
@@ -257,7 +257,7 @@ export default function CreateSprintModal({
                         <div className="space-y-2">
                           <label className="form-label flex items-center gap-2">
                             <Clock className="w-3.5 h-3.5 text-purple-500" />
-                            Target End
+                            End Date
                           </label>
                           <input
                             type="date"
@@ -278,7 +278,7 @@ export default function CreateSprintModal({
                       <div className="space-y-2">
                         <label className="form-label flex items-center gap-2">
                           <Target className="w-3.5 h-3.5 text-emerald-500" />
-                          Mission Objective
+                          Sprint Goal
                         </label>
                         <textarea
                           rows={2}
@@ -291,7 +291,7 @@ export default function CreateSprintModal({
                       <div className="space-y-2">
                         <label className="form-label flex items-center gap-2">
                           <AlignLeft className="w-3.5 h-3.5 text-amber-500" />
-                          Briefing
+                          Description
                         </label>
                         <textarea
                           rows={2}
@@ -311,9 +311,9 @@ export default function CreateSprintModal({
                         {loading ? (
                           <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                         ) : isEdit ? (
-                          "Commit Changes"
+                          "Save Changes"
                         ) : (
-                          "Launch Sprint"
+                          "Create Sprint"
                         )}
                       </button>
                       <button
@@ -322,7 +322,7 @@ export default function CreateSprintModal({
                         onClick={onClose}
                         disabled={loading}
                       >
-                        Abort
+                        Cancel
                       </button>
                     </div>
                   </form>

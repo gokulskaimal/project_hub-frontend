@@ -20,12 +20,12 @@ export default function CtaSection() {
           </div>
 
           <h2 className="text-5xl lg:text-6xl font-black text-foreground uppercase tracking-tighter italic mb-8 max-w-4xl mx-auto leading-[0.9]">
-            Ready to Synchronize Your <br />
-            <span className="text-gradient">Organization?</span>
+            Ready to Start Your <br />
+            <span className="text-gradient">Project?</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-16 text-[11px] font-black uppercase tracking-[0.4em] leading-relaxed opacity-60">
-            Deploy the project hub architecture in seconds. <br />
-            Select your node path and begin operational scaling.
+            Set up your workspace in seconds. <br />
+            Choose your plan and grow your team today.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -40,13 +40,13 @@ export default function CtaSection() {
               href="/login"
               className="px-12 py-6 bg-secondary text-foreground font-black uppercase tracking-[0.2em] text-[11px] rounded-2xl border border-white/5 shadow-xl hover:bg-secondary/80 transition-all hover:scale-[1.05] active:scale-95"
             >
-              Active Node Login
+              Login to your account
             </Link>
           </div>
 
           <div className="mt-16 pt-10 border-t border-white/5 opacity-40">
             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.5em]">
-              Global Network Density: 4,208 Active Operatives
+              Global Stats: 4,208 Active Users
             </p>
           </div>
         </motion.div>

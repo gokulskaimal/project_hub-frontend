@@ -62,10 +62,10 @@ export default function MeetingHub() {
         <div>
           <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2">
             <Video className="w-8 h-8 text-primary" />
-            Meetings Hub
+            My Meetings
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            View and manage all your project syncs and team calls.
+            View and manage all your team calls here.
           </p>
         </div>
       </div>

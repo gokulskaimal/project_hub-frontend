@@ -56,7 +56,7 @@ export default function ProjectDetailsHeader({
             </h1>
             <p className="text-xs font-medium text-muted-foreground mt-1 max-w-2xl line-clamp-1">
               {project?.description ||
-                "Strategic project initiatives and roadmap."}
+                "All details and tasks for this project."}
             </p>
           </div>
         </div>
@@ -68,11 +68,7 @@ export default function ProjectDetailsHeader({
                 ? "bg-primary border-primary/20 text-primary-foreground shadow-primary/20"
                 : "bg-card border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/30"
             }`}
-            title={
-              isSidebarOpen
-                ? "Hide Intelligence Sidebar"
-                : "Show Intelligence Sidebar"
-            }
+            title={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
           >
             <PanelRight
               size={22}

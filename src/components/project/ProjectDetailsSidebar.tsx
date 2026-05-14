@@ -20,13 +20,13 @@ export default function ProjectDetailsSidebar({
       <div className="flex items-center justify-between mb-5 px-1">
         <h3 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.3em] flex items-center gap-2 opacity-60">
           <Users className="w-3.5 h-3.5 text-primary" />
-          Neural Team
+          Team Members
         </h3>
         {isManager && (
           <button
             onClick={onAddMembers}
             className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all group active:scale-90"
-            title="Manage Team Synergy"
+            title="Add Members"
           >
             <UserPlus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
           </button>
@@ -54,7 +54,7 @@ export default function ProjectDetailsSidebar({
         {teamMembers.length === 0 && (
           <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-2xl">
             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-              No Active Nodes
+              No members yet
             </p>
           </div>
         )}

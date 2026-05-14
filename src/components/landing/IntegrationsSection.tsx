@@ -6,14 +6,14 @@ export default function IntegrationsSection() {
       <div className="container max-w-[1400px] mx-auto px-8 relative z-10">
         <div className="text-center mb-20 space-y-4">
           <div className="text-[10px] font-black text-primary tracking-[0.4em] uppercase mb-4 opacity-70 italic">
-            Network Fabric
+            Connect Your Tools
           </div>
           <h2 className="text-5xl font-black text-foreground uppercase tracking-tighter italic">
-            Seamless Ecosystem
+            Everything in One Place
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-[11px] font-black uppercase tracking-[0.2em] leading-relaxed opacity-60">
-            Unify your operational stack. Bridge designers, developers, and
-            leadership across a single neural nexus.
+            Connect all your tools. Bring designers, developers, and managers
+            together in one hub.
           </p>
         </div>
 
@@ -21,7 +21,7 @@ export default function IntegrationsSection() {
           <div className="glass-card rounded-[2.5rem] border border-white/5 bg-card/40 p-10 shadow-2xl flex flex-col justify-between">
             <div>
               <h4 className="text-[10px] font-black text-foreground uppercase tracking-[0.3em] mb-8 opacity-50 italic">
-                Authorized Node Connectors
+                Available Apps
               </h4>
               <div className="flex flex-wrap gap-3 mb-10">
                 {["Figma", "GitHub", "Slack", "Jira", "Notion"].map((tool) => (
@@ -35,8 +35,8 @@ export default function IntegrationsSection() {
               </div>
             </div>
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] leading-relaxed opacity-60">
-              Bi-directional data flow with major ecosystem nodes. Keep
-              specifications, commits, and communications in total synchrony.
+              Send and receive data between your apps. Keep designs, code, and
+              messages synced.
             </p>
           </div>
 
@@ -45,18 +45,18 @@ export default function IntegrationsSection() {
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em]">
-                  Figma Visualization Node
+                  Figma Integration
                 </span>
               </div>
               <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">
-                Live Synchronization
+                Live Syncing
               </span>
             </div>
 
             <div className="p-10 flex flex-col sm:flex-row gap-10 h-full min-h-[300px]">
               <div className="flex-1 rounded-[2rem] border border-white/5 bg-gradient-to-br from-primary/10 to-purple-500/10 p-8 relative overflow-hidden group/vis">
                 <div className="text-[10px] font-black text-foreground uppercase tracking-[0.3em] mb-6 opacity-50 italic">
-                  Design Manifest
+                  Design Preview
                 </div>
                 {/* Visualizer Skeleton */}
                 <div className="h-40 rounded-2xl bg-background/50 border border-white/5 relative shadow-inner overflow-hidden">
@@ -70,13 +70,13 @@ export default function IntegrationsSection() {
 
               <div className="flex-1 flex flex-col justify-center">
                 <h4 className="text-lg font-black text-foreground uppercase tracking-tighter italic mb-6">
-                  Automated Lifecycle
+                  How it works
                 </h4>
                 <div className="space-y-4">
                   {[
-                    "Generate stories from Figma frames",
-                    "Link commits to specific issue nodes",
-                    "Synchronize repository states",
+                    "Create tasks from designs",
+                    "Connect code to tasks",
+                    "Sync with GitHub",
                   ].map((spec) => (
                     <div key={spec} className="flex items-center gap-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary" />

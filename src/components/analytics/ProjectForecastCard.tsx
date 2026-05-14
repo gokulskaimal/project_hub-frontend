@@ -90,10 +90,10 @@ export default function ProjectForecastCard({
           </div>
           <div>
             <h3 className="text-2xl font-black text-white tracking-tighter uppercase">
-              Launch Forecast
+              Finish Date
             </h3>
             <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-1">
-              Predictive Delivery Intelligence
+              When we think the project will finish.
             </p>
           </div>
         </div>
@@ -102,13 +102,13 @@ export default function ProjectForecastCard({
           <div className="flex items-center gap-2 mb-1">
             <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
             <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">
-              Team Throughput
+              Team Speed
             </span>
           </div>
           <span className="text-2xl font-black text-white leading-none tabular-nums">
             {analytics.avgVelocity.toFixed(1)}{" "}
             <span className="text-xs text-white/30 uppercase ml-1">
-              pts/cycle
+              pts/sprint
             </span>
           </span>
         </div>
@@ -120,7 +120,7 @@ export default function ProjectForecastCard({
           <div className="flex items-center gap-3 mb-4">
             <Calendar className="w-4 h-4 text-primary" />
             <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">
-              Estimated Arrival
+              Estimated Finish
             </span>
           </div>
           <p className="text-xl font-black text-white">
@@ -131,7 +131,7 @@ export default function ProjectForecastCard({
             })}
           </p>
           <p className="text-[9px] font-bold text-white/30 uppercase mt-1">
-            ~ {analytics.weeksToComplete} development cycles
+            ~ {analytics.weeksToComplete} sprints
           </p>
         </div>
 
@@ -140,7 +140,7 @@ export default function ProjectForecastCard({
           <div className="flex items-center gap-3 mb-4">
             <TrendingUp className="w-4 h-4 text-emerald-500" />
             <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">
-              Remaining Scope
+              Unfinished Work
             </span>
           </div>
           <p className="text-xl font-black text-white">
@@ -149,7 +149,7 @@ export default function ProjectForecastCard({
           </p>
           <p className="text-[9px] font-bold text-white/30 uppercase mt-1">
             Across {tasks.filter((t) => t.status !== "DONE").length} active
-            nodes
+            tasks
           </p>
         </div>
 
@@ -164,7 +164,7 @@ export default function ProjectForecastCard({
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             )}
             <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">
-              Deadline Buffer
+              Time Left
             </span>
           </div>
           <p
@@ -178,9 +178,7 @@ export default function ProjectForecastCard({
           <p
             className={`text-[9px] font-bold uppercase mt-1 ${analytics.isOverdue ? "text-red-500/50" : "text-emerald-500/50"}`}
           >
-            {analytics.isOverdue
-              ? "Strategic Delay Detected"
-              : "Mission On Track"}
+            {analytics.isOverdue ? "We are running late" : "On Time"}
           </p>
         </div>
       </div>
@@ -189,11 +187,11 @@ export default function ProjectForecastCard({
         <div className="flex items-center gap-2">
           <Clock className="w-3.5 h-3.5 text-white/20" />
           <span className="text-[8px] font-black text-white/20 uppercase tracking-widest leading-none">
-            Last Pulse Sync: {new Date().toLocaleTimeString()}
+            Last Updated: {new Date().toLocaleTimeString()}
           </span>
         </div>
         <button className="text-[9px] font-black text-primary uppercase tracking-[0.2em] hover:text-white transition-colors">
-          Configure Baseline Parameters →
+          Settings →
         </button>
       </div>
     </div>

@@ -41,22 +41,20 @@ import PremiumStatGrid from "@/components/admin/PremiumStatGrid";
 import { Toggle } from "@/components/ui/Toggle";
 
 const planSchema = z.object({
-  name: z.string().min(3, "Identify must be at least 3 characters"),
-  description: z
-    .string()
-    .min(10, "Provide a more tactical description (min 10 chars)"),
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  description: z.string().min(10, "Write a better description (min 10 chars)"),
   price: z.number().min(0, "Cost cannot be negative"),
   currency: z.string().min(1, MESSAGES.VALIDATION.REQUIRED),
   type: z.enum(["STARTER", "PRO", "ENTERPRISE"]),
   features: z
-    .array(z.string().min(1, "Feature node cannot be empty"))
+    .array(z.string().min(1, "Feature cannot be empty"))
     .min(1, "At least one feature required"),
   isActive: z.boolean(),
   limits: z.object({
-    projects: z.number().min(1, "Minimum 1 Project Partition required"),
-    members: z.number().min(1, "Minimum 1 Operator Capacity required"),
-    storage: z.number().min(1, "Storage node required"),
-    messages: z.number().min(1, "Communication nodes required"),
+    projects: z.number().min(1, "Minimum 1 Project required"),
+    members: z.number().min(1, "Minimum 1 Member required"),
+    storage: z.number().min(1, "Storage required"),
+    messages: z.number().min(1, "Messages required"),
   }),
 });
 
@@ -223,7 +221,7 @@ export default function AdminPlansPage() {
   };
 
   return (
-    <DashboardLayout title="Subscription Logistics">
+    <DashboardLayout title="Pricing Plans">
       <div className="p-4 md:p-8 space-y-10 sm:space-y-12 pb-20">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
           <div>
@@ -231,10 +229,10 @@ export default function AdminPlansPage() {
               <div className="p-3 bg-primary/10 rounded-2xl">
                 <CreditCard className="w-8 h-8 text-primary" />
               </div>
-              Revenue <span className="text-primary">&</span> Tiers
+              Plans
             </h1>
             <p className="text-[10px] font-black text-muted-foreground mt-2 uppercase tracking-[0.2em] opacity-70">
-              Configuring the economic architecture and access nodes.
+              Create and manage the plans for your companies.
             </p>
           </div>
         </div>
@@ -255,7 +253,7 @@ export default function AdminPlansPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search plan matrix..."
+              placeholder="Search plans..."
               className="w-full pl-12 pr-4 py-3 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
             />
           </div>
@@ -267,16 +265,16 @@ export default function AdminPlansPage() {
                 className="appearance-none px-6 py-3 bg-secondary/30 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground outline-none focus:bg-secondary/50 focus:border-primary/20 cursor-pointer transition-all hover:bg-secondary/40 min-w-[170px]"
               >
                 <option value="ALL" className="bg-card">
-                  Tier Hierarchy: ALL
+                  Type: ALL
                 </option>
                 <option value="STARTER" className="bg-card">
-                  Tactical Starter
+                  Starter
                 </option>
                 <option value="PRO" className="bg-card">
-                  Strategic Pro
+                  Pro
                 </option>
                 <option value="ENTERPRISE" className="bg-card">
-                  Industrial Enterprise
+                  Enterprise
                 </option>
               </select>
             </div>
@@ -287,13 +285,13 @@ export default function AdminPlansPage() {
                 className="appearance-none px-6 py-3 bg-secondary/30 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground outline-none focus:bg-secondary/50 focus:border-primary/20 cursor-pointer transition-all hover:bg-secondary/40 min-w-[180px]"
               >
                 <option value="price_asc" className="bg-card">
-                  Cost: Low → High
+                  Price: Low to High
                 </option>
                 <option value="price_desc" className="bg-card">
-                  Cost: High → Low
+                  Price: High to Low
                 </option>
                 <option value="name_asc" className="bg-card">
-                  Identity: Primary
+                  Sort by Name
                 </option>
               </select>
             </div>
@@ -301,7 +299,7 @@ export default function AdminPlansPage() {
               onClick={() => handleOpenModal()}
               className="flex items-center gap-3 px-8 py-3.5 bg-primary text-primary-foreground rounded-2xl hover:opacity-90 transition-all shadow-2xl shadow-primary/20 font-black text-[10px] uppercase tracking-[0.2em] shrink-0 active:scale-95"
             >
-              <Plus size={18} /> Manifest Plan
+              <Plus size={18} /> Create Plan
             </button>
           </div>
         </div>
@@ -310,7 +308,7 @@ export default function AdminPlansPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-6 glass-card rounded-[3rem] border border-border/50">
             <Loader2 className="animate-spin w-12 h-12 text-primary opacity-50" />
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] animate-pulse">
-              Syncing Plan Matrix...
+              Loading plans...
             </span>
           </div>
         ) : (
@@ -318,7 +316,7 @@ export default function AdminPlansPage() {
             {filteredPlans.length === 0 && (
               <div className="col-span-full py-40 text-center text-muted-foreground bg-card/30 rounded-[3rem] border border-border/50 border-dashed font-black text-sm uppercase tracking-widest animate-in fade-in zoom-in duration-700">
                 <Shield className="w-16 h-16 mx-auto mb-6 opacity-20" />
-                Null Plan Results Found.
+                No plans found.
               </div>
             )}
             {filteredPlans.map((plan: Plan) => (
@@ -326,10 +324,8 @@ export default function AdminPlansPage() {
                 key={plan.id}
                 id={plan.id}
                 title={plan.name}
-                description={
-                  plan.description || "Inert mission tier without description."
-                }
-                status={plan.isActive ? "ACTIVE" : "VACANT"}
+                description={plan.description || "No description available."}
+                status={plan.isActive ? "ACTIVE" : "OFF"}
                 statusColor={
                   plan.isActive
                     ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
@@ -352,14 +348,14 @@ export default function AdminPlansPage() {
                     <div className="flex gap-2.5 ml-2">
                       <button
                         onClick={() => handleOpenModal(plan)}
-                        title="Modify Plan"
+                        title="Edit Plan"
                         className="p-2.5 bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary hover:text-white transition-all shadow-xl active:scale-90"
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => handleDeletePlan(plan.id)}
-                        title="Void Plan"
+                        title="Delete Plan"
                         className="p-2.5 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all shadow-xl active:scale-90"
                       >
                         <Trash2 size={16} />
@@ -373,7 +369,7 @@ export default function AdminPlansPage() {
                       ₹{plan.price}
                     </span>
                     <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
-                      / {plan.interval || "node cycle"}
+                      / month
                     </span>
                   </div>
                 }
@@ -385,13 +381,13 @@ export default function AdminPlansPage() {
                       <div className="p-1.5 bg-primary/10 rounded-lg">
                         <Target size={14} className="text-primary" />
                       </div>
-                      {plan.limits?.projects || 0} Project Partitions
+                      {plan.limits?.projects || 0} Projects Allowed
                     </li>
                     <li className="flex items-center gap-3 text-xs text-foreground font-black uppercase tracking-tighter">
                       <div className="p-1.5 bg-primary/10 rounded-lg">
                         <Shield size={14} className="text-primary" />
                       </div>
-                      {plan.limits?.members || 0} Operator Capacity
+                      {plan.limits?.members || 0} Members Allowed
                     </li>
                     {plan.features.map((f: string, i: number) => (
                       <li
@@ -450,7 +446,7 @@ export default function AdminPlansPage() {
                             <Plus size={22} className="text-primary" />
                           )}
                         </div>
-                        {editingPlan ? "Tier Modification" : "Manifest Plan"}
+                        {editingPlan ? "Edit Plan" : "Create Plan"}
                       </Dialog.Title>
                       <button
                         onClick={handleCloseModal}
@@ -466,12 +462,12 @@ export default function AdminPlansPage() {
                       <div className="grid grid-cols-2 gap-8">
                         <div className="col-span-2">
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2.5 block ml-1 opacity-70">
-                            Neural Tier Identity
+                            Plan Name
                           </label>
                           <input
                             {...register("name")}
                             className="w-full px-6 py-4 bg-secondary/30 border border-border/30 rounded-2xl text-sm font-bold text-foreground focus:bg-secondary/50 focus:border-primary/20 transition-all outline-none shadow-inner"
-                            placeholder="e.g. TITAN OMEGA"
+                            placeholder="e.g. Pro Plan"
                           />
                           {errors.name && (
                             <p className="text-[10px] font-black text-destructive mt-2.5 ml-1 uppercase tracking-widest">
@@ -481,13 +477,13 @@ export default function AdminPlansPage() {
                         </div>
                         <div className="col-span-2">
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2.5 block ml-1 opacity-70">
-                            Tier Definition
+                            Plan Description
                           </label>
                           <textarea
                             {...register("description")}
                             rows={3}
                             className="w-full px-6 py-4 bg-secondary/30 border border-border/30 rounded-2xl text-sm font-bold text-foreground focus:bg-secondary/50 focus:border-primary/20 transition-all outline-none shadow-inner resize-none"
-                            placeholder="Describe the operational scope of this tier..."
+                            placeholder="Describe what is included in this plan..."
                           />
                           {errors.description && (
                             <p className="text-[10px] font-black text-destructive mt-2.5 ml-1 uppercase tracking-widest">
@@ -497,7 +493,7 @@ export default function AdminPlansPage() {
                         </div>
                         <div>
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2.5 block ml-1 opacity-70">
-                            Operational Cost
+                            Plan Price
                           </label>
                           <div className="relative group">
                             <div className="absolute left-6 top-1/2 -translate-y-1/2 text-primary font-black">
@@ -517,7 +513,7 @@ export default function AdminPlansPage() {
                         </div>
                         <div>
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2.5 block ml-1 opacity-70">
-                            Tier Spectrum
+                            Plan Type
                           </label>
                           <Controller
                             name="type"
@@ -550,11 +546,10 @@ export default function AdminPlansPage() {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <h4 className="text-xs font-black text-foreground uppercase tracking-widest">
-                                    Strategic Availability
+                                    Plan Status
                                   </h4>
                                   <p className="text-[10px] font-medium text-muted-foreground mt-1 uppercase tracking-tighter opacity-70">
-                                    Deploy or suspend this tier in the
-                                    subscription matrix.
+                                    Turn this plan on or off for users.
                                   </p>
                                 </div>
                                 <Toggle
@@ -582,7 +577,7 @@ export default function AdminPlansPage() {
                         </div>
                         <div className="col-span-1">
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 block ml-1 opacity-70">
-                            Operators
+                            Members
                           </label>
                           <input
                             type="number"
@@ -606,7 +601,7 @@ export default function AdminPlansPage() {
                         </div>
                         <div className="col-span-1">
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 block ml-1 opacity-70">
-                            Comm Nodes
+                            Messages
                           </label>
                           <input
                             type="number"
@@ -621,14 +616,14 @@ export default function AdminPlansPage() {
                       <div className="bg-secondary/10 p-8 rounded-[2rem] border border-border/30">
                         <div className="flex justify-between items-center mb-6">
                           <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">
-                            Neural Features
+                            Plan Features
                           </label>
                           <button
                             type="button"
                             onClick={() => append("")}
                             className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest border border-primary/20 hover:bg-primary hover:text-white transition-all active:scale-95 shadow-sm"
                           >
-                            + Append
+                            + Add Feature
                           </button>
                         </div>
                         <div className="space-y-4 max-h-56 overflow-y-auto pr-3 custom-scrollbar">
@@ -640,7 +635,7 @@ export default function AdminPlansPage() {
                               <input
                                 {...register(`features.${i}` as const)}
                                 className="flex-1 px-5 py-3 bg-secondary/30 border border-border/30 rounded-xl text-xs font-bold text-foreground outline-none shadow-inner"
-                                placeholder="Feature node..."
+                                placeholder="Feature name..."
                               />
                               {fields.length > 1 && (
                                 <button
@@ -662,13 +657,13 @@ export default function AdminPlansPage() {
                           onClick={handleCloseModal}
                           className="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:bg-secondary/50 rounded-2xl transition-all active:scale-95"
                         >
-                          Abort
+                          Cancel
                         </button>
                         <button
                           type="submit"
                           className="flex-[2] py-4 text-[10px] font-black uppercase tracking-[0.2em] text-primary-foreground bg-primary hover:opacity-90 rounded-2xl shadow-2xl shadow-primary/20 transition-all active:scale-95"
                         >
-                          Synchronize Tier
+                          Save Plan
                         </button>
                       </div>
                     </form>

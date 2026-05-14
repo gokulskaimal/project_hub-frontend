@@ -56,7 +56,7 @@ export default function EditUserForm(props: Props) {
   return (
     <div className="bg-secondary/10 rounded-[2rem] p-8 mb-6 border border-border/50">
       <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">
-        Edit User Context
+        Basic Information
       </h4>
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -101,7 +101,7 @@ export default function EditUserForm(props: Props) {
         {showRole && (
           <div>
             <label htmlFor="profile-role" className="form-label">
-              Authority Role
+              Role
             </label>
             <select
               id="profile-role"
@@ -123,7 +123,7 @@ export default function EditUserForm(props: Props) {
         {showStatus && (
           <div>
             <label htmlFor="profile-status" className="form-label">
-              Signal Status
+              Status
             </label>
             <select
               id="profile-status"
@@ -147,7 +147,7 @@ export default function EditUserForm(props: Props) {
           <>
             <div className="pt-2 border-t border-border/50" />
             <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6 mt-6">
-              Cyber Security Refresh
+              Change Password
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>

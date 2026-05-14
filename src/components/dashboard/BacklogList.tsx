@@ -52,10 +52,10 @@ export default function BacklogList({
         </div>
         <div className="space-y-2">
           <p className="text-foreground font-black text-xs uppercase tracking-[0.3em]">
-            Zero Vectors Detected
+            No tasks found
           </p>
           <p className="text-muted-foreground/40 text-[9px] font-black uppercase tracking-[0.2em] max-w-[200px]">
-            Backlog fully synchronized. Archive is clear.
+            Your backlog is empty.
           </p>
         </div>
       </div>
@@ -67,7 +67,7 @@ export default function BacklogList({
       <div className="flex items-center justify-between mb-8 px-2">
         <div className="flex items-center gap-4 w-full">
           <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em] shrink-0">
-            Sector Backlog ({totalCount ?? tasks.length})
+            Backlog ({totalCount ?? tasks.length})
           </h3>
           <div className="h-px w-full bg-gradient-to-r from-border/20 via-border/5 to-transparent" />
         </div>
@@ -135,7 +135,7 @@ export default function BacklogList({
                         onMoveToBoard(task.id);
                       }}
                       className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-xl active:scale-90 border border-emerald-500/20"
-                      title="Initialize Active Stream"
+                      title="Move to Board"
                     >
                       <ArrowUpCircle size={14} strokeWidth={3} />
                     </button>
@@ -145,7 +145,7 @@ export default function BacklogList({
                         onEditTask(task);
                       }}
                       className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-white transition-all shadow-xl active:scale-90 border border-primary/20"
-                      title="Reconfigure Logic"
+                      title="Edit Task"
                     >
                       <Pencil size={14} strokeWidth={3} />
                     </button>
@@ -155,7 +155,7 @@ export default function BacklogList({
                         onDeleteTask(task.id);
                       }}
                       className="p-2 bg-destructive/10 text-destructive rounded-xl hover:bg-destructive hover:text-white transition-all shadow-xl active:scale-90 border border-destructive/20"
-                      title="Purge Object"
+                      title="Delete Task"
                     >
                       <Trash2 size={14} strokeWidth={3} />
                     </button>
@@ -185,12 +185,12 @@ export default function BacklogList({
                         {task.storyPoints}
                       </span>
                       <span className="text-[8px] font-black text-muted-foreground uppercase opacity-40">
-                        Compute Units
+                        Points
                       </span>
                     </div>
                   ) : (
                     <span className="text-[8px] text-muted-foreground/20 font-black uppercase tracking-widest italic">
-                      Unaligned Weight
+                      No points
                     </span>
                   )}
                 </div>
@@ -237,7 +237,7 @@ export default function BacklogList({
               />
             )}
             <span className="relative text-[10px] font-black text-muted-foreground group-hover:text-primary uppercase tracking-[0.3em] transition-all">
-              {isLoadingMore ? "SYNCHRONIZING..." : "ACCESS DEEPER ARCHIVES"}
+              {isLoadingMore ? "LOADING..." : "LOAD MORE"}
             </span>
             {isLoadingMore ? (
               <div className="relative w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />

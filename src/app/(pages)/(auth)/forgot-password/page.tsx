@@ -55,12 +55,12 @@ export default function ForgotPasswordPage() {
                   <ShieldQuestion className="w-10 h-10 text-primary animate-pulse" />
                 </div>
                 <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter italic mb-3">
-                  Logic Reset
+                  Reset Password
                 </h1>
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed">
                   {isSubmitted
-                    ? "Check primary signal channel for decryption link."
-                    : "Initialize recovery sequence for your neural node."}
+                    ? "Check your email for the reset link."
+                    : "Enter your email to reset your password."}
                 </p>
               </div>
 
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
                   <div className="space-y-4">
                     <Input
                       type="email"
-                      placeholder="OPERATIVE IDENTIFIER (EMAIL)"
+                      placeholder="EMAIL ADDRESS"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -87,15 +87,15 @@ export default function ForgotPasswordPage() {
                     isLoading={isLoading}
                     className="h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
                   >
-                    Send Recovery Signal
+                    Send Reset Link
                   </Button>
                 </form>
               ) : (
                 <div className="space-y-8 animate-in zoom-in-95 duration-500">
                   <div className="p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-center">
                     <p className="text-[11px] text-emerald-400 font-black uppercase tracking-widest leading-relaxed">
-                      If node exists for {email}, <br />
-                      recovery sequence has been broadcast.
+                      If an account exists for {email}, <br />
+                      the reset link has been sent.
                     </p>
                   </div>
                   <Button
@@ -104,7 +104,7 @@ export default function ForgotPasswordPage() {
                     onClick={() => setIsSubmitted(false)}
                     className="h-12 rounded-xl text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:bg-white/5"
                   >
-                    No signal received? Retry
+                    Didn&apos;t get an email? Retry
                   </Button>
                 </div>
               )}
@@ -115,7 +115,7 @@ export default function ForgotPasswordPage() {
                   className="inline-flex items-center text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:brightness-125 transition-all group"
                 >
                   <ArrowLeft className="w-4 h-4 mr-3 transition-transform group-hover:-translate-x-1.5" />
-                  Abort & Return
+                  Back to Login
                 </Link>
               </div>
             </Card>

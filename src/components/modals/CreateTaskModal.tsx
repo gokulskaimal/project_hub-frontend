@@ -234,7 +234,7 @@ export default function CreateTaskModal({
                           as="h3"
                           className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
-                          {isEdit ? "Refine Task" : "Launch New Task"}
+                          {isEdit ? "Edit Task" : "Create New Task"}
                         </Dialog.Title>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
                           Every great project starts with a single step
@@ -253,8 +253,8 @@ export default function CreateTaskModal({
                     <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
                       <Lock size={14} />
                       {isDone
-                        ? "Task final & locked"
-                        : "Under managerial review"}
+                        ? "Task finished & locked"
+                        : "Waiting for manager review"}
                     </div>
                   )}
 
@@ -264,14 +264,14 @@ export default function CreateTaskModal({
                         <div className="md:col-span-2 space-y-2">
                           <label className="form-label flex items-center gap-2">
                             <Type className="w-3.5 h-3.5 text-primary" />
-                            Task Identifier
+                            Task Name
                           </label>
                           <input
                             type="text"
                             required
                             disabled={isLocked}
                             className="form-input"
-                            placeholder="WHAT NEEDS TO BE DONE?"
+                            placeholder="ENTER TASK NAME..."
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                           />
@@ -279,7 +279,7 @@ export default function CreateTaskModal({
                         <div className="space-y-2">
                           <label className="form-label flex items-center gap-2">
                             <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-                            Classification
+                            Task Type
                           </label>
                           <select
                             disabled={isLocked}
@@ -302,7 +302,7 @@ export default function CreateTaskModal({
                         <div className="space-y-2">
                           <label className="form-label flex items-center gap-2">
                             <Layout className="w-3.5 h-3.5 text-primary" />
-                            Parent Epic
+                            Epic / Project Goal
                           </label>
                           <select
                             disabled={isLocked}
@@ -310,7 +310,7 @@ export default function CreateTaskModal({
                             value={epicId}
                             onChange={(e) => setEpicId(e.target.value)}
                           >
-                            <option value="">No Epic (Backlog Story)</option>
+                            <option value="">No Epic</option>
                             {epic.map((e: Task) => (
                               <option key={e.id} value={e.id}>
                                 {e.title}
@@ -325,7 +325,7 @@ export default function CreateTaskModal({
                         <div className="space-y-2">
                           <label className="form-label flex items-center gap-2">
                             <AlignLeft className="w-3.5 h-3.5 text-indigo-500" />
-                            Parent Objective
+                            Part of Task
                           </label>
                           <select
                             disabled={isLocked}
@@ -333,7 +333,7 @@ export default function CreateTaskModal({
                             value={parentTaskId}
                             onChange={(e) => setParentTaskId(e.target.value)}
                           >
-                            <option value="">No Parent (Root Task)</option>
+                            <option value="">Main Task</option>
                             {potentialParents.map((t: Task) => (
                               <option key={t.id} value={t.id}>
                                 {t.title} ({t.type})
@@ -346,13 +346,13 @@ export default function CreateTaskModal({
                       <div className="space-y-2">
                         <label className="form-label flex items-center gap-2">
                           <AlignLeft className="w-3.5 h-3.5 text-indigo-500" />
-                          Mission Briefing
+                          Description
                         </label>
                         <textarea
                           rows={4}
                           disabled={isLocked}
                           className="form-input min-h-[120px] resize-none"
-                          placeholder="ADD OPERATIONAL CONTEXT..."
+                          placeholder="ENTER TASK DETAILS..."
                           value={description}
                           onChange={(e) => setDescription(e.target.value)}
                         />
@@ -370,10 +370,10 @@ export default function CreateTaskModal({
                             setStatus(e.target.value as Task["status"])
                           }
                         >
-                          <option value="TODO">BACKLOG</option>
-                          <option value="IN_PROGRESS">ACTIVE</option>
-                          <option value="REVIEW">QUALITY CHECK</option>
-                          <option value="DONE">COMPLETED</option>
+                          <option value="TODO">TO DO 📥</option>
+                          <option value="IN_PROGRESS">IN PROGRESS ⚡</option>
+                          <option value="REVIEW">REVIEWING 🔍</option>
+                          <option value="DONE">FINISHED ✅</option>
                         </select>
                       </div>
 
@@ -391,7 +391,13 @@ export default function CreateTaskModal({
                         >
                           {PRIORITIES.map((p) => (
                             <option key={p} value={p}>
-                              {p}
+                              {p === "CRITICAL"
+                                ? "CRITICAL 🚨"
+                                : p === "HIGH"
+                                  ? "HIGH 🔴"
+                                  : p === "MEDIUM"
+                                    ? "MEDIUM 🟡"
+                                    : "LOW 🟢"}
                             </option>
                           ))}
                         </select>
@@ -442,7 +448,7 @@ export default function CreateTaskModal({
                             value={assignedTo}
                             onChange={(e) => setAssignedTo(e.target.value)}
                           >
-                            <option value="">UNASSIGNED</option>
+                            <option value="">NOT ASSIGNED</option>
                             {projectMembers.map((member) => (
                               <option key={member.id} value={member.id}>
                                 {member.firstName} {member.lastName}
@@ -464,7 +470,7 @@ export default function CreateTaskModal({
                             value={sprintId}
                             onChange={(e) => setSprintId(e.target.value)}
                           >
-                            <option value="">BACKLOG (NO SPRINT)</option>
+                            <option value="">NOT IN A SPRINT</option>
                             {sprints.map((sprint) => (
                               <option key={sprint.id} value={sprint.id}>
                                 {sprint.name}{" "}
@@ -486,9 +492,9 @@ export default function CreateTaskModal({
                           {isLoading ? (
                             <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                           ) : isEdit ? (
-                            "Commit Changes"
+                            "Save Changes"
                           ) : (
-                            "Launch Task"
+                            "Create Task"
                           )}
                         </button>
                       )}
@@ -498,7 +504,7 @@ export default function CreateTaskModal({
                         onClick={onClose}
                         disabled={isLoading}
                       >
-                        {isLocked ? "Close" : "Abort"}
+                        {isLocked ? "Close" : "Cancel"}
                       </button>
                     </div>
                   </form>

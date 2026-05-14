@@ -317,30 +317,29 @@ export default function SignUpPage() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-8">
                 <Rocket className="w-4 h-4" />
-                Phase One: Deployment
+                Step 1: Sign Up
               </div>
               <h1 className="text-5xl lg:text-7xl font-black text-foreground mb-8 uppercase tracking-tighter leading-[0.9]">
-                Forge The <br />
-                <span className="text-gradient">Future Hub</span>
+                Build Your <br />
+                <span className="text-gradient">Projects</span>
               </h1>
 
               <p className="text-muted-foreground text-sm mb-12 max-w-lg font-bold leading-relaxed opacity-70">
-                The high-performance neural lattice for modern project
-                architecture. Synchronize your collective, track every node, and
-                accelerate velocity.
+                The easiest way to manage your work. Bring your team together,
+                track your progress, and get things done faster.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-left">
                 {[
                   {
                     icon: ShieldCheck,
-                    label: "Neural Security",
-                    desc: "Enterprise grade encryption",
+                    label: "Safe & Secure",
+                    desc: "Your data is safe with us",
                   },
                   {
                     icon: Fingerprint,
-                    label: "Bio-Sync",
-                    desc: "Unique operative identification",
+                    label: "Easy Sync",
+                    desc: "Updates for your whole team",
                   },
                 ].map((feat, i) => (
                   <div key={i} className="flex gap-4">
@@ -371,7 +370,7 @@ export default function SignUpPage() {
                 <div className="mb-10 flex items-center justify-between">
                   <div className="space-y-1">
                     <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter italic">
-                      Initialize Node
+                      Create Account
                     </h2>
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-40">
                       Form Step {signupStep} of 3
@@ -399,7 +398,7 @@ export default function SignUpPage() {
                       <div className="space-y-4">
                         <Input
                           type="email"
-                          placeholder="OPERATIVE IDENTIFIER (EMAIL)"
+                          placeholder="EMAIL ADDRESS"
                           value={email}
                           onChange={(e) => {
                             dispatch(setEmail(e.target.value));
@@ -414,7 +413,7 @@ export default function SignUpPage() {
                         />
                         <Input
                           type="text"
-                          placeholder="COLLECTIVE IDENTITY (ORG NAME)"
+                          placeholder="ORGANIZATION NAME"
                           value={name}
                           onChange={(e) => {
                             dispatch(setName(e.target.value));
@@ -435,7 +434,7 @@ export default function SignUpPage() {
                         fullWidth
                         className="h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30"
                       >
-                        {loading ? "INITIALIZING..." : "GENERATE ACCESS KEY"}
+                        {loading ? "SENDING..." : "GET SIGN UP CODE"}
                       </Button>
                     </motion.div>
                   )}
@@ -450,12 +449,12 @@ export default function SignUpPage() {
                     >
                       <div className="text-center space-y-2">
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 leading-relaxed italic">
-                          Intercepting signal at{" "}
+                          We sent a code to{" "}
                           <span className="text-primary not-italic">
                             {email}
                           </span>
                           . <br />
-                          Decryption code required.
+                          Please enter the 6-digit code.
                         </p>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-4 items-start">
@@ -478,7 +477,7 @@ export default function SignUpPage() {
                           isLoading={loading}
                           className="h-14 px-8 rounded-2xl bg-primary font-black uppercase tracking-widest text-[11px]"
                         >
-                          {loading ? "..." : "DECRYPT"}
+                          {loading ? "..." : "VERIFY"}
                         </Button>
                       </div>
                       <div className="flex flex-col items-center gap-4 text-[10px] font-black uppercase tracking-widest">
@@ -512,7 +511,7 @@ export default function SignUpPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <Input
                           type="text"
-                          placeholder="DESIGNATION-01"
+                          placeholder="FIRST NAME"
                           value={firstName}
                           onChange={(e) => {
                             dispatch(setFirstName(e.target.value));
@@ -527,7 +526,7 @@ export default function SignUpPage() {
                         />
                         <Input
                           type="text"
-                          placeholder="DESIGNATION-02"
+                          placeholder="LAST NAME"
                           value={lastName}
                           onChange={(e) => {
                             dispatch(setLastName(e.target.value));
@@ -543,7 +542,7 @@ export default function SignUpPage() {
                       </div>
                       <Input
                         type="password"
-                        placeholder="NEURAL ACCESS KEY (PASSWORD)"
+                        placeholder="CHOOSE A PASSWORD"
                         value={password}
                         onChange={(e) => {
                           dispatch(setPassword(e.target.value));
@@ -555,7 +554,7 @@ export default function SignUpPage() {
                       />
                       <Input
                         type="password"
-                        placeholder="VERIFY KEY (CONFIRM PASSWORD)"
+                        placeholder="CONFIRM PASSWORD"
                         value={confirmPassword}
                         onChange={(e) => {
                           setConfirmPassword(e.target.value);
@@ -581,7 +580,7 @@ export default function SignUpPage() {
                         isLoading={loading}
                         className="h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30"
                       >
-                        {loading ? "FINALIZING..." : "FINALIZE ANCHORING"}
+                        {loading ? "SAVING..." : "FINISH SIGN UP"}
                       </Button>
                     </motion.div>
                   )}
@@ -589,7 +588,7 @@ export default function SignUpPage() {
 
                 <div className="mt-12 flex flex-col items-center gap-8">
                   <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
-                    <span className="opacity-40">Existing Node?</span>
+                    <span className="opacity-40">Have an account?</span>
                     <Link
                       href="/login"
                       className="text-primary hover:brightness-125 transition-all"
@@ -604,7 +603,7 @@ export default function SignUpPage() {
                     </div>
                     <div className="relative flex justify-center">
                       <div className="bg-card px-4 text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em]">
-                        External Nexus
+                        Social Sign In
                       </div>
                     </div>
                   </div>
@@ -638,16 +637,15 @@ export default function SignUpPage() {
             >
               <div className="mb-8 space-y-2">
                 <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter italic">
-                  Neural Origin
+                  Organization Name
                 </h2>
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed">
-                  Anchor your organizational collective to finalized network
-                  anchoring.
+                  Please enter your organization or team name to finish.
                 </p>
               </div>
               <form onSubmit={handleGoogleOrgSubmit} className="space-y-6">
                 <Input
-                  label="COLLECTIVE IDENTITY (ORG NAME)"
+                  label="ORGANIZATION NAME"
                   type="text"
                   value={googleOrgName}
                   onChange={(e) => setGoogleOrgName(e.target.value)}

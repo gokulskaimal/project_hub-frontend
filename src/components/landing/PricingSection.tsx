@@ -102,7 +102,7 @@ export default function PricingSection() {
       <div className="py-24 text-center">
         <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em]">
-          Calibrating Tiers...
+          Loading plans...
         </p>
       </div>
     );
@@ -116,14 +116,14 @@ export default function PricingSection() {
       <div className="container max-w-[1400px] mx-auto px-6 relative z-10">
         <div className="text-center mb-20 space-y-4">
           <div className="text-[10px] font-black text-primary tracking-[0.4em] uppercase mb-4 opacity-70 italic">
-            Resource Allocation
+            Pricing
           </div>
           <h2 className="text-5xl font-black text-foreground uppercase tracking-tighter italic">
-            Logical Tiers
+            Our Plans
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-[11px] font-black uppercase tracking-[0.2em] leading-relaxed opacity-60">
-            Select the optimal synchronization path for your organization.
-            High-fidelity architecture for any team density.
+            Choose the best plan for your team. Powerful features for any team
+            size.
           </p>
         </div>
 
@@ -145,7 +145,7 @@ export default function PricingSection() {
                 {isFeatured && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
                     <span className="px-5 py-2 bg-primary rounded-full text-[9px] font-black text-white uppercase tracking-[0.2em] shadow-xl shadow-primary/40">
-                      Standard Choice
+                      Most Popular
                     </span>
                   </div>
                 )}
@@ -176,7 +176,7 @@ export default function PricingSection() {
 
                   <div className="space-y-6 mb-12 flex-1">
                     <p className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em] mb-4">
-                      Core Capacities
+                      What&apos;s Included
                     </p>
                     {plan.features.map((feature, fIndex) => (
                       <div
@@ -207,7 +207,7 @@ export default function PricingSection() {
                     }`}
                   >
                     <span className="relative z-10">
-                      {plan.price === 0 ? "Get Started" : "Synchronize"}
+                      {plan.price === 0 ? "Get Started" : "Choose Plan"}
                     </span>
                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
                   </button>

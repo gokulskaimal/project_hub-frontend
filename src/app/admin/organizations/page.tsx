@@ -104,7 +104,7 @@ export default function AdminOrganizationsPage() {
   };
 
   return (
-    <DashboardLayout title="Client Infrastructure">
+    <DashboardLayout title="Companies">
       <div className="p-4 md:p-8 space-y-10 sm:space-y-12 pb-20">
         <PremiumStatGrid
           stats={{
@@ -127,15 +127,15 @@ export default function AdminOrganizationsPage() {
                   setStatusFilter("ALL");
                 }}
               >
-                Root Registry
+                Organizations
               </span>
               <ChevronRight size={12} className="text-border/50" />
               <span className="text-primary truncate max-w-[150px] sm:max-w-none">
                 {search
-                  ? `QUERY: ${search.toUpperCase()}`
+                  ? search.toUpperCase()
                   : statusFilter === "ALL"
-                    ? "GLOBAL UNIVERSE"
-                    : `NODE: ${statusFilter}`}
+                    ? "ALL COMPANIES"
+                    : `STATUS: ${statusFilter}`}
               </span>
             </div>
           </div>
@@ -145,7 +145,7 @@ export default function AdminOrganizationsPage() {
             className="flex items-center gap-3 px-8 py-3 bg-primary text-primary-foreground rounded-2xl hover:opacity-90 transition-all font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 active:scale-95"
           >
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-            Sync Network Data
+            Refresh
           </button>
         </div>
 
@@ -156,7 +156,7 @@ export default function AdminOrganizationsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Locate organization nexus..."
+              placeholder="Search for a company..."
               className="w-full pl-12 pr-4 py-3.5 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
             />
           </div>
@@ -168,7 +168,7 @@ export default function AdminOrganizationsPage() {
               className="w-full md:w-48 appearance-none px-6 py-3.5 bg-secondary/30 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all cursor-pointer hover:bg-secondary/40"
             >
               <option value="ALL" className="bg-card">
-                Status: ALL NODES
+                Status: ALL
               </option>
               <option value="ACTIVE" className="bg-card">
                 Status: ACTIVE
@@ -191,7 +191,7 @@ export default function AdminOrganizationsPage() {
           ) : filteredOrgs.length === 0 ? (
             <div className="col-span-full py-40 text-center text-muted-foreground bg-card/30 rounded-[3rem] border border-border/50 border-dashed font-black text-sm uppercase tracking-widest animate-in fade-in zoom-in duration-700">
               <Building className="w-16 h-16 mx-auto mb-6 opacity-20" />
-              No Entity Trace Detected.
+              No Organization Found
             </div>
           ) : (
             filteredOrgs.map((org) => (
@@ -218,10 +218,10 @@ export default function AdminOrganizationsPage() {
                 footerRight={
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em] opacity-60">
-                      Network Access Type
+                      Plan
                     </span>
                     <div className="px-3 py-1 bg-primary text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-primary/20">
-                      {org.planName || "Trial Node"}
+                      {org.planName || "Free Plan"}
                     </div>
                   </div>
                 }
@@ -231,11 +231,7 @@ export default function AdminOrganizationsPage() {
                       onClick={() =>
                         confirmToggleStatus(org.id, org.status || "ACTIVE")
                       }
-                      title={
-                        org.status === "ACTIVE"
-                          ? "Suspend Network"
-                          : "Activate Network"
-                      }
+                      title={org.status === "ACTIVE" ? "Suspend" : "Activate"}
                       className={`p-3 rounded-xl border transition-all active:scale-90 shadow-xl ${
                         org.status === "ACTIVE"
                           ? "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500 hover:text-white"
@@ -250,7 +246,7 @@ export default function AdminOrganizationsPage() {
                     </button>
                     <button
                       onClick={() => confirmDeleteOrg(org.id)}
-                      title="Purge Node"
+                      title="Delete"
                       className="p-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all shadow-xl active:scale-90"
                     >
                       <Trash2 size={18} />

@@ -86,12 +86,12 @@ export default function UserModal({
 
         <div className="mb-10 text-center sm:text-left">
           <h2 className="text-3xl font-black text-foreground mb-2 uppercase tracking-tighter italic">
-            {isEdit ? "Edit Profile Node" : "Manage Profile Node"}
+            {isEdit ? "Edit Profile" : "My Profile"}
           </h2>
           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-40">
             {isEdit
-              ? "Synchronizing personal parameters with the neural network"
-              : "Analytical overview of current operative identifier"}
+              ? "Update your personal details"
+              : "View your profile details"}
           </p>
         </div>
 
@@ -150,7 +150,7 @@ export default function UserModal({
                 </span>
                 <span className="px-4 py-1 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  ACTIVE NODE
+                  ACTIVE
                 </span>
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function UserModal({
             onClick={handleClose}
             className="px-8 py-4 bg-secondary/20 border border-white/5 text-foreground rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-secondary/40 transition-all active:scale-95"
           >
-            Abort Session
+            Close
           </button>
           {isEdit && (
             <button
@@ -238,7 +238,7 @@ export default function UserModal({
               disabled={state.loading}
               className="px-10 py-4 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-violet-600 shadow-xl shadow-primary/20 disabled:opacity-50 transition-all active:scale-95"
             >
-              {state.loading ? "Synchronizing..." : "Finalize Changes"}
+              {state.loading ? "Saving..." : "Save Changes"}
             </button>
           )}
         </div>

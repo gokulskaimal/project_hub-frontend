@@ -123,7 +123,7 @@ export default function ManagerDashboardPage() {
   }, [socket, refetchProjects, refetchMembers, refetchInvites, refetchStats]);
 
   return (
-    <DashboardLayout title="Manager Console">
+    <DashboardLayout title="Manager Dashboard">
       <motion.div
         variants={container}
         initial="hidden"
@@ -134,12 +134,12 @@ export default function ManagerDashboardPage() {
         <motion.div variants={item}>
           <RoleBanner
             roleName="Manager"
-            badgeText="Executive Authority"
+            badgeText="Manager"
             welcomeMessage={
               <>
-                Operational Hub:{" "}
+                Organization:{" "}
                 <span className="text-white">
-                  {organization?.name || "System"}
+                  {organization?.name || "My Organization"}
                 </span>
               </>
             }
@@ -147,13 +147,13 @@ export default function ManagerDashboardPage() {
               <>
                 Managing{" "}
                 <span className="text-white border-b border-white/30 pb-0.5">
-                  {stats?.projects?.total || 0} active nodes
+                  {stats?.projects?.total || 0} active projects
                 </span>{" "}
                 with{" "}
                 <span className="text-white/90">
-                  {stats?.members?.total || 0} authorized operators
+                  {stats?.members?.total || 0} team members
                 </span>{" "}
-                within the current organization fabric.
+                in your company.
               </>
             }
           />
@@ -165,20 +165,20 @@ export default function ManagerDashboardPage() {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Layout className="w-5 h-5 text-primary" />
               </div>
-              Organization Overview
+              Quick Stats
             </h2>
           </div>
           <PremiumStatGrid
             items={[
               {
-                label: "Total Force",
+                label: "Team Size",
                 value:
                   (stats?.members?.total || 0) + (stats?.invites?.pending || 0),
                 icon: Users,
                 color: "blue",
               },
               {
-                label: "Active Projects",
+                label: "Projects",
                 value: stats?.projects?.active || 0,
                 icon: Rocket,
                 color: "violet",
@@ -190,7 +190,7 @@ export default function ManagerDashboardPage() {
                 color: "orange",
               },
               {
-                label: "Efficiency",
+                label: "Project Progress",
                 value: `${stats?.projects?.total && stats.projects.total > 0 ? Math.round((stats.projects.active / stats.projects.total) * 100) : 0}%`,
                 icon: ListTodo,
                 color: "emerald",
@@ -206,7 +206,7 @@ export default function ManagerDashboardPage() {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
-              Strategic Analytics
+              Team Stats
             </h2>
             <AnalyticsFilter value={timeframe} onChange={setTimeframe} />
           </div>
@@ -217,10 +217,10 @@ export default function ManagerDashboardPage() {
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
-                    Top Performers
+                    Top Members
                   </h3>
                   <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                    Productivity trajectory
+                    Member progress
                   </p>
                 </div>
               </div>
@@ -244,10 +244,10 @@ export default function ManagerDashboardPage() {
               <div className="noise-overlay" />
               <div className="mb-8">
                 <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
-                  Global Velocity
+                  Team Speed
                 </h3>
                 <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                  System-wide point delivery
+                  Task speed
                 </p>
               </div>
               <div className="h-[280px]">
@@ -267,7 +267,7 @@ export default function ManagerDashboardPage() {
                   Task Distribution
                 </h3>
                 <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                  Operational pipeline status
+                  Task status
                 </p>
               </div>
               <div className="h-[280px]">
@@ -281,10 +281,10 @@ export default function ManagerDashboardPage() {
             <div className="lg:col-span-2 glass-card rounded-3xl p-8 border border-border/50">
               <div className="mb-8">
                 <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
-                  Team Load Balance
+                  Member Workload
                 </h3>
                 <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                  Workload heatmap across active team nodes
+                  Busy level
                 </p>
               </div>
               <WorkloadHeatmap
@@ -295,10 +295,10 @@ export default function ManagerDashboardPage() {
             <div className="glass-card rounded-3xl p-8 border border-border/50">
               <div className="mb-8">
                 <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
-                  Portfolio Integrity
+                  Project Status
                 </h3>
                 <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                  Real-time system health audit
+                  Health check
                 </p>
               </div>
               <PortfolioHealthWidget
@@ -324,7 +324,7 @@ export default function ManagerDashboardPage() {
                 href="/manager/projects"
                 className="text-[10px] font-black text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest"
               >
-                View Repository
+                View All
               </Link>
             </div>
 
@@ -373,7 +373,7 @@ export default function ManagerDashboardPage() {
                         ))}
                     </div>
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                      {project.members?.length || 0} Operators
+                      {project.members?.length || 0} Members
                     </span>
                   </div>
                 </motion.div>
@@ -392,7 +392,7 @@ export default function ManagerDashboardPage() {
           {/* Quick Actions Panel */}
           <motion.div variants={item} className="space-y-6">
             <h2 className="text-xl font-black text-foreground tracking-tight px-1 text-center">
-              Command Suite
+              Quick Actions
             </h2>
             <div className="glass-card rounded-3xl p-8 border border-border/50 shadow-2xl space-y-4">
               <button
@@ -404,7 +404,7 @@ export default function ManagerDashboardPage() {
                     <Plus className="w-5 h-5 text-white" />
                   </div>
                   <span className="font-black text-white text-xs uppercase tracking-widest">
-                    Authorize Member
+                    Invite Member
                   </span>
                 </div>
                 <ArrowRight className="w-5 h-5 text-white/50 group-hover:translate-x-1 group-hover:text-white transition-all" />
@@ -419,7 +419,7 @@ export default function ManagerDashboardPage() {
                     <Plus className="w-5 h-5 text-primary" />
                   </div>
                   <span className="font-black text-foreground text-xs uppercase tracking-widest">
-                    Host New Node
+                    New Project
                   </span>
                 </div>
                 <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
@@ -429,13 +429,13 @@ export default function ManagerDashboardPage() {
                 <div className="flex items-center gap-2 mb-6 px-1">
                   <Calendar className="w-4 h-4 text-primary" />
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    Scheduled Events
+                    Upcoming
                   </span>
                 </div>
                 <div className="p-8 glass-card rounded-2xl border border-dashed border-border/50 text-center flex flex-col items-center">
                   <Clock className="w-6 h-6 text-muted-foreground/20 mb-2" />
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-relaxed">
-                    System nominal. <br /> No active alerts.
+                    No urgent tasks.
                   </p>
                 </div>
               </div>

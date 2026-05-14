@@ -73,7 +73,7 @@ export default function SprintSelectorHeader({
             className="text-xs font-black border border-border/50 bg-secondary/30 rounded-2xl px-5 py-2.5 outline-none focus:border-primary/50 focus:bg-secondary/50 transition-all text-foreground shadow-xl appearance-none pr-10 cursor-pointer uppercase tracking-widest"
           >
             <option value="ACTIVE" className="bg-card font-black">
-              Current Active Cycle
+              Current Sprint
             </option>
             {sprints.map((s) => {
               const startDate = new Date(s.startDate).toLocaleDateString(
@@ -107,7 +107,7 @@ export default function SprintSelectorHeader({
             onClick={onNewSprint}
             className="flex items-center gap-2 px-6 py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-primary-foreground transition-all shadow-lg active:scale-95"
           >
-            + Assemble Sprint
+            + Create Sprint
           </button>
         )}
       </div>
@@ -156,7 +156,7 @@ export default function SprintSelectorHeader({
                 onClick={onStartSprint}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest px-6 py-2.5 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95"
               >
-                Activate Sprint
+                Start Sprint
               </Button>
             ) : null}
 
@@ -164,7 +164,7 @@ export default function SprintSelectorHeader({
               <button
                 onClick={onEditSprint}
                 className="active:scale-95 p-2.5 bg-secondary/30 text-muted-foreground border border-border/50 rounded-2xl hover:text-primary hover:border-primary/50 hover:bg-secondary/50 transition-all shadow-xl group"
-                title="Modify Logistics"
+                title="Edit Sprint"
               >
                 <Pencil
                   size={18}
@@ -174,7 +174,7 @@ export default function SprintSelectorHeader({
               <button
                 onClick={() => onDeleteSprint(selectedSprint.id)}
                 className="active:scale-95 p-2.5 bg-secondary/30 text-muted-foreground border border-border/50 rounded-2xl hover:text-destructive hover:border-destructive/50 hover:bg-secondary/50 transition-all shadow-xl group font-black"
-                title="Discard Sprint"
+                title="Delete Sprint"
               >
                 <Trash2
                   size={18}

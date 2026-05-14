@@ -106,7 +106,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <DashboardLayout title="Operational Operators">
+    <DashboardLayout title="Manage Users">
       <div className="p-4 md:p-8 space-y-10 sm:space-y-12 pb-20">
         <PremiumStatGrid
           stats={{
@@ -131,15 +131,15 @@ export default function AdminUsersPage() {
                   setStatusFilter("ALL");
                 }}
               >
-                Root Registry
+                All Users
               </span>
               <ChevronRight size={12} className="text-border/50" />
               <span className="text-primary truncate max-w-[150px] sm:max-w-none">
                 {search
-                  ? `QUERY: ${search.toUpperCase()}`
+                  ? search.toUpperCase()
                   : statusFilter === "ALL"
-                    ? "FULL BIOMETRIC SCAN"
-                    : `NODE: ${statusFilter}`}
+                    ? "ALL USERS"
+                    : `STATUS: ${statusFilter}`}
               </span>
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
             className="flex items-center gap-3 px-8 py-3 bg-primary text-primary-foreground rounded-2xl hover:opacity-90 transition-all font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 active:scale-95"
           >
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-            Re-Sync Biometrics
+            Refresh List
           </button>
         </div>
 
@@ -160,7 +160,7 @@ export default function AdminUsersPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Locate operational identity..."
+              placeholder="Search for a user..."
               className="w-full pl-12 pr-4 py-3.5 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
             />
           </div>
@@ -225,14 +225,14 @@ export default function AdminUsersPage() {
           ) : filteredUsers.length === 0 ? (
             <div className="col-span-full py-40 text-center text-muted-foreground bg-card/30 rounded-[3rem] border border-border/50 border-dashed font-black text-sm uppercase tracking-widest animate-in fade-in zoom-in duration-700">
               <UserX className="w-16 h-16 mx-auto mb-6 opacity-20" />
-              No Biological Signals Detected.
+              No Users Found.
             </div>
           ) : (
             filteredUsers.map((user) => (
               <EntityCard
                 key={user.id}
                 id={user.id}
-                title={user.name || "Ident-Unknown"}
+                title={user.name || "Unknown User"}
                 subtitle={user.email}
                 icon={
                   <UserAvatar
@@ -254,9 +254,7 @@ export default function AdminUsersPage() {
                         confirmToggleBlock(user.id, user.status || "ACTIVE")
                       }
                       title={
-                        user.status === "ACTIVE"
-                          ? "Void Access"
-                          : "Restore Access"
+                        user.status === "ACTIVE" ? "Block User" : "Unblock User"
                       }
                       className={`p-3 rounded-xl border transition-all active:scale-90 shadow-xl ${
                         user.status === "ACTIVE"
@@ -272,7 +270,7 @@ export default function AdminUsersPage() {
                     </button>
                     <button
                       onClick={() => confirmDeleteUser(user.id)}
-                      title="Purge Identity"
+                      title="Delete User"
                       className="p-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all shadow-xl active:scale-90"
                     >
                       <Trash2 size={18} />
@@ -287,7 +285,7 @@ export default function AdminUsersPage() {
                 footerRight={
                   <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-70">
                     <Clock size={12} className="text-primary/50" />
-                    {user.organizationName || "Indep. Operator"}
+                    {user.organizationName || "No Organization"}
                   </div>
                 }
               />

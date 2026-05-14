@@ -43,7 +43,7 @@ interface KanbanBoardProps {
 const COLUMNS = [
   {
     id: "TODO",
-    title: "Pending Sync",
+    title: "To Do",
     color: "bg-secondary/10",
     border: "border-border/30",
     accent: "bg-muted-foreground/30",
@@ -51,7 +51,7 @@ const COLUMNS = [
   },
   {
     id: "IN_PROGRESS",
-    title: "In Operation",
+    title: "Working",
     color: "bg-primary/5",
     border: "border-primary/20",
     accent: "bg-primary",
@@ -59,7 +59,7 @@ const COLUMNS = [
   },
   {
     id: "REVIEW",
-    title: "In Verification",
+    title: "Review",
     color: "bg-amber-500/5",
     border: "border-amber-500/20",
     accent: "bg-amber-500",
@@ -67,7 +67,7 @@ const COLUMNS = [
   },
   {
     id: "DONE",
-    title: "Terminated / Success",
+    title: "Finished",
     color: "bg-emerald-500/5",
     border: "border-emerald-500/20",
     accent: "bg-emerald-500",
@@ -215,7 +215,7 @@ export default function KanbanBoard({
                   size={12}
                   className={showOnlyMyTasks ? "animate-pulse" : ""}
                 />
-                My Signal
+                My Tasks
               </button>
               <button
                 onClick={() => setShowOnlyMyTasks(false)}
@@ -226,7 +226,7 @@ export default function KanbanBoard({
                 }`}
               >
                 <Users size={12} />
-                Global Matrix
+                All Tasks
               </button>
             </div>
 
@@ -237,7 +237,7 @@ export default function KanbanBoard({
                 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2 opacity-80"
               >
                 <Filter size={12} />
-                Neural Focus Active
+                Filtering my tasks
               </motion.span>
             )}
           </div>
@@ -245,7 +245,7 @@ export default function KanbanBoard({
 
         <div className="flex items-center gap-3 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-60">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-          {tasks.length} Nodes Synchronized
+          {tasks.length} Tasks Synced
         </div>
       </div>
 
@@ -332,7 +332,7 @@ export default function KanbanBoard({
                                         size={10}
                                         className="text-muted-foreground/50"
                                       />
-                                      SUB-NODE
+                                      SUB-TASK
                                     </div>
                                   )}
                                   <h4 className="text-sm font-black text-foreground leading-tight line-clamp-2 transition-colors group-hover:text-primary">
@@ -355,7 +355,7 @@ export default function KanbanBoard({
                                           onEditTask(task);
                                         }}
                                         className="p-2 bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary hover:text-white transition-all active:scale-90 shadow-xl"
-                                        title="Modify Neural Directive"
+                                        title="Edit Task"
                                       >
                                         <svg
                                           xmlns="http://www.w3.org/2000/svg"
@@ -379,7 +379,7 @@ export default function KanbanBoard({
                                             onDeleteTask(task.id);
                                           }}
                                           className="p-2 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all active:scale-90 shadow-xl"
-                                          title="Purge Signal"
+                                          title="Delete Task"
                                         >
                                           <Trash2 size={12} strokeWidth={3} />
                                         </button>

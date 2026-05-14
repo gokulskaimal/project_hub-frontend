@@ -401,7 +401,7 @@ export default function ProjectDetailsPage() {
                   className="bg-primary hover:bg-primary/90 h-10 px-6 flex items-center gap-2 shadow-lg shadow-primary/20 rounded-xl text-[10px] font-black uppercase tracking-widest"
                 >
                   <Plus size={16} />
-                  Assemble New Epic
+                  Create Epic
                 </Button>
               </div>
               <EpicListing
@@ -427,13 +427,13 @@ export default function ProjectDetailsPage() {
                     onClick={() => setAnalyticsView("SPRINT")}
                     className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "SPRINT" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
                   >
-                    Tactical Sprint
+                    Sprint Stats
                   </button>
                   <button
                     onClick={() => setAnalyticsView("STRATEGIC")}
                     className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "STRATEGIC" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
                   >
-                    Strategic Project
+                    Project Report
                   </button>
                 </div>
               </div>
@@ -457,8 +457,8 @@ export default function ProjectDetailsPage() {
                         No Sprint Selected
                       </h3>
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[260px] text-center leading-relaxed">
-                        Select an active or completed operational node to
-                        generate a performance audit.
+                        Select an active or completed sprint to generate a
+                        report.
                       </p>
                     </div>
                   )
@@ -480,12 +480,12 @@ export default function ProjectDetailsPage() {
                   <div className="p-2 bg-primary/10 rounded-xl">
                     <Layout className="w-5 h-5 text-primary" />
                   </div>
-                  System Intelligence
+                  Project Stats
                 </h2>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    Syncing Live
+                    Online
                   </span>
                 </div>
               </div>

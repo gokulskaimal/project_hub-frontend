@@ -134,7 +134,7 @@ export default function InvitesPage() {
   };
 
   return (
-    <DashboardLayout title="Operational Invites">
+    <DashboardLayout title="Invites">
       <div className="space-y-8 pb-12">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -143,11 +143,10 @@ export default function InvitesPage() {
               <div className="p-3 bg-primary/10 rounded-2xl">
                 <Users className="w-8 h-8 text-primary" />
               </div>
-              Authorization <span className="text-primary">&</span> Access
+              Manage <span className="text-primary">&</span> Invites
             </h1>
             <p className="text-xs font-black text-muted-foreground mt-2 uppercase tracking-[0.2em] opacity-70">
-              Tracking all pending entity authorizations within the secure
-              perimeter.
+              View and manage all people you have invited to your company.
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -170,7 +169,7 @@ export default function InvitesPage() {
               className="flex items-center gap-3 px-8 py-3.5 bg-primary text-primary-foreground hover:opacity-90 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl shadow-primary/20 active:scale-95"
             >
               <Plus size={18} />
-              Dispatch Invite
+              Send Invite
             </button>
           </div>
         </div>
@@ -180,32 +179,32 @@ export default function InvitesPage() {
             <div className="p-2 bg-primary/10 rounded-lg">
               <Layout className="w-5 h-5 text-primary" />
             </div>
-            Access Analytics
+            Invite Stats
           </h2>
         </div>
 
         {/* Modular Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           <StatCard
-            label="Total Dispatched"
+            label="Total Sent"
             value={inviteStats?.total || 0}
             icon={Mail}
             color="blue"
           />
           <StatCard
-            label="Awaiting Response"
+            label="Pending"
             value={inviteStats?.pending || 0}
             icon={Clock}
             color="orange"
           />
           <StatCard
-            label="Authorized Nodes"
+            label="Accepted"
             value={inviteStats?.accepted || 0}
             icon={CheckCircle}
             color="green"
           />
           <StatCard
-            label="System Expired"
+            label="Expired"
             value={inviteStats?.expired || 0}
             icon={XCircle}
             color="red"
@@ -218,7 +217,7 @@ export default function InvitesPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
             <input
               type="text"
-              placeholder="Search by identity email..."
+              placeholder="Search by email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
@@ -282,11 +281,10 @@ export default function InvitesPage() {
               <Mail className="w-12 h-12 text-primary opacity-40" />
             </div>
             <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">
-              Null Result Matrix
+              No results found
             </h3>
             <p className="text-muted-foreground font-medium text-sm max-w-xs mx-auto leading-relaxed">
-              No active authorizations detected within the current query
-              parameters.
+              We couldn&apos;t find any invites matching your search.
             </p>
           </div>
         ) : (
@@ -300,8 +298,8 @@ export default function InvitesPage() {
                 <EntityCard
                   key={invite.id}
                   id={invite.id}
-                  title={invite.email || "Unknown node"}
-                  subtitle={`Access Role: ${(invite.assignedRole || invite.role || "TEAM_MEMBER").toLowerCase().replace("_", " ")}`}
+                  title={invite.email || "Unknown"}
+                  subtitle={`Role: ${(invite.assignedRole || invite.role || "TEAM_MEMBER").toLowerCase().replace("_", " ")}`}
                   icon={Mail}
                   status={invite.status || "PENDING"}
                   statusColor={
@@ -337,10 +335,10 @@ export default function InvitesPage() {
                       </div>
                       <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                         {isAccepted
-                          ? "Authorized"
+                          ? "Accepted"
                           : isPending
-                            ? "Dispatched"
-                            : "Void"}
+                            ? "Sent"
+                            : "Expired"}
                       </span>
                     </div>
                   }
@@ -361,7 +359,7 @@ export default function InvitesPage() {
         {invitationsData && invitationsData.totalPages > 1 && (
           <div className="px-8 py-5 bg-card border border-border/50 rounded-2xl shadow-2xl flex items-center justify-between">
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              Matrix Page {page} / {invitationsData.totalPages}
+              Page {page} / {invitationsData.totalPages}
             </span>
             <div className="flex gap-4">
               <button

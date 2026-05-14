@@ -18,12 +18,12 @@ export default function UserInfoView({
   return (
     <div className="bg-secondary/10 rounded-3xl p-8 mb-6 border border-border/50 shadow-inner">
       <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">
-        Analytical Profile Data
+        Profile Details
       </h4>
       <div className="space-y-4">
         <div className="flex justify-between items-center py-2 border-b border-border/10">
           <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
-            Email Identifier
+            Email
           </span>
           <span className="text-[11px] font-black text-foreground uppercase tracking-tight">
             {email || "-"}
@@ -31,7 +31,7 @@ export default function UserInfoView({
         </div>
         <div className="flex justify-between items-center py-2 border-b border-border/10">
           <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
-            Operator Name
+            Name
           </span>
           <span className="text-[11px] font-black text-foreground uppercase tracking-tight">
             {name}
@@ -40,7 +40,7 @@ export default function UserInfoView({
         {organizationName && (
           <div className="flex justify-between items-center py-2 border-b border-border/10">
             <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
-              Nexus Organization
+              Organization
             </span>
             <span className="text-[11px] font-black text-primary uppercase tracking-tight">
               {organizationName}
@@ -49,7 +49,7 @@ export default function UserInfoView({
         )}
         <div className="flex justify-between items-center py-2 border-b border-border/10">
           <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
-            Authority Role
+            Role
           </span>
           <span className="text-[11px] font-black text-primary uppercase tracking-tight">
             {(role || "").toUpperCase()}
@@ -57,7 +57,7 @@ export default function UserInfoView({
         </div>
         <div className="flex justify-between items-center py-2">
           <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
-            Signal Status
+            Status
           </span>
           <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded text-[9px] font-black uppercase tracking-widest">
             {status}

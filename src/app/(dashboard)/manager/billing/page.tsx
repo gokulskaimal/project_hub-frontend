@@ -48,16 +48,16 @@ export default function ManagerBillingPage() {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Layout className="w-5 h-5 text-primary" />
               </div>
-              Financial Spectrum
+              Billing History
             </h2>
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1.5 opacity-70">
-              Live tracking of organizational resource consumption
+              View all your payments and plan details
             </p>
           </div>
           <div className="flex items-center gap-3 bg-secondary/30 px-4 py-2 rounded-2xl border border-border/10">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              Live Matrix Sync
+              Active
             </span>
           </div>
         </div>
@@ -65,25 +65,25 @@ export default function ManagerBillingPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            label="Invoices Dispatched"
+            label="Total Invoices"
             value={stats.total}
             icon={ReceiptText}
             color="blue"
           />
           <StatCard
-            label="Net Flux"
+            label="Total Paid"
             value={stats.spent}
             icon={IndianRupee}
             color="green"
           />
           <StatCard
-            label="Pending Settlement"
+            label="Unpaid"
             value={stats.pending}
             icon={Calendar}
             color="orange"
           />
           <StatCard
-            label="Terminal Billing"
+            label="Latest Invoice"
             value={stats.latest}
             icon={ArrowRight}
             color="blue"
@@ -93,10 +93,10 @@ export default function ManagerBillingPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
           <div>
             <h1 className="text-2xl font-black text-foreground tracking-tighter uppercase">
-              Operational History
+              Past Invoices
             </h1>
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1 opacity-70">
-              Manage your organizational subscription and transaction logs
+              Manage your plan and view payments
             </p>
           </div>
         </div>
@@ -107,16 +107,16 @@ export default function ManagerBillingPage() {
               <thead className="bg-secondary/30 border-b border-border/10">
                 <tr>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Operational Date
+                    Date
                   </th>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Quantum Amount
+                    Amount
                   </th>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Status Node
+                    Status
                   </th>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Allocation Plan
+                    Plan
                   </th>
                   <th className="px-8 py-5 text-right text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                     Actions
@@ -130,7 +130,7 @@ export default function ManagerBillingPage() {
                       <div className="flex flex-col items-center gap-4">
                         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(var(--primary),0.3)]" />
                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                          Syncing History...
+                          Loading...
                         </span>
                       </div>
                     </td>
@@ -141,7 +141,7 @@ export default function ManagerBillingPage() {
                       colSpan={5}
                       className="px-8 py-16 text-center text-muted-foreground font-black text-[10px] uppercase tracking-widest opacity-50"
                     >
-                      Null Transaction History Detected
+                      No history found
                     </td>
                   </tr>
                 ) : (
@@ -202,7 +202,7 @@ export default function ManagerBillingPage() {
                           onClick={() => setSelectedInvoice(invoice)}
                           className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary hover:opacity-80 transition-all active:scale-95"
                         >
-                          Manifest <ArrowRight className="w-3.5 h-3.5" />
+                          View <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -223,7 +223,7 @@ export default function ManagerBillingPage() {
                 Previous
               </button>
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                Matrix Page {page} / {data.totalPages}
+                Page {page} / {data.totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
