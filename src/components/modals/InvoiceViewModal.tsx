@@ -30,7 +30,7 @@ export default function InvoiceViewModal({
         {/* Header - Hidden during print */}
         <div className="sticky top-0 z-10 flex items-center justify-between p-6 bg-card border-b border-border/50 print:hidden">
           <h2 className="text-xl font-black text-foreground uppercase tracking-tighter">
-            Operational Invoice
+            Invoice Details
           </h2>
           <button
             onClick={onClose}

@@ -100,22 +100,22 @@ export default function MemberTasksPage() {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4">
               <div className="px-4 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-[0.2em]">
-                Neural Mission Log
+                My Tasks
               </div>
             </div>
             <h1 className="text-4xl font-black tracking-tighter mb-3">
-              Task Command <span className="text-primary">Center</span>
+              Task <span className="text-primary">Dashboard</span>
             </h1>
             <p className="text-slate-400 text-sm font-medium max-w-xl leading-relaxed">
               Monitoring{" "}
               <span className="text-white font-black">
-                {stats.total} total deployments
+                {stats.total} total tasks
               </span>
               . Currently,{" "}
               <span className="text-rose-500 font-black">
-                {stats.critical} critical nodes
+                {stats.critical} important tasks
               </span>{" "}
-              require immediate synchronization to maintain system integrity.
+              need your attention.
             </p>
           </div>
         </div>
@@ -136,13 +136,13 @@ export default function MemberTasksPage() {
               color: "orange",
             },
             {
-              label: "Critical",
+              label: "Urgent",
               value: stats.critical,
               icon: AlertCircle,
               color: "red",
             },
             {
-              label: "Done",
+              label: "Completed",
               value: stats.completed,
               icon: CheckCircle2,
               color: "green",
@@ -156,7 +156,7 @@ export default function MemberTasksPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors w-4 h-4" />
             <input
               type="text"
-              placeholder="Search registry..."
+              placeholder="Search tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-secondary/30 border border-transparent rounded-xl text-xs sm:text-sm text-foreground font-bold placeholder-muted-foreground outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all"
@@ -199,16 +199,16 @@ export default function MemberTasksPage() {
                 All Priority
               </option>
               <option value="CRITICAL" className="bg-card">
-                Critical
+                Urgent
               </option>
               <option value="HIGH" className="bg-card">
-                High Intensity
+                High
               </option>
               <option value="MEDIUM" className="bg-card">
                 Medium
               </option>
               <option value="LOW" className="bg-card">
-                Low Gear
+                Low
               </option>
             </select>
           </div>
@@ -220,10 +220,10 @@ export default function MemberTasksPage() {
               <CheckSquare className="w-10 h-10 text-primary" />
             </div>
             <h3 className="text-xl font-black text-foreground mb-2 tracking-tight">
-              Operational Clearance
+              No Tasks Found
             </h3>
             <p className="text-muted-foreground text-sm font-medium">
-              No tasks match your current filter trajectory.
+              No tasks found with these filters.
             </p>
           </div>
         ) : (
@@ -269,7 +269,7 @@ export default function MemberTasksPage() {
                 }
               >
                 <div className="mt-3 text-[10px] font-black text-primary uppercase tracking-[0.15em] truncate group-hover:translate-x-1 transition-transform">
-                  {task.project?.name || "Global Stream"}
+                  {task.project?.name || "General"}
                 </div>
               </EntityCard>
             ))}

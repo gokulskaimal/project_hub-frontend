@@ -81,7 +81,7 @@ export default function AdminLayout({
     { name: "Organizations", href: "/admin/organizations", icon: Building2 },
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Plans", href: "/admin/plans", icon: CreditCard },
-    { name: "Invoices", href: "/admin/invoices", icon: ReceiptText },
+    { name: "Payments", href: "/admin/invoices", icon: ReceiptText },
   ];
 
   if (!isMounted || !isReady || !isLoggedIn || role !== "SUPER_ADMIN")

@@ -97,11 +97,11 @@ export default function MemberProjectsPage() {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4">
               <div className="px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[10px] font-black uppercase tracking-[0.2em]">
-                Neural Portfolio
+                My Projects
               </div>
             </div>
             <h1 className="text-4xl font-black tracking-tighter mb-3">
-              Project <span className="text-blue-500">Collection</span>
+              My <span className="text-blue-500">Projects</span>
             </h1>
             <p className="text-slate-400 text-sm font-medium max-w-xl leading-relaxed">
               Managing{" "}
@@ -110,9 +110,9 @@ export default function MemberProjectsPage() {
               </span>
               . Currently,{" "}
               <span className="text-emerald-400 font-black">
-                {stats.active} systems
+                {stats.active} projects
               </span>{" "}
-              are in active operation status.
+              are active right now.
             </p>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function MemberProjectsPage() {
         <PremiumStatGrid
           items={[
             {
-              label: "Total",
+              label: "All Projects",
               value: stats.total,
               icon: Activity,
               color: "blue",
@@ -154,7 +154,7 @@ export default function MemberProjectsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors w-4 h-4" />
             <input
               type="text"
-              placeholder="Search project repository..."
+              placeholder="Search projects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-secondary/30 border border-transparent rounded-xl text-xs sm:text-sm text-foreground font-bold placeholder-muted-foreground outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all"
@@ -194,7 +194,7 @@ export default function MemberProjectsPage() {
                 All Priority
               </option>
               <option value="CRITICAL" className="bg-card">
-                Critical
+                Urgent
               </option>
               <option value="HIGH" className="bg-card">
                 High
@@ -203,7 +203,7 @@ export default function MemberProjectsPage() {
                 Medium
               </option>
               <option value="LOW" className="bg-card">
-                Low Gear
+                Low
               </option>
             </select>
 
@@ -234,10 +234,10 @@ export default function MemberProjectsPage() {
               <Activity className="w-10 h-10 text-primary" />
             </div>
             <h3 className="text-xl font-black text-foreground mb-2 tracking-tight">
-              Operational Static
+              No projects found
             </h3>
             <p className="text-muted-foreground text-sm font-medium">
-              Try adjusting your search or filter spectrum.
+              Try searching for something else.
             </p>
           </div>
         ) : (

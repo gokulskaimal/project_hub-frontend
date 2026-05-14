@@ -177,13 +177,13 @@ export default function MembersPage() {
           <button
             onClick={refetch}
             className="flex items-center gap-2 px-5 py-2.5 bg-secondary/50 border border-border/50 text-foreground hover:bg-secondary rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all active:scale-95 shadow-xl"
-            title="Sync Registry"
+            title="Refresh List"
           >
             <RefreshCw
               size={14}
               className={isLoading ? "animate-spin" : "text-primary"}
             />
-            <span className="hidden sm:inline">Sync Data</span>
+            <span className="hidden sm:inline">Refresh List</span>
           </button>
 
           <button
@@ -191,7 +191,7 @@ export default function MembersPage() {
             className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground hover:opacity-90 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all shadow-xl shadow-primary/20 active:scale-95"
           >
             <Mail size={14} />
-            Authorize Operator
+            Invite Member
           </button>
         </div>
 
@@ -206,7 +206,7 @@ export default function MembersPage() {
             <div className="p-2 bg-primary/10 rounded-lg">
               <Layout className="w-5 h-5 text-primary" />
             </div>
-            Squad Intelligence
+            Team Members
           </h2>
         </div>
 

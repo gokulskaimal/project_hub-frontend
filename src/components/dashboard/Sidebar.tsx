@@ -102,10 +102,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <Icon
                     className={`shrink-0 transition-transform duration-300 group-hover:scale-110
-                      ${isCollapsed ? "w-6 h-6" : "w-5 h-5"}
+                      ${isCollapsed ? "md:w-6 md:h-6 w-5 h-5" : "w-5 h-5"}
                       ${isActive ? "text-primary glow-indigo" : "text-muted-foreground"}`}
                   />
-                  {!isCollapsed && (
+                  {(!isCollapsed || isMobileMenuOpen) && (
                     <span className="text-[13px] font-bold tracking-tight whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-400">
                       {item.name}
                     </span>
@@ -116,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
 
           <div className="mt-auto space-y-4 pt-4 border-t border-border">
-            {!isCollapsed && (
+            {(!isCollapsed || isMobileMenuOpen) && (
               <div className="px-2">
                 <ThemeToggle />
               </div>
@@ -126,12 +126,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={handleLogout}
               title={isCollapsed ? "Logout" : ""}
               className={`flex items-center gap-3 px-3 py-3 w-full rounded-xl text-destructive hover:bg-destructive/10 transition-all duration-300 group
-                ${isCollapsed ? "justify-center" : ""}`}
+                ${isCollapsed ? "md:justify-center" : ""}`}
             >
               <LogOut
-                className={`shrink-0 transition-transform duration-300 group-hover:scale-110 ${isCollapsed ? "w-6 h-6" : "w-5 h-5"}`}
+                className={`shrink-0 transition-transform duration-300 group-hover:scale-110 ${isCollapsed ? "md:w-6 md:h-6 w-5 h-5" : "w-5 h-5"}`}
               />
-              {!isCollapsed && (
+              {(!isCollapsed || isMobileMenuOpen) && (
                 <span className="text-[13px] font-black tracking-widest uppercase whitespace-nowrap animate-in fade-in duration-300">
                   Logout
                 </span>

@@ -58,10 +58,10 @@ export default function SprintAnalysisReport({
           </div>
           <div>
             <h2 className="text-2xl font-black text-foreground tracking-tighter uppercase">
-              Mission Report: {sprint.name}
+              Sprint Report: {sprint.name}
             </h2>
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mt-1 opacity-60">
-              Tactical performance audit & Delivery analysis
+              See how well your team did in this sprint.
             </p>
           </div>
         </div>
@@ -88,7 +88,7 @@ export default function SprintAnalysisReport({
           </div>
           <div className="h-8 w-px bg-border/50 mx-2" />
           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-            {sprintTasks.length} NODES ENGAGED
+            {sprintTasks.length} TASKS
           </span>
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function SprintAnalysisReport({
               <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm h-full flex items-center justify-center text-center">
                 <AlertCircle className="w-8 h-8 text-destructive/50 mb-3 mx-auto" />
                 <p className="text-[10px] font-black text-muted-foreground uppercase opacity-50">
-                  Burndown Analysis Unavailable
+                  Burndown Chart Not Ready
                 </p>
               </div>
             }
@@ -125,7 +125,7 @@ export default function SprintAnalysisReport({
             fallback={
               <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm flex items-center justify-center text-center min-h-[250px]">
                 <p className="text-[10px] font-black text-muted-foreground uppercase opacity-50">
-                  Typology Data Unavailable
+                  Task Distribution Not Ready
                 </p>
               </div>
             }
@@ -140,7 +140,7 @@ export default function SprintAnalysisReport({
             fallback={
               <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm flex items-center justify-center text-center min-h-[250px]">
                 <p className="text-[10px] font-black text-muted-foreground uppercase opacity-50">
-                  Operator Data Unavailable
+                  Member Data Not Ready
                 </p>
               </div>
             }
@@ -168,11 +168,11 @@ export default function SprintAnalysisReport({
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <h3 className="text-[13px] font-black text-foreground uppercase tracking-tight">
-                Delivered Objectives
+                Done Tasks
               </h3>
             </div>
             <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-lg">
-              {completedTasks.length} SUCCESSFUL
+              {completedTasks.length} DONE
             </span>
           </div>
 
@@ -205,7 +205,7 @@ export default function SprintAnalysisReport({
             ) : (
               <div className="text-center py-12 opacity-40">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  No nodes finalized in this sector
+                  No tasks finished yet.
                 </p>
               </div>
             )}
@@ -224,11 +224,11 @@ export default function SprintAnalysisReport({
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <h3 className="text-[13px] font-black text-foreground uppercase tracking-tight">
-                Active Spillovers
+                Unfinished Tasks
               </h3>
             </div>
             <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 px-3 py-1 rounded-lg">
-              {unfinishedTasks.length} STALLED
+              {unfinishedTasks.length} PENDING
             </span>
           </div>
 
@@ -256,7 +256,7 @@ export default function SprintAnalysisReport({
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest opacity-60">
-                      Requires Migration
+                      To be moved
                     </span>
                   </div>
                 </div>
@@ -264,7 +264,7 @@ export default function SprintAnalysisReport({
             ) : (
               <div className="text-center py-12 opacity-40">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Optimal clearance. No spillovers detected.
+                  Great job! All tasks are finished.
                 </p>
               </div>
             )}

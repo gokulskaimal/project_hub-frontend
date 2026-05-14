@@ -28,16 +28,15 @@ export default function AdminInvoicesPage() {
   });
 
   return (
-    <DashboardLayout title="Financial Ledger">
+    <DashboardLayout title="Payments">
       <div className="space-y-8 pb-12">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black text-foreground tracking-tighter">
-              Revenue <span className="text-primary">&</span> Ledger
+              Payments
             </h1>
             <p className="text-xs font-black text-muted-foreground mt-1 uppercase tracking-widest">
-              Global synchronization of all transactional nodes across the
-              platform.
+              See all money paid by companies.
             </p>
           </div>
         </div>
@@ -49,7 +48,7 @@ export default function AdminInvoicesPage() {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <input
                 type="text"
-                placeholder="Search organization identity..."
+                placeholder="Search company..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -89,7 +88,7 @@ export default function AdminInvoicesPage() {
                 className="px-4 py-2.5 bg-secondary/30 border border-transparent rounded-xl text-xs text-foreground font-black uppercase tracking-wider outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all appearance-none cursor-pointer min-w-[140px] hover:bg-secondary/40"
               >
                 <option value="ALL" className="bg-card">
-                  Tier: All
+                  Type: All
                 </option>
                 <option value="STARTER" className="bg-card">
                   Starter
@@ -113,10 +112,10 @@ export default function AdminInvoicesPage() {
                   Recent First
                 </option>
                 <option value="amount_desc" className="bg-card">
-                  Value: High-Low
+                  Amount: High to Low
                 </option>
                 <option value="amount_asc" className="bg-card">
-                  Value: Low-High
+                  Amount: Low to High
                 </option>
               </select>
             </div>
@@ -128,25 +127,25 @@ export default function AdminInvoicesPage() {
               <thead className="bg-secondary/10">
                 <tr>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    Timestamp
+                    Date
                   </th>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    Source Entity
+                    Organization
                   </th>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    Service Tier
+                    Plan
                   </th>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    System Status
+                    Status
                   </th>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    Metric Value
+                    Amount
                   </th>
                   <th className="px-8 py-5 text-left text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                     Razorpay ID
                   </th>
                   <th className="px-8 py-5 text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    Inspect
+                    Action
                   </th>
                 </tr>
               </thead>
@@ -159,7 +158,7 @@ export default function AdminInvoicesPage() {
                     >
                       <div className="flex justify-center items-center gap-3">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_10px_rgba(var(--primary),0.3)]"></div>
-                        <span>Syncing Financial Cloud...</span>
+                        <span>Loading payments...</span>
                       </div>
                     </td>
                   </tr>
@@ -168,10 +167,10 @@ export default function AdminInvoicesPage() {
                     <td colSpan={7} className="px-8 py-20 text-center">
                       <ReceiptText className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
                       <p className="text-foreground font-black text-lg tracking-tight">
-                        Null Result Matrix
+                        No results found
                       </p>
                       <p className="text-xs text-muted-foreground font-black uppercase tracking-widest mt-2">
-                        No transactions detected in current query scope.
+                        No payments found in the search.
                       </p>
                     </td>
                   </tr>
@@ -190,7 +189,7 @@ export default function AdminInvoicesPage() {
                       <td className="px-8 py-5 whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight">
-                            {invoice.orgName || "Unknown Node"}
+                            {invoice.orgName || "Unknown"}
                           </span>
                           <span className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-tighter opacity-70">
                             {invoice.orgId.slice(0, 10)}...
@@ -247,7 +246,7 @@ export default function AdminInvoicesPage() {
                         {invoice.currency} {invoice.amount?.toLocaleString()}
                       </td>
                       <td className="px-8 py-5 whitespace-nowrap text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
-                        {invoice.razorpayPaymentId || "VOID"}
+                        {invoice.razorpayPaymentId || "None"}
                       </td>
                       <td className="px-8 py-5 whitespace-nowrap text-right">
                         <button
@@ -259,7 +258,7 @@ export default function AdminInvoicesPage() {
                         >
                           <div className="flex items-center gap-2">
                             <Eye className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
-                            Analyze
+                            View
                           </div>
                         </button>
                       </td>

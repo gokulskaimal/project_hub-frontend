@@ -53,11 +53,11 @@ export default function GlobalCalendarPage() {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-3">
               <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
-                Schedule
+                Calendar
               </span>
             </div>
             <h1 className="text-3xl font-black tracking-tight mb-2">
-              Workspace Schedule
+              My Schedule
             </h1>
             <p className="text-gray-400 text-sm font-medium max-w-xl">
               Track deadlines, milestones, and project timelines across your

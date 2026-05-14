@@ -263,13 +263,13 @@ export default function TaskDetailsModal({
                   {/* Tabs */}
                   <div className="flex items-center gap-6 border-b border-border/50 mb-8">
                     {[
-                      { id: "details", label: "DETAILS", icon: Info },
+                      { id: "details", label: "ABOUT", icon: Info },
                       {
                         id: "comments",
                         label: "COMMENTS",
                         icon: MessageSquare,
                       },
-                      { id: "history", label: "HISTORY", icon: History },
+                      { id: "history", label: "ACTIVITY", icon: History },
                     ].map((tab) => (
                       <button
                         key={tab.id}
@@ -297,22 +297,22 @@ export default function TaskDetailsModal({
                         <div className="flex items-center gap-2 text-primary py-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           <span className="text-[10px] font-black uppercase tracking-widest">
-                            Synching Grid...
+                            Loading...
                           </span>
                         </div>
                       )}
                       <div className="space-y-3">
-                        <h4 className="form-label">Objective Briefing</h4>
+                        <h4 className="form-label">Description</h4>
                         <p className="text-base text-foreground leading-relaxed font-bold">
                           {currentTask.description ||
-                            "No operational data available."}
+                            "No description available."}
                         </p>
                       </div>
 
                       {/* Attachments Placeholder */}
                       <div className="space-y-4">
                         <h4 className="form-label">
-                          Evidence Repositories{" "}
+                          Attachments{" "}
                           {currentTask.attachments?.length
                             ? `(${currentTask.attachments.length})`
                             : ""}
@@ -332,7 +332,7 @@ export default function TaskDetailsModal({
                                   </div>
                                   <div className="overflow-hidden">
                                     <p className="text-xs font-black text-foreground truncate uppercase tracking-tight">
-                                      {attachment.name || `RESOURCE ${idx + 1}`}
+                                      {attachment.name || `FILE ${idx + 1}`}
                                     </p>
                                     <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
                                       {attachment.size
@@ -390,7 +390,7 @@ export default function TaskDetailsModal({
                               <MessageSquare className="w-8 h-8 text-muted-foreground" />
                             </div>
                             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                              SILENCE IN THE ARCHIVES. COMMENCE COMMS...
+                              No comments yet. Start a conversation!
                             </p>
                           </div>
                         ) : (
@@ -440,7 +440,7 @@ export default function TaskDetailsModal({
                         <input
                           type="text"
                           className="form-input !pr-20 !py-4 text-xs font-black uppercase tracking-tight"
-                          placeholder="SIGNAL COMMODITY..."
+                          placeholder="Write a comment..."
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
                           disabled={isAddingComment}
@@ -468,7 +468,7 @@ export default function TaskDetailsModal({
                         </div>
                       ) : history.length === 0 ? (
                         <p className="text-[10px] text-muted-foreground text-center py-20 font-black uppercase tracking-widest opacity-40">
-                          SYSTEM LOG EMPTY.
+                          No activity found.
                         </p>
                       ) : (
                         <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
@@ -518,7 +518,7 @@ export default function TaskDetailsModal({
                     <div className="space-y-3">
                       <h4 className="form-label flex items-center gap-2">
                         <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                        Access Grade
+                        Status
                       </h4>
                       <select
                         className="form-select text-[10px] font-black uppercase"
@@ -527,17 +527,17 @@ export default function TaskDetailsModal({
                           handleStatusChange(e.target.value as Task["status"])
                         }
                       >
-                        <option value="TODO">BACKLOG</option>
-                        <option value="IN_PROGRESS">IN PROGRESS</option>
-                        <option value="REVIEW">REVIEW</option>
-                        <option value="DONE">DONE</option>
+                        <option value="TODO">TO DO 📥</option>
+                        <option value="IN_PROGRESS">IN PROGRESS ⚡</option>
+                        <option value="REVIEW">REVIEWING 🔍</option>
+                        <option value="DONE">FINISHED ✅</option>
                       </select>
                     </div>
 
                     <div className="space-y-3">
                       <h4 className="form-label flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-primary" />
-                        Uptime Tracking
+                        Time Tracking
                       </h4>
                       <div className="bg-secondary/10 rounded-2xl p-6 border border-border/50 text-center">
                         <div className="text-3xl font-black text-foreground mb-4 font-mono tracking-tighter">
@@ -574,13 +574,13 @@ export default function TaskDetailsModal({
                         <UserIcon className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="form-label !mb-0">Operative</p>
+                        <p className="form-label !mb-0">Assigned To</p>
                         <p className="text-xs font-black text-foreground uppercase tracking-tight">
                           {currentTask.assignedTo
                             ? users.find((u) => u.id === currentTask.assignedTo)
                               ? `${users.find((u) => u.id === currentTask.assignedTo)?.firstName} ${users.find((u) => u.id === currentTask.assignedTo)?.lastName}`
                               : "ASSIGNED"
-                            : "UNASSIGNED"}
+                            : "No one"}
                         </p>
                       </div>
                     </div>
@@ -594,7 +594,7 @@ export default function TaskDetailsModal({
                         <p className="text-xs font-black text-foreground uppercase tracking-tight">
                           {currentTask.dueDate
                             ? new Date(currentTask.dueDate).toLocaleDateString()
-                            : "UNSET"}
+                            : "Not set"}
                         </p>
                       </div>
                     </div>
@@ -604,9 +604,9 @@ export default function TaskDetailsModal({
                         <Tag className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="form-label !mb-0">Complexity</p>
+                        <p className="form-label !mb-0">Points</p>
                         <p className="text-xs font-black text-foreground uppercase tracking-tight text-gradient">
-                          {currentTask.storyPoints || 0} NODE PTS
+                          {currentTask.storyPoints || 0} PTS
                         </p>
                       </div>
                     </div>

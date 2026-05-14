@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <DashboardLayout title="Admin Command">
+      <DashboardLayout title="Admin Panel">
         <div className="p-6 space-y-10">
           <div className="h-48 bg-secondary/30 rounded-3xl animate-pulse" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -90,7 +90,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <DashboardLayout title="Admin Command">
+    <DashboardLayout title="Admin Dashboard">
       <motion.div
         variants={container}
         initial="hidden"
@@ -101,19 +101,19 @@ export default function AdminDashboardPage() {
         <motion.div variants={item}>
           <RoleBanner
             roleName="Super Admin"
-            badgeText="System Authority"
+            badgeText="Admin"
             welcomeMessage={
               <>
-                Central <span className="text-white">Command</span>
+                Admin <span className="text-white">Dashboard</span>
               </>
             }
             description={
               <>
-                Operational oversight for{" "}
+                Managing{" "}
                 <span className="text-white border-b border-white/30 pb-0.5">
                   {reportsData?.overview.totalOrganizations || 0} organizations
                 </span>{" "}
-                across the primary ecosystem fabric.
+                on the entire system.
               </>
             }
             gradientFrom="#6366F1"
@@ -128,14 +128,14 @@ export default function AdminDashboardPage() {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Activity className="w-5 h-5 text-primary" />
               </div>
-              Global Analytics
+              Stats
             </h2>
             <div className="flex items-center gap-4">
               <AnalyticsFilter value={timeframe} onChange={setTimeframe} />
               <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
-                  Active System
+                  Online
                 </span>
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
           <PremiumStatGrid
             items={[
               {
-                label: "Total Entities",
+                label: "Total Accounts",
                 value:
                   (reportsData?.overview.totalUsers || 0) +
                   (reportsData?.overview.totalOrganizations || 0),
@@ -158,13 +158,13 @@ export default function AdminDashboardPage() {
                 color: "emerald",
               },
               {
-                label: "Active Orgs",
+                label: "Active Companies",
                 value: reportsData?.organizations.active || 0,
                 icon: Building2,
                 color: "violet",
               },
               {
-                label: "System Health",
+                label: "Active Now (%)",
                 value: `${Math.round((((reportsData?.users.active || 0) + (reportsData?.organizations.active || 0)) / ((reportsData?.overview.totalUsers || 0) + (reportsData?.overview.totalOrganizations || 0) || 1)) * 100)}%`,
                 icon: Activity,
                 color: "blue",
@@ -182,10 +182,10 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">
-                  Revenue Trajectory
+                  Money Made
                 </h3>
                 <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                  Financial velocity across the grid
+                  Money made over time
                 </p>
               </div>
               <TrendingUp className="w-5 h-5 text-emerald-500" />
@@ -196,7 +196,7 @@ export default function AdminDashboardPage() {
                 <div className="h-full flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-2xl bg-secondary/10">
                   <AlertCircle className="w-8 h-8 text-muted-foreground mb-2" />
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Data Stream Offline
+                    No Data Found
                   </p>
                 </div>
               ) : (
@@ -215,10 +215,10 @@ export default function AdminDashboardPage() {
             <div className="glass-card rounded-3xl p-8 border border-border/50">
               <div className="mb-6">
                 <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest mb-1">
-                  Org Status Distribution
+                  Organization Status
                 </h3>
                 <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">
-                  System Access Levels
+                  How many are active
                 </p>
               </div>
               <div className="h-[280px]">
@@ -230,10 +230,10 @@ export default function AdminDashboardPage() {
             <div className="glass-card rounded-3xl p-8 border border-border/50">
               <div className="mb-6">
                 <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest mb-1">
-                  Subscription Tiers
+                  Plans
                 </h3>
                 <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest">
-                  Plan distribution metrics
+                  Which plans are used
                 </p>
               </div>
               <div className="h-[280px]">
@@ -249,12 +249,12 @@ export default function AdminDashboardPage() {
             <div className="p-2 bg-emerald-500/10 rounded-lg">
               <Banknote className="w-5 h-5 text-emerald-500" />
             </div>
-            Fiscal Monitoring
+            Money Stats
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                Revenue
+                Money Made
               </span>
               <h4 className="text-2xl font-black text-foreground mt-1">
                 ₹{(invoicesData?.totalRevenue || 0).toLocaleString()}
@@ -278,7 +278,7 @@ export default function AdminDashboardPage() {
             </div>
             <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                Orgs
+                Companies
               </span>
               <h4 className="text-2xl font-black text-foreground mt-1">
                 {reportsData?.overview.totalOrganizations || 0}

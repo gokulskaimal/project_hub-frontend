@@ -83,8 +83,8 @@ function ResetPasswordForm() {
           Success!
         </h2>
         <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
-          Neural access key reconfigured. <br />
-          Redirecting to primary login node...
+          Password updated. <br />
+          Taking you to the login page...
         </p>
         <div className="pt-6">
           <Link href="/login">
@@ -93,7 +93,7 @@ function ResetPasswordForm() {
               fullWidth
               className="h-12 rounded-xl text-[10px] font-black text-primary uppercase tracking-widest hover:bg-primary/10"
             >
-              Access Login Node Now
+              Login Now
             </Button>
           </Link>
         </div>
@@ -109,7 +109,7 @@ function ResetPasswordForm() {
       <div className="space-y-4">
         <Input
           type="password"
-          placeholder="NEW ACCESS KEY (PASSWORD)"
+          placeholder="NEW PASSWORD"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -118,7 +118,7 @@ function ResetPasswordForm() {
         />
         <Input
           type="password"
-          placeholder="VERIFY NEW KEY"
+          placeholder="CONFIRM NEW PASSWORD"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
@@ -140,7 +140,7 @@ function ResetPasswordForm() {
         isLoading={isLoading}
         className="h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
       >
-        Finalize Key Reset
+        Update Password
       </Button>
     </form>
   );
@@ -169,11 +169,11 @@ export default function ResetPasswordPage() {
                   <Lock className="w-10 h-10 text-primary" />
                 </div>
                 <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter italic mb-3">
-                  Reconfigure Key
+                  New Password
                 </h1>
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
-                  Establish a new neural access key <br />
-                  to regain network connectivity.
+                  Choose a new password <br />
+                  to log in to your account.
                 </p>
               </div>
 
@@ -193,7 +193,7 @@ export default function ResetPasswordPage() {
                   className="inline-flex items-center text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:brightness-125 transition-all group"
                 >
                   <ArrowLeft className="w-4 h-4 mr-3 transition-transform group-hover:-translate-x-1.5" />
-                  Abort & Return
+                  Back to Login
                 </Link>
               </div>
             </Card>

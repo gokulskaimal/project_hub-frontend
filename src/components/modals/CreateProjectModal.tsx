@@ -222,7 +222,7 @@ export default function CreateProjectModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden modal-surface transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+              <Dialog.Panel className="relative transform modal-surface transition-all sm:my-8 sm:w-full sm:max-w-2xl max-h-[95vh] flex flex-col">
                 {/* Progress Bar */}
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-secondary">
                   <motion.div
@@ -232,7 +232,7 @@ export default function CreateProjectModal({
                   />
                 </div>
 
-                <div className="px-10 pt-10 pb-6">
+                <div className="px-6 md:px-10 pt-10 pb-6 overflow-y-auto flex-1 custom-scrollbar">
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-primary/10 rounded-xl">
@@ -250,13 +250,13 @@ export default function CreateProjectModal({
                           className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
                           {step === 1
-                            ? "Initiate Node"
+                            ? "New Project"
                             : step === 2
-                              ? "Parameters"
-                              : "Assemble Team"}
+                              ? "Project Details"
+                              : "Add Team"}
                         </Dialog.Title>
                         <p className="text-[10px] font-black text-muted-foreground mt-1 uppercase tracking-widest opacity-60">
-                          Step {step} of 3 • Operation Provisioning
+                          Step {step} of 3 • Basic Info
                         </p>
                       </div>
                     </div>
@@ -268,12 +268,12 @@ export default function CreateProjectModal({
                     </button>
                   </div>
 
-                  <div className="min-h-[400px]">
+                  <div className="min-h-[300px] md:min-h-[400px]">
                     {step === 1 && (
                       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <Input
-                          label="Node Identifier"
-                          placeholder="PROJECT QUANTUM"
+                          label="Project Name"
+                          placeholder="My Awesome Project"
                           required
                           value={formData.name}
                           onChange={(e) =>
@@ -283,11 +283,11 @@ export default function CreateProjectModal({
                         />
                         <div className="space-y-2">
                           <label className="form-label uppercase tracking-[0.2em]">
-                            Mission Briefing
+                            Project Description
                           </label>
                           <textarea
                             rows={4}
-                            placeholder="DEFINE THE STRATEGIC OBJECTIVES..."
+                            placeholder="TELL US ABOUT THE PROJECT..."
                             value={formData.description}
                             onChange={(e) =>
                               setFormData({
@@ -305,7 +305,7 @@ export default function CreateProjectModal({
                       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <div className="grid grid-cols-2 gap-6">
                           <Input
-                            label="Activation"
+                            label="Start Date"
                             type="date"
                             required
                             value={formData.startDate}
@@ -318,7 +318,7 @@ export default function CreateProjectModal({
                             labelClassName="uppercase tracking-[0.2em]"
                           />
                           <Input
-                            label="Target Completion"
+                            label="End Date"
                             type="date"
                             required
                             value={formData.endDate}
@@ -335,7 +335,7 @@ export default function CreateProjectModal({
                         <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className="form-label uppercase tracking-[0.2em]">
-                              Priority Tier
+                              Priority
                             </label>
                             <select
                               value={formData.priority}
@@ -348,15 +348,15 @@ export default function CreateProjectModal({
                               }
                               className="form-select"
                             >
-                              <option value="LOW">LOW PRIORITY</option>
-                              <option value="MEDIUM">MEDIUM PRIORITY</option>
-                              <option value="HIGH">HIGH PRIORITY</option>
-                              <option value="CRITICAL">CRITICAL</option>
+                              <option value="LOW">LOW 🟢</option>
+                              <option value="MEDIUM">MEDIUM 🟡</option>
+                              <option value="HIGH">HIGH 🔴</option>
+                              <option value="CRITICAL">CRITICAL 🚨</option>
                             </select>
                           </div>
                           <div className="space-y-2">
                             <label className="form-label uppercase tracking-[0.2em]">
-                              Initial Protocol
+                              Project Status
                             </label>
                             <select
                               value={formData.status}
@@ -368,15 +368,15 @@ export default function CreateProjectModal({
                               }
                               className="form-select"
                             >
-                              <option value="PLANNING">PLANNING</option>
-                              <option value="ACTIVE">ACTIVE</option>
-                              <option value="ON_HOLD">ON HOLD</option>
+                              <option value="PLANNING">PLANNING 📝</option>
+                              <option value="ACTIVE">ACTIVE 🚀</option>
+                              <option value="ON_HOLD">ON HOLD ⏸️</option>
                             </select>
                           </div>
                         </div>
 
                         <div className="space-y-4">
-                          <label className="form-label">Operational Tags</label>
+                          <label className="form-label">Project Tags</label>
                           <div className="flex flex-wrap gap-2 mb-2">
                             {formData.tags.map((tag) => (
                               <span
@@ -395,7 +395,7 @@ export default function CreateProjectModal({
                           </div>
                           <div className="flex gap-2">
                             <input
-                              placeholder="ADD SIGNAL TAGS..."
+                              placeholder="ADD TAGS..."
                               value={tagInput}
                               onChange={(e) => setTagInput(e.target.value)}
                               onKeyDown={(e) =>
@@ -409,7 +409,7 @@ export default function CreateProjectModal({
                               onClick={addTag}
                               className="px-6 bg-secondary text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary/80 transition-all"
                             >
-                              Pin
+                              Add
                             </button>
                           </div>
                         </div>
@@ -421,7 +421,7 @@ export default function CreateProjectModal({
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <input
-                              placeholder="SCAN FOR OPERATIVES..."
+                              placeholder="SEARCH TEAM MEMBERS..."
                               className="form-input flex-1"
                               value={memberSearch}
                               onChange={(e) => setMemberSearch(e.target.value)}
@@ -442,7 +442,7 @@ export default function CreateProjectModal({
                           {showBulkAdd && (
                             <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
                               <label className="text-[10px] font-black text-primary uppercase tracking-widest">
-                                Bulk Signal Entry
+                                Add many emails
                               </label>
                               <textarea
                                 rows={3}
@@ -457,7 +457,7 @@ export default function CreateProjectModal({
                                   onClick={handleBulkAddEmails}
                                   className="bg-primary text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
                                 >
-                                  Identify
+                                  Check List
                                 </button>
                               </div>
                             </div>
@@ -465,7 +465,7 @@ export default function CreateProjectModal({
 
                           <div className="flex items-center justify-between px-1">
                             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-                              {formData.teamMemberIds.length} AUTHORIZED
+                              {formData.teamMemberIds.length} ADDED
                             </p>
                             <div className="flex gap-4">
                               <button
@@ -473,14 +473,14 @@ export default function CreateProjectModal({
                                 onClick={handleSelectAll}
                                 className="text-[9px] font-black text-primary hover:text-primary/80 uppercase tracking-widest transition-colors"
                               >
-                                Authorize All
+                                Add All
                               </button>
                               <button
                                 type="button"
                                 onClick={handleDeselectAll}
                                 className="text-[9px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest transition-colors"
                               >
-                                Prune
+                                Clear
                               </button>
                             </div>
                           </div>
@@ -563,7 +563,7 @@ export default function CreateProjectModal({
                       onClick={handleNext}
                       className="inline-flex items-center gap-2 bg-primary px-8 py-3.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all"
                     >
-                      Proceed <ArrowRight className="w-4 h-4" />
+                      Next <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
                     <button
@@ -576,7 +576,7 @@ export default function CreateProjectModal({
                       ) : (
                         <>
                           <Check className="w-4 h-4 mr-1" />
-                          Initialize Node
+                          Create Project
                         </>
                       )}
                     </button>

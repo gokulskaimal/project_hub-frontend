@@ -178,10 +178,10 @@ export default function EditProjectModal({
                           as="h3"
                           className="text-2xl font-black text-foreground tracking-tight leading-none uppercase"
                         >
-                          Modify Node
+                          Edit Project
                         </Dialog.Title>
                         <p className="text-[10px] font-black text-muted-foreground mt-1 uppercase tracking-widest opacity-60">
-                          Refining the operational architecture
+                          Update your project details
                         </p>
                       </div>
                     </div>
@@ -197,7 +197,7 @@ export default function EditProjectModal({
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                       <div className="md:col-span-3">
                         <Input
-                          label="Node Identifier"
+                          label="Project Name"
                           required
                           value={name}
                           onChange={(e) => setName(e.target.value)}
@@ -225,7 +225,7 @@ export default function EditProjectModal({
                         <div className="flex items-center gap-3">
                           <input
                             type="text"
-                            placeholder="SCAN FOR OPERATIVES..."
+                            placeholder="SEARCH TEAM MEMBERS..."
                             className="form-input !py-3 flex-1 text-xs font-black uppercase tracking-tight"
                             value={memberSearch}
                             onChange={(e) => setMemberSearch(e.target.value)}
@@ -243,7 +243,7 @@ export default function EditProjectModal({
                         {showBulkAdd && (
                           <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
                             <label className="text-[10px] font-black text-primary uppercase tracking-widest">
-                              Signal Bulk List
+                              Add many emails
                             </label>
                             <textarea
                               rows={3}
@@ -258,7 +258,7 @@ export default function EditProjectModal({
                                 onClick={handleBulkAddEmails}
                                 className="bg-primary text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
                               >
-                                Match & Authorize
+                                Add to Team
                               </button>
                             </div>
                           </div>
@@ -266,7 +266,7 @@ export default function EditProjectModal({
 
                         <div className="flex items-center justify-between px-1">
                           <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-                            {teamMemberIds.length} AUTHORIZED
+                            {teamMemberIds.length} ADDED
                           </p>
                           <div className="flex gap-4">
                             <button
@@ -274,14 +274,14 @@ export default function EditProjectModal({
                               onClick={handleSelectAll}
                               className="text-[9px] font-black text-primary hover:text-primary/80 uppercase tracking-widest transition-colors"
                             >
-                              Authorize All
+                              Add All
                             </button>
                             <button
                               type="button"
                               onClick={handleDeselectAll}
                               className="text-[9px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest transition-colors"
                             >
-                              Prune Viewport
+                              Clear Selection
                             </button>
                           </div>
                         </div>
@@ -347,7 +347,7 @@ export default function EditProjectModal({
                     <div className="space-y-2">
                       <label className="form-label flex items-center gap-2">
                         <AlignLeft className="w-3.5 h-3.5 text-primary" />
-                        Operational Briefing
+                        Description
                       </label>
                       <textarea
                         rows={3}
@@ -362,7 +362,7 @@ export default function EditProjectModal({
                         label={
                           <span className="flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5 text-primary" />
-                            Start Node
+                            Start Date
                           </span>
                         }
                         type="date"
@@ -374,7 +374,7 @@ export default function EditProjectModal({
                         label={
                           <span className="flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5 text-primary" />
-                            Target End
+                            End Date
                           </span>
                         }
                         type="date"
@@ -395,7 +395,7 @@ export default function EditProjectModal({
                         ) : (
                           <>
                             <Save className="w-4 h-4 mr-2" />
-                            Commit Node
+                            Save Changes
                           </>
                         )}
                       </button>
@@ -405,7 +405,7 @@ export default function EditProjectModal({
                         onClick={onClose}
                         disabled={isLoading}
                       >
-                        Abort
+                        Cancel
                       </button>
                     </div>
                   </form>

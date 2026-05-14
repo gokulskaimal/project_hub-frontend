@@ -163,12 +163,12 @@ export default function ProjectsPage() {
             <div className="p-2 bg-primary/10 rounded-xl">
               <Layout className="w-5 h-5 text-primary" />
             </div>
-            Real-time Portfolio Analytics
+            All Projects
           </h2>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-              Live Feed
+              Online
             </span>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function ProjectsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search project name or description..."
+              placeholder="Search projects..."
               className="w-full pl-10 pr-4 py-2.5 bg-secondary/30 border border-transparent rounded-xl focus:bg-secondary/50 focus:border-primary/20 transition-all outline-none text-foreground font-bold placeholder-muted-foreground text-sm"
             />
           </div>
@@ -312,8 +312,8 @@ export default function ProjectsPage() {
               No results match your search
             </h3>
             <p className="text-muted-foreground text-sm font-medium mb-8 max-w-xs mx-auto">
-              We couldn&apos;t find any projects meeting those criteria. Try
-              clarifying your terms.
+              We couldn&apos;t find any projects. Try searching for something
+              else.
             </p>
             <button
               onClick={() => setIsModalOpen(true)}
@@ -350,7 +350,7 @@ export default function ProjectsPage() {
                 footerRight={
                   <div className="flex flex-col items-end gap-2 -mt-1 min-w-[100px]">
                     <span className="text-[10px] font-black text-foreground uppercase tracking-wider leading-none">
-                      {project.progress || 0}% Done
+                      {project.progress || 0}% Complete
                     </span>
                     <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden border border-border/10 shadow-inner">
                       <div
@@ -381,7 +381,7 @@ export default function ProjectsPage() {
                             className="w-full text-left px-4 py-2.5 text-xs font-black uppercase tracking-widest text-emerald-500 hover:bg-emerald-500/10 flex items-center gap-3 transition-colors"
                           >
                             <CheckCircle2 className="w-4 h-4" />
-                            Close Project
+                            Mark as Finished
                           </button>
                         )}
                         <button
@@ -389,7 +389,7 @@ export default function ProjectsPage() {
                           className="w-full text-left px-4 py-2.5 text-xs font-black uppercase tracking-widest text-foreground hover:bg-primary/10 hover:text-primary flex items-center gap-3 transition-colors"
                         >
                           <Edit2 className="w-4 h-4" />
-                          Modify Settings
+                          Edit Project
                         </button>
                         <div className="mx-4 my-1 h-px bg-border/30" />
                         <button
@@ -397,7 +397,7 @@ export default function ProjectsPage() {
                           className="w-full text-left px-4 py-2.5 text-xs font-black uppercase tracking-widest text-destructive hover:bg-destructive/10 flex items-center gap-3 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Prune Project
+                          Delete Project
                         </button>
                       </div>
                     )}

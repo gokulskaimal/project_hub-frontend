@@ -62,10 +62,10 @@ export default function SpilloverWizard({
                       </div>
                       <div>
                         <Dialog.Title className="text-xl font-black text-foreground uppercase tracking-tighter">
-                          Spillover Protocol
+                          Unfinished Tasks
                         </Dialog.Title>
                         <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest mt-0.5">
-                          {stalledCount} STALLED OPERATIVES DETECTED
+                          {stalledCount} UNFINISHED TASKS FOUND
                         </p>
                       </div>
                     </div>
@@ -81,7 +81,7 @@ export default function SpilloverWizard({
                 <div className="p-8 space-y-6">
                   <div className="space-y-4">
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-60 ml-1">
-                      Target Migration Destination
+                      Where should these tasks go?
                     </p>
 
                     {/* Move to Backlog */}
@@ -101,10 +101,10 @@ export default function SpilloverWizard({
                         </div>
                         <div className="text-left">
                           <p className="text-xs font-black uppercase tracking-tight">
-                            Mission Backlog
+                            Backlog
                           </p>
                           <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">
-                            Decentralize all items
+                            Move to backlog
                           </p>
                         </div>
                       </div>
@@ -117,7 +117,7 @@ export default function SpilloverWizard({
                     {futureSprints.length > 0 && (
                       <div className="space-y-3">
                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1 opacity-40">
-                          Available Future Cycles
+                          Available Future Sprints
                         </p>
                         {futureSprints.map((sprint) => (
                           <button
@@ -140,7 +140,7 @@ export default function SpilloverWizard({
                                   {sprint.name}
                                 </p>
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">
-                                  Future Node Sync
+                                  Next Sprint
                                 </p>
                               </div>
                             </div>
@@ -158,14 +158,14 @@ export default function SpilloverWizard({
                       onClick={onClose}
                       className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all"
                     >
-                      Abort
+                      Cancel
                     </button>
                     <button
                       onClick={() => onConfirm(destination)}
                       disabled={isLoading}
                       className="flex-[2] py-3.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                     >
-                      {isLoading ? "Synchronizing..." : "Initialize Migration"}
+                      {isLoading ? "Moving..." : "Move Tasks"}
                       {!isLoading && <ArrowRight size={14} />}
                     </button>
                   </div>

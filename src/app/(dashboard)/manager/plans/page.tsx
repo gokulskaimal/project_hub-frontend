@@ -182,16 +182,16 @@ export default function ManagerPlansPage() {
               <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
                 <Layout className="w-6 h-6 text-primary" />
               </div>
-              Plan Matrix
+              Choose a Plan
             </h2>
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-40">
-              Synchronizing with Global Billing Hub
+              View all available subscription plans
             </p>
           </div>
           <div className="flex items-center gap-4 px-4 py-2 bg-secondary/10 border border-white/5 rounded-2xl">
             <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em]">
-              Primary Link Active
+              Online
             </span>
           </div>
         </div>
@@ -199,26 +199,26 @@ export default function ManagerPlansPage() {
         {/* Stats Grid - Standardized to Midnight Slate */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            label="Current Prototype"
+            label="My Plan"
             value={stats.currentPlan}
             icon={Zap}
             color="blue"
           />
           <StatCard
-            label="Tier Protocol"
+            label="Level"
             value={stats.isPremium ? "Premium" : "Standard"}
             icon={Shield}
             color={stats.isPremium ? "purple" : "blue"}
           />
           <StatCard
-            label="Active Logic Paths"
+            label="Available Plans"
             value={stats.planCount}
             icon={Target}
             color="green"
           />
           <StatCard
-            label="Nexus Status"
-            value="Anchored"
+            label="System"
+            value="Online"
             icon={Activity}
             color="blue"
           />
@@ -252,7 +252,7 @@ export default function ManagerPlansPage() {
                   {isCurrentPlan && (
                     <div className="absolute top-0 right-0 bg-primary px-6 py-2 rounded-bl-3xl">
                       <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
-                        Active Matrix
+                        Current Plan
                       </span>
                     </div>
                   )}
@@ -297,7 +297,7 @@ export default function ManagerPlansPage() {
 
                     <div className="space-y-4 mb-10">
                       <p className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em] mb-2">
-                        Capabilities
+                        Features
                       </p>
                       {plan.features.map((feature: string, i: number) => (
                         <div
@@ -327,7 +327,7 @@ export default function ManagerPlansPage() {
                           <div className="w-full py-5 rounded-[1.5rem] bg-secondary/10 border border-white/5 flex items-center justify-center gap-3">
                             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">
-                              Neural Node Synced
+                              Active
                             </span>
                           </div>
                         );
@@ -354,8 +354,8 @@ export default function ManagerPlansPage() {
                               <ArrowRight className="w-4 h-4" />
                             )}
                             {isUpgrade
-                              ? `Evolve to ${plan.name}`
-                              : `Switch to ${plan.name}`}
+                              ? `Upgrade to ${plan.name}`
+                              : `Change to ${plan.name}`}
                           </span>
                           <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
                         </Button>

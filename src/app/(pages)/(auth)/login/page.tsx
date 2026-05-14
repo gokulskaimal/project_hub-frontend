@@ -324,11 +324,11 @@ export default function LoginPage() {
 
                 <form onSubmit={handleOrgSubmit} className="space-y-6">
                   <Input
-                    label="COLLECTIVE IDENTITY (ORG NAME)"
+                    label="COMPANY NAME"
                     type="text"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
-                    placeholder="e.g. CORE SYSTEMS"
+                    placeholder="e.g. My Team"
                     required
                     autoFocus
                     className="bg-background/50 border-white/5 text-[11px] font-black uppercase tracking-wider h-14 rounded-2xl"
@@ -352,7 +352,7 @@ export default function LoginPage() {
                       isLoading={loading}
                       className="flex-1 h-12 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
                     >
-                      Anchor Node
+                      Create
                     </Button>
                   </div>
                 </form>

@@ -33,10 +33,10 @@ export default function StrategicProjectReport({
           </div>
           <div>
             <h2 className="text-2xl font-black text-foreground tracking-tighter uppercase">
-              Strategic Intelligence Hub
+              Project Report
             </h2>
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mt-1 opacity-60">
-              Long-range Forecasting & Efficiency Audit
+              See how the project is moving and how fast your team is.
             </p>
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function StrategicProjectReport({
           <div className="flex items-center gap-3 px-2">
             <Target className="w-4 h-4 text-primary" />
             <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-              Scope vs Completion Physics
+              Tasks vs Progress
             </h4>
           </div>
           <ProjectBurnUpChart project={project} tasks={tasks} />
@@ -62,7 +62,7 @@ export default function StrategicProjectReport({
           <div className="flex items-center gap-3 px-2">
             <TrendingUp className="w-4 h-4 text-violet-500" />
             <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-              Systemic Efficiency Trend
+              Team Speed Trend
             </h4>
           </div>
           <EfficiencyTrendChart tasks={tasks} />
@@ -74,10 +74,10 @@ export default function StrategicProjectReport({
         <div className="flex items-center justify-between mb-8">
           <div>
             <h3 className="text-lg font-black text-foreground tracking-tight uppercase">
-              Operational Milestone Journey
+              Project Timeline
             </h3>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
-              Proximity to Project Finalization
+              How close we are to finishing.
             </p>
           </div>
           <div className="text-right">
@@ -85,7 +85,7 @@ export default function StrategicProjectReport({
               {project.progress || 0}%
             </span>
             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">
-              Global Completion
+              Overall Progress
             </p>
           </div>
         </div>
@@ -106,10 +106,10 @@ export default function StrategicProjectReport({
         </div>
 
         <div className="grid grid-cols-4 mt-4 text-[9px] font-black text-muted-foreground uppercase tracking-widest px-1">
-          <span>Inception</span>
-          <span className="text-center">Strategic Alignment</span>
-          <span className="text-center">Tactical Execution</span>
-          <span className="text-right">Finalization</span>
+          <span>Start</span>
+          <span className="text-center">Planning</span>
+          <span className="text-center">Working</span>
+          <span className="text-right">Finish</span>
         </div>
       </div>
     </motion.div>

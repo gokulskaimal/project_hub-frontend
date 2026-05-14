@@ -12,14 +12,14 @@ export default function LeadershipSection() {
       color: "bg-emerald-500",
     },
     {
-      name: "Neural Data Matrix",
+      name: "Data Hub",
       status: "IN_PROGRESS",
       progress: 65,
-      metric: "Operational Drift: 0.02%",
+      metric: "Accuracy: 99.9%",
       color: "bg-primary",
     },
     {
-      name: "API Synchrony",
+      name: "App Connections",
       status: "STABILIZING",
       progress: 40,
       metric: "Latency: 12ms",
@@ -42,14 +42,14 @@ export default function LeadershipSection() {
       <div className="container max-w-[1400px] mx-auto px-8 relative z-10">
         <div className="text-center mb-20 space-y-4">
           <div className="text-[10px] font-black text-primary tracking-[0.4em] uppercase mb-4 opacity-70 italic">
-            Executive Oversight
+            For Managers
           </div>
           <h2 className="text-5xl font-black text-foreground uppercase tracking-tighter italic">
-            Strategic Clarity
+            Clear Reporting
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-[11px] font-black uppercase tracking-[0.2em] leading-relaxed opacity-60">
-            Real-time telemetry for modern leadership. Deconstruct
-            organizational complexity through advanced visual forensics.
+            Real-time updates for modern managers. Understand your project
+            progress with simple charts.
           </p>
         </div>
 
@@ -57,12 +57,12 @@ export default function LeadershipSection() {
           <div className="lg:col-span-2 glass-card rounded-[2.5rem] border border-white/5 bg-card/40 p-10 shadow-2xl">
             <div className="flex items-center justify-between mb-10">
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-50">
-                Active Roadmap v4.2
+                Active Roadmap
               </span>
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">
-                  Real-time Telemetry
+                  Real-time Updates
                 </span>
               </div>
             </div>
@@ -99,18 +99,18 @@ export default function LeadershipSection() {
 
           <div className="glass-card rounded-[2.5rem] border border-white/5 bg-card/40 p-10 shadow-2xl flex flex-col">
             <h4 className="text-[10px] font-black text-foreground uppercase tracking-[0.3em] mb-10 opacity-50 italic">
-              Organizational Integrity
+              Project Health
             </h4>
             <div className="space-y-6 flex-1">
               {[
-                { metric: "Release Velocity", value: "+42%", trend: "UP" },
-                { metric: "Operational Drift", value: "-12%", trend: "DOWN" },
+                { metric: "Work Speed", value: "+42%", trend: "UP" },
+                { metric: "Errors Found", value: "-12%", trend: "DOWN" },
                 {
-                  metric: "Deployment Accuracy",
+                  metric: "Success Rate",
                   value: "98.4%",
                   trend: "STABLE",
                 },
-                { metric: "Team Synchrony", value: "HIGH", trend: "OPTIMAL" },
+                { metric: "Teamwork", value: "HIGH", trend: "OPTIMAL" },
               ].map((m) => (
                 <div
                   key={m.metric}
@@ -128,7 +128,7 @@ export default function LeadershipSection() {
 
             <div className="mt-10 pt-8 border-t border-white/5 text-center">
               <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em] opacity-40 italic">
-                System Nominal • 12 Active Nodes
+                All Working • 12 Active Projects
               </p>
             </div>
           </div>

@@ -56,7 +56,7 @@ export default function ManagerCalendarPage() {
   }, [tasks]);
 
   return (
-    <DashboardLayout title="Operational Schedule">
+    <DashboardLayout title="Calendar">
       <div className="space-y-8 pb-12">
         {/* Real-time Analytics Header */}
         <div className="flex items-center justify-between px-1">
@@ -65,16 +65,16 @@ export default function ManagerCalendarPage() {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Layout className="w-5 h-5 text-primary" />
               </div>
-              Chronos Analytics
+              Task Stats
             </h2>
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1.5 opacity-70">
-              Temporal distribution of all organizational nodes
+              View all your tasks on a timeline
             </p>
           </div>
           <div className="flex items-center gap-3 bg-secondary/30 px-4 py-2 rounded-2xl border border-border/10">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              Live Matrix Sync
+              Online
             </span>
           </div>
         </div>
@@ -82,13 +82,13 @@ export default function ManagerCalendarPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            label="Nodes In Orbit"
+            label="Total Tasks"
             value={stats.total}
             icon={Layout}
             color="blue"
           />
           <StatCard
-            label="Priority Triggers"
+            label="Urgent Tasks"
             value={stats.highPriority}
             icon={AlertCircle}
             color="red"
@@ -100,7 +100,7 @@ export default function ManagerCalendarPage() {
             color="orange"
           />
           <StatCard
-            label="Resolved Nodes"
+            label="Completed"
             value={stats.completed}
             icon={CheckCircle}
             color="green"
@@ -112,7 +112,7 @@ export default function ManagerCalendarPage() {
             <div className="flex flex-col items-center gap-4">
               <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(var(--primary),0.3)]"></div>
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                Syncing Temporal Data...
+                Loading...
               </span>
             </div>
           </div>
@@ -120,11 +120,10 @@ export default function ManagerCalendarPage() {
           <div className="bg-card p-6 sm:p-8 rounded-3xl border border-border/50 shadow-2xl overflow-hidden">
             <div className="mb-8">
               <h2 className="text-xl font-black text-foreground tracking-tighter uppercase">
-                System Timeline
+                Task Calendar
               </h2>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1 opacity-70">
-                Visualizing all task vectors and mission deadlines across
-                organization nodes.
+                View all your project deadlines in one place.
               </p>
             </div>
             <div className="rounded-2xl overflow-hidden border border-border/30 bg-secondary/10">
