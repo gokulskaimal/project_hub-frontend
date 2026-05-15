@@ -36,7 +36,7 @@ export default function AdminInvoicesPage() {
               Payments
             </h1>
             <p className="text-xs font-black text-muted-foreground mt-1 uppercase tracking-widest">
-              See all money paid by companies.
+              See all payments from organizations.
             </p>
           </div>
         </div>
@@ -48,7 +48,7 @@ export default function AdminInvoicesPage() {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <input
                 type="text"
-                placeholder="Search company..."
+                placeholder="Search organization..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);

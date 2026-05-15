@@ -115,7 +115,7 @@ export default function MemberBoardsPage() {
                       <Users className="w-3.5 h-3.5 text-primary" />
                     </div>
                     <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                      {project.members?.length || 0} Operators
+                      {project.members?.length || 0} Members
                     </span>
                   </div>
                 }

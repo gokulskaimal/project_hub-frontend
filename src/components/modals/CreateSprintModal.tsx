@@ -297,7 +297,7 @@ export default function CreateSprintModal({
                           rows={2}
                           {...register("description")}
                           className="form-input min-h-[80px]"
-                          placeholder="OPERATIONAL CONTEXT..."
+                          placeholder="Add a description..."
                         />
                       </div>
                     </div>

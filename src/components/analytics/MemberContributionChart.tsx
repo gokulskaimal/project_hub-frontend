@@ -169,7 +169,7 @@ export default function MemberContributionChart({
       <div className="mt-6 pt-4 border-t border-border/50 flex justify-between items-center">
         <div className="flex flex-col">
           <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-            Prime Operator
+            Top Contributor
           </span>
           <span className="text-[11px] font-black text-primary uppercase mt-0.5">
             {data[0]?.name || "N/A"}

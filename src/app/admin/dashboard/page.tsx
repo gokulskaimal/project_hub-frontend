@@ -158,7 +158,7 @@ export default function AdminDashboardPage() {
                 color: "emerald",
               },
               {
-                label: "Active Companies",
+                label: "Active Organizations",
                 value: reportsData?.organizations.active || 0,
                 icon: Building2,
                 color: "violet",
@@ -182,10 +182,10 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">
-                  Money Made
+                  Revenue
                 </h3>
                 <p className="text-[10px] text-muted-foreground font-black mt-1 uppercase tracking-widest">
-                  Money made over time
+                  Revenue over time
                 </p>
               </div>
               <TrendingUp className="w-5 h-5 text-emerald-500" />
@@ -249,12 +249,12 @@ export default function AdminDashboardPage() {
             <div className="p-2 bg-emerald-500/10 rounded-lg">
               <Banknote className="w-5 h-5 text-emerald-500" />
             </div>
-            Money Stats
+            Financial Stats
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                Money Made
+                Revenue
               </span>
               <h4 className="text-2xl font-black text-foreground mt-1">
                 ₹{(invoicesData?.totalRevenue || 0).toLocaleString()}
@@ -278,7 +278,7 @@ export default function AdminDashboardPage() {
             </div>
             <div className="glass-card p-6 rounded-2xl border border-border/50 hover:border-primary/30 transition-all">
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                Companies
+                Organizations
               </span>
               <h4 className="text-2xl font-black text-foreground mt-1">
                 {reportsData?.overview.totalOrganizations || 0}

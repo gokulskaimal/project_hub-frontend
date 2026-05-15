@@ -91,7 +91,7 @@ export const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({
           <div className="py-20 flex flex-col items-center justify-center text-center glass-card rounded-[2rem] border border-dashed border-white/5">
             <BarChart2 className="text-muted-foreground/20 w-12 h-12 mb-4" />
             <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-              No Operator Data
+              No workload data
             </p>
           </div>
         )}

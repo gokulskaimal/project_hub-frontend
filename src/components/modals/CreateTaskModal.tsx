@@ -271,7 +271,7 @@ export default function CreateTaskModal({
                             required
                             disabled={isLocked}
                             className="form-input"
-                            placeholder="ENTER TASK NAME..."
+                            placeholder="What needs to be done?"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                           />
@@ -352,7 +352,7 @@ export default function CreateTaskModal({
                           rows={4}
                           disabled={isLocked}
                           className="form-input min-h-[120px] resize-none"
-                          placeholder="ENTER TASK DETAILS..."
+                          placeholder="Add a description..."
                           value={description}
                           onChange={(e) => setDescription(e.target.value)}
                         />

@@ -287,7 +287,7 @@ export default function CreateProjectModal({
                           </label>
                           <textarea
                             rows={4}
-                            placeholder="TELL US ABOUT THE PROJECT..."
+                            placeholder="Add a description..."
                             value={formData.description}
                             onChange={(e) =>
                               setFormData({
