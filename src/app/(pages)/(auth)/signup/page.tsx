@@ -434,7 +434,7 @@ export default function SignUpPage() {
                         fullWidth
                         className="h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30"
                       >
-                        {loading ? "SENDING..." : "GET SIGN UP CODE"}
+                        {loading ? "SENDING..." : "Send Code"}
                       </Button>
                     </motion.div>
                   )}
@@ -482,18 +482,20 @@ export default function SignUpPage() {
                       </div>
                       <div className="flex flex-col items-center gap-4 text-[10px] font-black uppercase tracking-widest">
                         <div className="flex items-center gap-2">
-                          <span className="opacity-40">No Signal?</span>
+                          <span className="opacity-40">
+                            Didn&apos;t get the code?
+                          </span>
                           <button
                             className="text-primary hover:brightness-125 disabled:opacity-30 disabled:pointer-events-none transition-all"
                             onClick={onResendOtp}
                             disabled={loading || isResendDisabled}
                           >
-                            RE-BROADCAST
+                            Resend Code
                           </button>
                         </div>
                         {formattedTimer && (
                           <div className="px-4 py-1 bg-secondary/10 border border-white/5 rounded-full opacity-40">
-                            Cooldown: {formattedTimer}
+                            Wait: {formattedTimer}
                           </div>
                         )}
                       </div>
@@ -580,7 +582,7 @@ export default function SignUpPage() {
                         isLoading={loading}
                         className="h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30"
                       >
-                        {loading ? "SAVING..." : "FINISH SIGN UP"}
+                        {loading ? "SAVING..." : "Complete Signup"}
                       </Button>
                     </motion.div>
                   )}
@@ -649,7 +651,7 @@ export default function SignUpPage() {
                   type="text"
                   value={googleOrgName}
                   onChange={(e) => setGoogleOrgName(e.target.value)}
-                  placeholder="e.g. CORE SYSTEMS"
+                  placeholder="e.g. My Organization"
                   required
                   autoFocus
                   className="bg-background/50 border-white/5 text-[11px] font-black uppercase tracking-wider h-14 rounded-2xl"
@@ -665,7 +667,7 @@ export default function SignUpPage() {
                     }}
                     className="flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest border-white/5 hover:bg-white/5"
                   >
-                    Abort
+                    Cancel
                   </Button>
                   <Button
                     type="submit"
@@ -673,7 +675,7 @@ export default function SignUpPage() {
                     isLoading={loading}
                     className="flex-1 h-12 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
                   >
-                    Anchor Node
+                    Create Organization
                   </Button>
                 </div>
               </form>

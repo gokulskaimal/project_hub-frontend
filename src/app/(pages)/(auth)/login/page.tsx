@@ -324,7 +324,7 @@ export default function LoginPage() {
 
                 <form onSubmit={handleOrgSubmit} className="space-y-6">
                   <Input
-                    label="COMPANY NAME"
+                    label="ORGANIZATION NAME"
                     type="text"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
@@ -344,7 +344,7 @@ export default function LoginPage() {
                       }}
                       className="flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest border-white/5 hover:bg-white/5"
                     >
-                      Abort
+                      Cancel
                     </Button>
                     <Button
                       type="submit"

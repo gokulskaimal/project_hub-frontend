@@ -24,7 +24,7 @@ export default function SprintMetricsGrid({
     return (
       <div className="bg-card p-8 rounded-[2rem] border border-border shadow-sm text-center mb-6 transition-colors duration-500">
         <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
-          Select a node to view performance metrics
+          Select a sprint to view performance metrics
         </p>
       </div>
     );
@@ -68,15 +68,15 @@ export default function SprintMetricsGrid({
     {
       label: "Task Closure",
       value: `${completedTasks} / ${totalTasks}`,
-      sub: "Operational Volume",
+      sub: "Task completion",
       icon: CheckCircle2,
       color: "text-emerald-500",
       bg: "bg-emerald-500/10",
     },
     {
-      label: "Node Status",
+      label: "Sprint Status",
       value: sprint.status,
-      sub: "Current Lifecycle",
+      sub: "Current phase",
       icon: Zap,
       color: "text-amber-500",
       bg: "bg-amber-500/10",

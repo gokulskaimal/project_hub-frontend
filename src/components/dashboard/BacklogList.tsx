@@ -91,7 +91,7 @@ export default function BacklogList({
               }}
               className="group relative bg-card border border-border/30 rounded-[2rem] p-6 shadow-2xl hover:shadow-primary/5 hover:-translate-y-2 transition-all duration-500 flex flex-col gap-6 cursor-pointer overflow-hidden glass-card"
             >
-              {/* Logic Trace Indicator */}
+              {/* Priority Indicator */}
               <div
                 className={`absolute top-0 left-0 right-0 h-1.5 opacity-80 ${
                   task.priority === "CRITICAL"
@@ -104,7 +104,7 @@ export default function BacklogList({
                 }`}
               />
 
-              {/* Matrix Header: Type & Priority */}
+              {/* Task Header: Type & Priority */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span
@@ -126,7 +126,7 @@ export default function BacklogList({
                   </span>
                 </div>
 
-                {/* Neural Actions */}
+                {/* Quick Actions */}
                 {(userRole === "ORG_MANAGER" || userRole === "SUPER_ADMIN") && (
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <button
@@ -176,7 +176,7 @@ export default function BacklogList({
                 </h4>
               </div>
 
-              {/* Metrics Footer: Complexity & Operative */}
+              {/* Metrics Footer: Points & Assigned Member */}
               <div className="mt-auto pt-5 border-t border-border/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {(task.storyPoints || 0) > 0 ? (

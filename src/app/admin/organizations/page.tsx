@@ -104,7 +104,7 @@ export default function AdminOrganizationsPage() {
   };
 
   return (
-    <DashboardLayout title="Companies">
+    <DashboardLayout title="Organizations">
       <div className="p-4 md:p-8 space-y-10 sm:space-y-12 pb-20">
         <PremiumStatGrid
           stats={{
@@ -134,7 +134,7 @@ export default function AdminOrganizationsPage() {
                 {search
                   ? search.toUpperCase()
                   : statusFilter === "ALL"
-                    ? "ALL COMPANIES"
+                    ? "ALL ORGANIZATIONS"
                     : `STATUS: ${statusFilter}`}
               </span>
             </div>
@@ -156,7 +156,7 @@ export default function AdminOrganizationsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search for a company..."
+              placeholder="Search for an organization..."
               className="w-full pl-12 pr-4 py-3.5 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
             />
           </div>

@@ -221,7 +221,7 @@ export default function InviteModal({
                           <textarea
                             value={bulkEmails}
                             onChange={(e) => setBulkEmails(e.target.value)}
-                            placeholder="EMAIL1@GMAIL.COM, EMAIL2@GMAIL.COM..."
+                            placeholder="jane@example.com, john@example.com..."
                             rows={8}
                             className="form-input !text-xs !font-black uppercase tracking-widest placeholder:opacity-40"
                           />
@@ -244,13 +244,13 @@ export default function InviteModal({
                                 value={USER_ROLES.TEAM_MEMBER}
                                 className="bg-card text-foreground"
                               >
-                                TEAM MEMBER
+                                MEMBER
                               </option>
                               <option
                                 value={USER_ROLES.ORG_MANAGER}
                                 className="bg-card text-foreground"
                               >
-                                ORG MANAGER
+                                MANAGER
                               </option>
                             </select>
                           </div>
@@ -277,7 +277,7 @@ export default function InviteModal({
                                     onChange={(e) =>
                                       updateRow(index, "email", e.target.value)
                                     }
-                                    placeholder="FRIEND@GMAIL.COM"
+                                    placeholder="jane@example.com"
                                     className="form-input"
                                   />
                                 </div>

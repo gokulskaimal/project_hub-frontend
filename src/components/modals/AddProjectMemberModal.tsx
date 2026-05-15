@@ -119,7 +119,7 @@ export default function AddProjectMemberModal({
                       </div>
                       <div>
                         <Dialog.Title className="text-xl font-black text-foreground uppercase tracking-tighter">
-                          Authorize Node Team
+                          Select Team Members
                         </Dialog.Title>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-0.5 opacity-60">
                           {project.name}
@@ -139,7 +139,7 @@ export default function AddProjectMemberModal({
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                       type="text"
-                      placeholder="SCAN FOR OPERATIVES..."
+                      placeholder="SEARCH FOR MEMBERS..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="form-input !pl-12 !py-4 text-xs font-black uppercase tracking-tight"
@@ -152,13 +152,13 @@ export default function AddProjectMemberModal({
                       <div className="flex flex-col items-center justify-center py-12">
                         <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-40">
-                          QUERYING REGISTRY...
+                          SEARCHING MEMBERS...
                         </span>
                       </div>
                     ) : filteredMembers.length === 0 ? (
                       <div className="text-center py-12 bg-secondary/10 rounded-2xl border border-dashed border-border/50">
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-                          NO CANDIDATES REGISTERED
+                          NO MEMBERS FOUND
                         </p>
                       </div>
                     ) : (
@@ -223,7 +223,7 @@ export default function AddProjectMemberModal({
                         </div>
                       ) : (
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-40">
-                          {selectedIds.length} ACTIVE OPERATIVES
+                          {selectedIds.length} SELECTED MEMBERS
                         </span>
                       )}
                     </div>

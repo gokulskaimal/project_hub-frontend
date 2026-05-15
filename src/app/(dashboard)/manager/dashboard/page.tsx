@@ -153,7 +153,7 @@ export default function ManagerDashboardPage() {
                 <span className="text-white/90">
                   {stats?.members?.total || 0} team members
                 </span>{" "}
-                in your company.
+                in your organization.
               </>
             }
           />

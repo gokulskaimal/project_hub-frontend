@@ -112,7 +112,7 @@ export default function NotificationBell() {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`relative p-2.5 rounded-xl transition-all duration-300 ${isOpen ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)]" : "text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/10 shadow-lg"}`}
-        aria-label="Access Intelligence Stream"
+        aria-label="Notifications"
       >
         <Bell
           className={`w-5 h-5 ${isOpen ? "animate-none" : "group-hover:animate-bounce"}`}
@@ -129,7 +129,7 @@ export default function NotificationBell() {
           <div className="p-6 border-b border-border/10 bg-secondary/20">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-black text-foreground uppercase tracking-[0.3em]">
-                Intelligence Feed
+                Notifications
               </h3>
               {unreadCount > 0 && (
                 <button
@@ -174,7 +174,7 @@ export default function NotificationBell() {
                   </div>
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-widest">
-                  No Intelligence Data Available
+                  No notifications yet
                 </p>
               </div>
             ) : (
@@ -212,7 +212,7 @@ export default function NotificationBell() {
                       <button
                         onClick={(e) => handleMarkRead(notification.id, e)}
                         className="shrink-0 w-8 h-8 rounded-xl bg-card border border-border/20 text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 flex items-center justify-center self-center shadow-xl opacity-0 group-hover/item:opacity-100"
-                        title="Authorize Read State"
+                        title="Mark as read"
                       >
                         <Check size={14} strokeWidth={3} />
                       </button>

@@ -60,10 +60,10 @@ function VerifyEmailContent() {
             </div>
             <div className="space-y-3">
               <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter italic">
-                Validating Node
+                Verifying Account
               </h2>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
-                Scanning neural signatures and anchoring operative identity...
+                Verifying your email and finalizing your setup...
               </p>
             </div>
           </div>
@@ -80,16 +80,16 @@ function VerifyEmailContent() {
             </div>
             <div className="space-y-3">
               <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter italic">
-                Identity Secured
+                Email Verified
               </h2>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed">
-                Your neural link has been successfully authenticated. <br />
-                Welcome to the collective.
+                Your account has been successfully verified. <br />
+                Welcome to Project Hub.
               </p>
             </div>
             <Link href="/login" className="w-full pt-4">
               <Button className="h-14 w-full rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30">
-                Access Neural Core
+                Go to Dashboard
               </Button>
             </Link>
           </motion.div>
@@ -106,10 +106,10 @@ function VerifyEmailContent() {
             </div>
             <div className="space-y-3">
               <h2 className="text-3xl font-black text-destructive uppercase tracking-tighter italic">
-                Link Corruption
+                Verification Error
               </h2>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
-                {message || "Authentication token parity failure."}
+                {message || "The verification link is invalid or has expired."}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 w-full pt-4">
@@ -118,7 +118,7 @@ function VerifyEmailContent() {
                   variant="ghost"
                   className="w-full h-12 rounded-xl text-[10px] font-black text-muted-foreground uppercase tracking-widest border-white/5 hover:bg-white/5"
                 >
-                  Return to Node
+                  Return to Login
                 </Button>
               </Link>
             </div>
@@ -145,7 +145,7 @@ export default function VerifyEmailPage() {
               <div className="flex flex-col items-center space-y-6">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em] animate-pulse">
-                  Establishing Connection...
+                  Verifying...
                 </p>
               </div>
             }
