@@ -107,7 +107,7 @@ export default function NotificationBell() {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-fit" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -125,7 +125,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-4 w-80 md:w-[420px] bg-card rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-border/20 z-50 overflow-hidden transform origin-top-right transition-all animate-in zoom-in-95 duration-300 glass-card">
+        <div className="absolute top-full right-0 mt-3 w-80 md:w-[420px] bg-card rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-border/20 z-50 overflow-hidden transform origin-top-right transition-all animate-in zoom-in-95 duration-300 glass-card">
           <div className="p-6 border-b border-border/10 bg-secondary/20">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-black text-foreground uppercase tracking-[0.3em]">
