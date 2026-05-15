@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Trash2,
   Mail,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import InviteModal from "@/components/modals/InviteModal";
+import { useSocket } from "@/context/SocketContext";
 import {
   useGetManagerInvitationsQuery,
   useCancelManagerInvitationMutation,
@@ -60,9 +61,29 @@ export default function InvitesPage() {
   const loading = isLoading || isFetching;
 
   // Reset page when filters change
-  React.useEffect(() => {
+  useEffect(() => {
     setPage(1);
   }, [searchTerm, filterStatus]);
+
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleInviteUpdate = () => {
+      refetch();
+    };
+
+    socket.on("invite:created", handleInviteUpdate);
+    socket.on("invite:updated", handleInviteUpdate);
+    socket.on("member:joined", handleInviteUpdate);
+
+    return () => {
+      socket.off("invite:created", handleInviteUpdate);
+      socket.off("invite:updated", handleInviteUpdate);
+      socket.off("member:joined", handleInviteUpdate);
+    };
+  }, [socket, isConnected, refetch]);
 
   // Derived Data
   const filteredInvitations = useMemo(() => {
@@ -90,22 +111,6 @@ export default function InvitesPage() {
 
     return result;
   }, [invitations, sortBy, sortOrder]);
-
-  // Calculated Stats
-  // const stats = useMemo(() => {
-  //   const total = invitationsData?.total || 0;
-
-  //   const pending = (invitations as Invitation[]).filter(
-  //     (i) => (i.status || "PENDING") === "PENDING",
-  //   ).length;
-  //   const accepted = (invitations as Invitation[]).filter(
-  //     (i) => i.status === "ACCEPTED",
-  //   ).length;
-  //   const expired = (invitations as Invitation[]).filter(
-  //     (i) => i.status === "EXPIRED",
-  //   ).length;
-  //   return { total, pending, accepted, expired };
-  // }, [invitations, invitationsData?.total]);
 
   const handleCancelInvite = async (id: string) => {
     const confirmed = await confirmWithAlert(

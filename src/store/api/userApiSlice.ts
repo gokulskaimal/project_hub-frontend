@@ -77,7 +77,7 @@ export const userApiSlice = apiSlice.injectEndpoints({
       }),
       transformResponse: (response: { data: MemberAnalyticsData }) =>
         response.data,
-      providesTags: ["Notifications"],
+      providesTags: ["MemberAnalytics"],
     }),
   }),
 });

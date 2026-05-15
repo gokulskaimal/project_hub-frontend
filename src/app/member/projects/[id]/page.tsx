@@ -38,7 +38,6 @@ import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
 import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
 import ProjectOverviewReport from "@/components/analytics/ProjectOverviewReport";
 import { Layers, BarChart } from "lucide-react";
-import { PaginatedResponse } from "@/types/project";
 
 export default function MemberProjectDetailsPage() {
   const params = useParams();
@@ -125,30 +124,64 @@ export default function MemberProjectDetailsPage() {
       isInBacklog: true,
     });
 
+  // Unified backlog task accumulation and synchronization
   useEffect(() => {
+    let newItems: Task[] = [];
     if (backlogData && "items" in backlogData) {
-      if (backlogPage === 1) {
-        setAllBacklogTasks(backlogData.items);
-      } else {
-        setAllBacklogTasks((prev) => {
-          const newItems = backlogData.items.filter(
-            (nt: Task) => !prev.find((pt) => pt.id === nt.id),
-          );
-          return [...prev, ...newItems];
-        });
-      }
-    } else if (Array.isArray(backlogData) && backlogPage === 1) {
-      setAllBacklogTasks(backlogData);
+      newItems = backlogData.items;
+    } else if (Array.isArray(backlogData)) {
+      newItems = backlogData;
     }
-  }, [backlogData, backlogPage]);
+
+    setAllBacklogTasks((prev) => {
+      let updated = prev;
+
+      // 1. Handle Pagination/Initial Fetch
+      if (backlogPage === 1) {
+        // If first page, replace entirely (after filtering)
+        const filteredNew = newItems.filter((item) => {
+          const globalMatch = tasks.find((t) => t.id === item.id);
+          return globalMatch ? !globalMatch.sprintId : true;
+        });
+
+        // Simple array comparison to prevent redundant updates
+        if (JSON.stringify(filteredNew) !== JSON.stringify(prev)) {
+          updated = filteredNew;
+        }
+      } else if (newItems.length > 0) {
+        // If subsequent pages, append unique items
+        const uniqueFiltered = newItems.filter((item) => {
+          const globalMatch = tasks.find((t) => t.id === item.id);
+          const isAssigned = globalMatch ? !!globalMatch.sprintId : false;
+          const isAlreadyInLocal = prev.find((p) => p.id === item.id);
+          return !isAssigned && !isAlreadyInLocal;
+        });
+
+        if (uniqueFiltered.length > 0) {
+          updated = [...prev, ...uniqueFiltered];
+        }
+      }
+
+      // 2. Continuous Sync (Filter out items that just got assigned to a sprint)
+      const finalSync = updated.filter((item) => {
+        const globalMatch = tasks.find((t) => t.id === item.id);
+        return globalMatch ? !globalMatch.sprintId : true;
+      });
+
+      if (finalSync.length !== prev.length || updated !== prev) {
+        return finalSync;
+      }
+      return prev;
+    });
+  }, [backlogData, backlogPage, tasks]);
 
   const { socket, syncTimestamp } = useSocket();
 
-  // Real-time Sprint Updates
+  // Real-time Updates
   useEffect(() => {
     if (!socket) return;
 
-    const handleSprintUpdate = () => {
+    const handleDataUpdate = () => {
       refetchSprints();
       refetchTasks();
     };
@@ -157,10 +190,14 @@ export default function MemberProjectDetailsPage() {
       dispatch(projectApiSlice.util.invalidateTags(["Meetings"]));
     };
 
-    socket.on("sprint:created", handleSprintUpdate);
-    socket.on("sprint:active", handleSprintUpdate);
-    socket.on("sprint:completed", handleSprintUpdate);
-    socket.on("sprint:deleted", handleSprintUpdate);
+    socket.on("sprint:created", handleDataUpdate);
+    socket.on("sprint:active", handleDataUpdate);
+    socket.on("sprint:completed", handleDataUpdate);
+    socket.on("sprint:deleted", handleDataUpdate);
+
+    socket.on("task:created", handleDataUpdate);
+    socket.on("task:updated", handleDataUpdate);
+    socket.on("task:deleted", handleDataUpdate);
 
     socket.on("meeting:created", handleMeetingChange);
     socket.on("meeting:updated", handleMeetingChange);
@@ -168,10 +205,14 @@ export default function MemberProjectDetailsPage() {
     socket.on("meeting:completed", handleMeetingChange);
 
     return () => {
-      socket.off("sprint:created", handleSprintUpdate);
-      socket.off("sprint:active", handleSprintUpdate);
-      socket.off("sprint:completed", handleSprintUpdate);
-      socket.off("sprint:deleted", handleSprintUpdate);
+      socket.off("sprint:created", handleDataUpdate);
+      socket.off("sprint:active", handleDataUpdate);
+      socket.off("sprint:completed", handleDataUpdate);
+      socket.off("sprint:deleted", handleDataUpdate);
+
+      socket.off("task:created", handleDataUpdate);
+      socket.off("task:updated", handleDataUpdate);
+      socket.off("task:deleted", handleDataUpdate);
 
       socket.off("meeting:created", handleMeetingChange);
       socket.off("meeting:updated", handleMeetingChange);
@@ -489,11 +530,7 @@ export default function MemberProjectDetailsPage() {
                       }
                       onLoadMore={() => setBacklogPage((prev) => prev + 1)}
                       isLoadingMore={backlogLoading}
-                      totalCount={
-                        backlogData && "total" in backlogData
-                          ? (backlogData as PaginatedResponse<Task>).total
-                          : backlogTasks.length
-                      }
+                      totalCount={allBacklogTasks.length}
                     />
                   </div>
                 )}

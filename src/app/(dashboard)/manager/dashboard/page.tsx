@@ -77,6 +77,7 @@ export default function ManagerDashboardPage() {
     data: analyticsData,
     isLoading: analyticsLoading,
     isError: analyticsError,
+    refetch: refetchAnalytics,
   } = useGetManagerAnalyticsQuery(timeframe);
 
   const performanceData = mapPerformanceData(analyticsData?.performance);
@@ -101,26 +102,50 @@ export default function ManagerDashboardPage() {
 
   useEffect(() => {
     if (socket) {
-      socket.on("project:created", () => {
+      const handleGlobalUpdate = () => {
         refetchProjects();
         refetchStats();
-      });
-      socket.on("project:updated", () => {
-        refetchProjects();
-        refetchStats();
-      });
-      socket.on("member:joined", () => {
+        refetchAnalytics();
+      };
+
+      const handleMemberUpdate = () => {
         refetchMembers();
         refetchInvites();
         refetchStats();
-      });
+      };
+
+      socket.on("project:created", handleGlobalUpdate);
+      socket.on("project:updated", handleGlobalUpdate);
+
+      socket.on("task:created", handleGlobalUpdate);
+      socket.on("task:updated", handleGlobalUpdate);
+      socket.on("task:deleted", handleGlobalUpdate);
+
+      socket.on("sprint:completed", handleGlobalUpdate);
+
+      socket.on("member:joined", handleMemberUpdate);
+
       return () => {
-        socket.off("project:created");
-        socket.off("project:updated");
-        socket.off("member:joined");
+        socket.off("project:created", handleGlobalUpdate);
+        socket.off("project:updated", handleGlobalUpdate);
+
+        socket.off("task:created", handleGlobalUpdate);
+        socket.off("task:updated", handleGlobalUpdate);
+        socket.off("task:deleted", handleGlobalUpdate);
+
+        socket.off("sprint:completed", handleGlobalUpdate);
+
+        socket.off("member:joined", handleMemberUpdate);
       };
     }
-  }, [socket, refetchProjects, refetchMembers, refetchInvites, refetchStats]);
+  }, [
+    socket,
+    refetchProjects,
+    refetchMembers,
+    refetchInvites,
+    refetchStats,
+    refetchAnalytics,
+  ]);
 
   return (
     <DashboardLayout title="Manager Dashboard">

@@ -43,7 +43,6 @@ import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
 import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
 import ProjectOverviewReport from "@/components/analytics/ProjectOverviewReport";
 import MeetingSection from "@/components/Meeting/MeetingSection";
-import { PaginatedResponse } from "@/types/project";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -134,23 +133,56 @@ export default function ProjectDetailsPage() {
       isInBacklog: true,
     });
 
-  // Accumulate backlog tasks
+  // Unified backlog task accumulation and synchronization
   useEffect(() => {
+    let newItems: Task[] = [];
     if (backlogData && "items" in backlogData) {
-      if (backlogPage === 1) {
-        setAllBacklogTasks(backlogData.items);
-      } else {
-        setAllBacklogTasks((prev) => {
-          const newItems = backlogData.items.filter(
-            (nt: Task) => !prev.find((pt) => pt.id === nt.id),
-          );
-          return [...prev, ...newItems];
-        });
-      }
-    } else if (Array.isArray(backlogData) && backlogPage === 1) {
-      setAllBacklogTasks(backlogData);
+      newItems = backlogData.items;
+    } else if (Array.isArray(backlogData)) {
+      newItems = backlogData;
     }
-  }, [backlogData, backlogPage]);
+
+    setAllBacklogTasks((prev) => {
+      let updated = prev;
+
+      // 1. Handle Pagination/Initial Fetch
+      if (backlogPage === 1) {
+        // If first page, replace entirely (after filtering)
+        const filteredNew = newItems.filter((item) => {
+          const globalMatch = tasks.find((t) => t.id === item.id);
+          return globalMatch ? !globalMatch.sprintId : true;
+        });
+
+        // Simple array comparison to prevent redundant updates
+        if (JSON.stringify(filteredNew) !== JSON.stringify(prev)) {
+          updated = filteredNew;
+        }
+      } else if (newItems.length > 0) {
+        // If subsequent pages, append unique items
+        const uniqueFiltered = newItems.filter((item) => {
+          const globalMatch = tasks.find((t) => t.id === item.id);
+          const isAssigned = globalMatch ? !!globalMatch.sprintId : false;
+          const isAlreadyInLocal = prev.find((p) => p.id === item.id);
+          return !isAssigned && !isAlreadyInLocal;
+        });
+
+        if (uniqueFiltered.length > 0) {
+          updated = [...prev, ...uniqueFiltered];
+        }
+      }
+
+      // 2. Continuous Sync (Filter out items that just got assigned to a sprint)
+      const finalSync = updated.filter((item) => {
+        const globalMatch = tasks.find((t) => t.id === item.id);
+        return globalMatch ? !globalMatch.sprintId : true;
+      });
+
+      if (finalSync.length !== prev.length || updated !== prev) {
+        return finalSync;
+      }
+      return prev;
+    });
+  }, [backlogData, backlogPage, tasks]);
 
   // Calculate stats
   const totalTasks = tasks.length;
@@ -317,6 +349,10 @@ export default function ProjectDetailsPage() {
       notifier.error(null, MESSAGES.VALIDATION.SELECT_PROJECT);
       return;
     }
+
+    // Optimistically remove from backlog UI for instant feedback
+    setAllBacklogTasks((prev) => prev.filter((t) => t.id !== taskId));
+
     try {
       await updateTask({
         id: taskId,
@@ -325,7 +361,7 @@ export default function ProjectDetailsPage() {
       }).unwrap();
       notifier.success(MESSAGES.SPRINTS.MOVED_TO_SPRINT(selectedSprint.name));
     } catch (err) {
-      notifier.error(err, MESSAGES.TASKS.UPDATE_SUCCESS);
+      notifier.error(err, "Failed to move task to sprint");
     }
   };
 
@@ -621,11 +657,7 @@ export default function ProjectDetailsPage() {
                       }
                       onLoadMore={() => setBacklogPage((prev) => prev + 1)}
                       isLoadingMore={backlogLoading}
-                      totalCount={
-                        backlogData && "total" in backlogData
-                          ? (backlogData as PaginatedResponse<Task>).total
-                          : backlogTasks.length
-                      }
+                      totalCount={allBacklogTasks.length}
                     />
                   </div>
                 )}

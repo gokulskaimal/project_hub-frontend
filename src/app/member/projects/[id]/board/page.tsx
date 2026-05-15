@@ -43,6 +43,7 @@ export default function MemberProjectBoardPage() {
     data: sprints = [],
     isLoading: sprintsLoading,
     isFetching: sprintsFetching,
+    refetch: refetchSprints,
   } = useGetProjectSprintsQuery(projectId);
 
   const [updateTask] = useUpdateTaskMutation();
@@ -65,16 +66,27 @@ export default function MemberProjectBoardPage() {
 
     const handleDataChanged = () => {
       refetchTasks();
+      refetchSprints();
     };
 
     socket.on("task:created", handleDataChanged);
     socket.on("task:updated", handleDataChanged);
+    socket.on("task:deleted", handleDataChanged);
+
+    socket.on("sprint:created", handleDataChanged);
+    socket.on("sprint:active", handleDataChanged);
+    socket.on("sprint:completed", handleDataChanged);
 
     return () => {
       socket.off("task:created", handleDataChanged);
       socket.off("task:updated", handleDataChanged);
+      socket.off("task:deleted", handleDataChanged);
+
+      socket.off("sprint:created", handleDataChanged);
+      socket.off("sprint:active", handleDataChanged);
+      socket.off("sprint:completed", handleDataChanged);
     };
-  }, [socket, isConnected, refetchTasks]);
+  }, [socket, isConnected, refetchTasks, refetchSprints]);
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {

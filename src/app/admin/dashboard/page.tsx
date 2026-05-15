@@ -9,7 +9,8 @@ import {
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSocket } from "@/context/SocketContext";
 import {
   useGetAdminReportsQuery,
   useGetAdminInvoicesQuery,
@@ -50,18 +51,47 @@ const item = {
 
 export default function AdminDashboardPage() {
   const [timeframe, setTimeframe] = useState<TimeFrame>("YEAR");
-  const { data: reportsData, isLoading: reportsLoading } =
-    useGetAdminReportsQuery();
-  const { data: invoicesData, isLoading: invoicesLoading } =
-    useGetAdminInvoicesQuery({
-      limit: 1,
-      page: 1,
-    });
+  const {
+    data: reportsData,
+    isLoading: reportsLoading,
+    refetch: refetchReports,
+  } = useGetAdminReportsQuery();
+  const {
+    data: invoicesData,
+    isLoading: invoicesLoading,
+    refetch: refetchInvoices,
+  } = useGetAdminInvoicesQuery({
+    limit: 1,
+    page: 1,
+  });
   const {
     data: analyticsData,
     isLoading: analyticsLoading,
     isError: analyticsError,
+    refetch: refetchAnalytics,
   } = useGetAdminAnalyticsQuery(timeframe);
+
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleDataUpdate = () => {
+      refetchReports();
+      refetchInvoices();
+      refetchAnalytics();
+    };
+
+    socket.on("org:created", handleDataUpdate);
+    socket.on("user:joined", handleDataUpdate);
+    socket.on("invoice:created", handleDataUpdate);
+
+    return () => {
+      socket.off("org:created", handleDataUpdate);
+      socket.off("user:joined", handleDataUpdate);
+      socket.off("invoice:created", handleDataUpdate);
+    };
+  }, [socket, isConnected, refetchReports, refetchInvoices, refetchAnalytics]);
 
   const loading = reportsLoading || invoicesLoading || analyticsLoading;
 

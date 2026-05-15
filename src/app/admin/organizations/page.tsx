@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { useSocket } from "@/context/SocketContext";
 import {
   useGetAdminOrgsQuery,
   useUpdateAdminOrgStatusMutation,
@@ -40,6 +41,26 @@ export default function AdminOrganizationsPage() {
   const { data: reportsData } = useGetAdminReportsQuery();
   const [updateStatus] = useUpdateAdminOrgStatusMutation();
   const [deleteOrg] = useDeleteAdminOrgMutation();
+
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleOrgUpdate = () => {
+      refetch();
+    };
+
+    socket.on("org:created", handleOrgUpdate);
+    socket.on("org:updated", handleOrgUpdate);
+    socket.on("org:deleted", handleOrgUpdate);
+
+    return () => {
+      socket.off("org:created", handleOrgUpdate);
+      socket.off("org:updated", handleOrgUpdate);
+      socket.off("org:deleted", handleOrgUpdate);
+    };
+  }, [socket, isConnected, refetch]);
 
   const orgs = useMemo(() => {
     return data?.items ?? [];
