@@ -27,10 +27,29 @@ export interface ManagerInvitation {
 
 const extractList = <T>(response: unknown): T[] => {
   if (Array.isArray(response)) return response as T[];
-  const maybeObject = response as { data?: unknown; [key: string]: unknown };
-  if (Array.isArray(maybeObject?.data)) return maybeObject.data as T[];
-  const nested = maybeObject?.data as { data?: unknown } | undefined;
-  if (Array.isArray(nested?.data)) return nested.data as T[];
+  const maybeObject = response as {
+    data?: unknown;
+    [key: string]: unknown;
+  };
+
+  // Handle nested data property
+  const data = maybeObject?.data;
+  if (Array.isArray(data)) return data as T[];
+
+  // Handle paginated response structure (data.items)
+  if (
+    data &&
+    typeof data === "object" &&
+    "items" in data &&
+    Array.isArray((data as { items: unknown }).items)
+  ) {
+    return (data as { items: T[] }).items;
+  }
+
+  // Handle double nested data property (common in some axios setups)
+  const nestedData = data as { data?: unknown } | undefined;
+  if (Array.isArray(nestedData?.data)) return nestedData?.data as T[];
+
   return [];
 };
 

@@ -63,10 +63,11 @@ export default function MemberDashboard() {
 
   const projects = projectsData?.items || [];
 
-  const { data: tasksData, isLoading: tasksLoading } = useGetMyTasksQuery(
-    { page: 1, limit: 100 },
-    { skip: !user },
-  );
+  const {
+    data: tasksData,
+    isLoading: tasksLoading,
+    refetch: refetchTasks,
+  } = useGetMyTasksQuery({ page: 1, limit: 100 }, { skip: !user });
 
   const tasks = useMemo(() => tasksData?.items || [], [tasksData?.items]);
 
@@ -74,6 +75,7 @@ export default function MemberDashboard() {
     data: analyticsData,
     isLoading: analyticsLoading,
     isError: analyticsError,
+    refetch: refetchAnalytics,
   } = useGetMemberAnalyticsQuery(timeframe, { skip: !user });
 
   // Real-time Updates
@@ -85,20 +87,32 @@ export default function MemberDashboard() {
     const handleProjectAssigned = (newProject: Project) => {
       notifier.success(MESSAGES.PROJECTS.ASSIGNED_SUCCESS(newProject.name));
       refetchProjects();
+      refetchTasks();
+      refetchAnalytics();
     };
 
-    const handleProjectUpdated = () => {
+    const handleDataUpdate = () => {
       refetchProjects();
+      refetchTasks();
+      refetchAnalytics();
     };
 
     socket.on("project:assigned", handleProjectAssigned);
-    socket.on("project:updated", handleProjectUpdated);
+    socket.on("project:updated", handleDataUpdate);
+
+    socket.on("task:created", handleDataUpdate);
+    socket.on("task:updated", handleDataUpdate);
+    socket.on("task:deleted", handleDataUpdate);
 
     return () => {
       socket.off("project:assigned", handleProjectAssigned);
-      socket.off("project:updated", handleProjectUpdated);
+      socket.off("project:updated", handleDataUpdate);
+
+      socket.off("task:created", handleDataUpdate);
+      socket.off("task:updated", handleDataUpdate);
+      socket.off("task:deleted", handleDataUpdate);
     };
-  }, [socket, isConnected, refetchProjects]);
+  }, [socket, isConnected, refetchProjects, refetchTasks, refetchAnalytics]);
 
   const velocityPoints = mapRevenueData(analyticsData?.velocity);
   const taskStats = mapStatusDistribution(analyticsData?.tasks);

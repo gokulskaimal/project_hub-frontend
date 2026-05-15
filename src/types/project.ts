@@ -49,6 +49,8 @@ export interface Task {
   comments?: Array<{
     id: string;
     userId: string;
+    userName?: string;
+    userAvatar?: string;
     text: string;
     createdAt: string;
   }>;

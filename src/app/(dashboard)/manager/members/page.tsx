@@ -18,6 +18,7 @@ import { MESSAGES } from "@/constants/messages";
 import { notifier } from "@/utils/notifier";
 import { confirmWithAlert } from "@/utils/confirm";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { useSocket } from "@/context/SocketContext";
 import InviteModal from "@/components/modals/InviteModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { USER_ROLES } from "@/utils/constants";
@@ -62,6 +63,26 @@ export default function MembersPage() {
   React.useEffect(() => {
     setPage(1);
   }, [searchTerm, filterRole, filterStatus]);
+
+  const { socket, isConnected } = useSocket();
+
+  React.useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleMemberUpdate = () => {
+      refetch();
+    };
+
+    socket.on("member:joined", handleMemberUpdate);
+    socket.on("member:left", handleMemberUpdate);
+    socket.on("member:updated", handleMemberUpdate);
+
+    return () => {
+      socket.off("member:joined", handleMemberUpdate);
+      socket.off("member:left", handleMemberUpdate);
+      socket.off("member:updated", handleMemberUpdate);
+    };
+  }, [socket, isConnected, refetch]);
 
   const members = useMemo(() => {
     const list = membersData?.items || [];

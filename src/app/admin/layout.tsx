@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { usePathname, useRouter } from "next/navigation";
 import type { RootState, AppDispatch } from "@/store/store";
 import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
+import { apiSlice } from "@/store/api/apiSlice";
 import { useGetProfileQuery } from "@/store/api/userApiSlice";
 import {
   LayoutDashboard,
@@ -67,6 +68,7 @@ export default function AdminLayout({
   }, [isReady, isLoggedIn, role, router]);
 
   const handleLogout = async () => {
+    dispatch(apiSlice.util.resetApiState());
     await dispatch(logout());
     router.push("/login");
   };

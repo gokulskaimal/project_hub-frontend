@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
 import { logout, hydrateFromStorage } from "@/features/auth/authSlice";
+import { apiSlice } from "@/store/api/apiSlice";
 import { useGetProfileQuery } from "@/store/api/userApiSlice";
 import UserModal from "@/components/modals/UserModal";
 import { useMemberProfile } from "@/hooks/useMemberProfile";
@@ -72,6 +73,7 @@ export default function MemberLayout({
   const profileHook = useMemberProfile(accessToken);
 
   const handleLogout = async () => {
+    dispatch(apiSlice.util.resetApiState());
     await dispatch(logout());
     router.push("/login");
   };

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { useSocket } from "@/context/SocketContext";
 import {
   useGetAdminUsersQuery,
   useUpdateAdminUserStatusMutation,
@@ -44,6 +45,26 @@ export default function AdminUsersPage() {
   const { data: reportsData } = useGetAdminReportsQuery();
   const [deleteUser] = useDeleteAdminUserMutation();
   const [updateUserStatus] = useUpdateAdminUserStatusMutation();
+
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleUserUpdate = () => {
+      refetch();
+    };
+
+    socket.on("user:joined", handleUserUpdate);
+    socket.on("user:updated", handleUserUpdate);
+    socket.on("user:deleted", handleUserUpdate);
+
+    return () => {
+      socket.off("user:joined", handleUserUpdate);
+      socket.off("user:updated", handleUserUpdate);
+      socket.off("user:deleted", handleUserUpdate);
+    };
+  }, [socket, isConnected, refetch]);
 
   const users = useMemo(() => {
     return data?.items ?? [];

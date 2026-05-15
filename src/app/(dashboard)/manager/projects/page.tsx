@@ -9,6 +9,7 @@ import {
   useGetManagerProjectsQuery,
   useUpdateManagerProjectMutation,
 } from "@/store/api/managerApiSlice";
+import { useSocket } from "@/context/SocketContext";
 import {
   Plus,
   Search,
@@ -85,6 +86,24 @@ export default function ProjectsPage() {
   useEffect(() => {
     setPage(1);
   }, [searchQuery, statusFilter, priorityFilter]);
+
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleProjectUpdate = () => {
+      refetch();
+    };
+
+    socket.on("project:created", handleProjectUpdate);
+    socket.on("project:updated", handleProjectUpdate);
+
+    return () => {
+      socket.off("project:created", handleProjectUpdate);
+      socket.off("project:updated", handleProjectUpdate);
+    };
+  }, [socket, isConnected, refetch]);
 
   // Actions
   const [activeActionId, setActiveActionId] = useState<string | null>(null);

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Task } from "@/types/project";
 import { useAuth } from "@/hooks/useAuth";
+import { useSocket } from "@/context/SocketContext";
 
 import {
   Search,
@@ -51,6 +52,28 @@ export default function MemberTasksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
+
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleTaskUpdate = () => {
+      refetch();
+    };
+
+    socket.on("task:assigned", handleTaskUpdate);
+    socket.on("task:created", handleTaskUpdate);
+    socket.on("task:updated", handleTaskUpdate);
+    socket.on("task:deleted", handleTaskUpdate);
+
+    return () => {
+      socket.off("task:assigned", handleTaskUpdate);
+      socket.off("task:created", handleTaskUpdate);
+      socket.off("task:updated", handleTaskUpdate);
+      socket.off("task:deleted", handleTaskUpdate);
+    };
+  }, [socket, isConnected, refetch]);
 
   const loading = isLoading || isFetching || usersLoading;
 

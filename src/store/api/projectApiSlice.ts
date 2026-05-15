@@ -22,10 +22,29 @@ import type {
 
 const extractList = <T>(response: unknown): T[] => {
   if (Array.isArray(response)) return response as T[];
-  const maybeObject = response as { data?: unknown; [key: string]: unknown };
-  if (Array.isArray(maybeObject?.data)) return maybeObject.data as T[];
-  const nested = maybeObject?.data as { data?: unknown } | undefined;
-  if (Array.isArray(nested?.data)) return nested.data as T[];
+  const maybeObject = response as {
+    data?: unknown;
+    [key: string]: unknown;
+  };
+
+  // Handle nested data property
+  const data = maybeObject?.data;
+  if (Array.isArray(data)) return data as T[];
+
+  // Handle paginated response structure (data.items)
+  if (
+    data &&
+    typeof data === "object" &&
+    "items" in data &&
+    Array.isArray((data as { items: unknown }).items)
+  ) {
+    return (data as { items: T[] }).items;
+  }
+
+  // Handle double nested data property (common in some axios setups)
+  const nestedData = data as { data?: unknown } | undefined;
+  if (Array.isArray(nestedData?.data)) return nestedData?.data as T[];
+
   return [];
 };
 
@@ -146,6 +165,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       }),
       transformResponse: (response: { data: EpicAnalytics[] }) =>
         response.data || [],
+      providesTags: ["EpicAnalytics"],
     }),
     getProjectSprints: builder.query<Sprint[], string>({
       query: (projectId) => ({
@@ -181,6 +201,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       transformResponse: (response: { data: Sprint }) => response.data,
       invalidatesTags: (_result, _error, { projectId: _projectId }) => [
         { type: "ProjectSprints", id: _projectId },
+        "ManagerAnalytics",
       ],
     }),
     deleteSprint: builder.mutation<void, { id: string; projectId: string }>({
@@ -190,6 +211,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { projectId: _projectId }) => [
         { type: "ProjectSprints", id: _projectId },
+        "ManagerAnalytics",
       ],
     }),
     createTask: builder.mutation<
@@ -204,6 +226,11 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       transformResponse: (response: { data: Task }) => response.data,
       invalidatesTags: (_result, _error, { projectId: _projectId }) => [
         { type: "MemberTasks", id: "LIST" },
+        { type: "UserVelocity", id: "ME" },
+        "MemberAnalytics",
+        "ManagerAnalytics",
+        "EpicAnalytics",
+        "ProjectVelocity",
       ],
     }),
     updateTask: builder.mutation<
@@ -250,7 +277,13 @@ export const projectApiSlice = apiSlice.injectEndpoints({
                 if (items && Array.isArray(items)) {
                   const taskIndex = items.findIndex((t: Task) => t.id === id);
                   if (taskIndex !== -1) {
-                    Object.assign(items[taskIndex], data);
+                    // If this query is specifically for the backlog, and the task is being assigned to a sprint,
+                    // we must remove it from the backlog list instead of just updating it.
+                    if (originalArgs.isInBacklog === true && data.sprintId) {
+                      items.splice(taskIndex, 1);
+                    } else {
+                      Object.assign(items[taskIndex], data);
+                    }
                   }
                 }
               },
@@ -267,8 +300,15 @@ export const projectApiSlice = apiSlice.injectEndpoints({
           patches.forEach((p) => p.undo());
         }
       },
-      // invalidatesTags intentionally removed: the optimistic patch handles the UI update.
-      // Re-adding invalidatesTags would refetch the entire list and defeat the optimistic update.
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "MemberTasks", id: "LIST" },
+        { type: "MemberTasks", id },
+        { type: "UserVelocity", id: "ME" },
+        "MemberAnalytics",
+        "ManagerAnalytics",
+        "EpicAnalytics",
+        "ProjectVelocity",
+      ],
     }),
     deleteTask: builder.mutation<void, { id: string; projectId: string }>({
       query: ({ id }) => ({
@@ -277,6 +317,11 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { projectId: _projectId }) => [
         { type: "MemberTasks", id: "LIST" },
+        { type: "UserVelocity", id: "ME" },
+        "MemberAnalytics",
+        "ManagerAnalytics",
+        "EpicAnalytics",
+        "ProjectVelocity",
       ],
     }),
     getProjectVelocity: builder.query<
@@ -293,6 +338,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         const payload = (response as { data?: VelocityResponse })?.data;
         return payload || { totalPoints: 0, days: 7, start: "", end: "" };
       },
+      providesTags: ["ProjectVelocity"],
     }),
     toggleTaskTimer: builder.mutation<
       Task,
@@ -306,6 +352,11 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       transformResponse: (response: { data: Task }) => response.data,
       invalidatesTags: (_result, _error, { projectId: _projectId }) => [
         { type: "MemberTasks", id: "LIST" },
+        { type: "UserVelocity", id: "ME" },
+        "MemberAnalytics",
+        "ManagerAnalytics",
+        "EpicAnalytics",
+        "ProjectVelocity",
       ],
     }),
     getTaskHistory: builder.query<TaskHistory[], string>({
@@ -317,6 +368,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         success: boolean;
         data: TaskHistory[];
       }) => response.data || [],
+      providesTags: ["TaskHistory"],
     }),
     addComment: builder.mutation<Task, { taskId: string; text: string }>({
       query: ({ taskId, text }) => ({

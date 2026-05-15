@@ -401,19 +401,38 @@ export default function TaskDetailsModal({
                                 className="flex gap-4 group animate-in fade-in slide-in-from-bottom-1 duration-300"
                               >
                                 <UserAvatar
-                                  user={users.find(
-                                    (u) => u.id === comment.userId,
-                                  )}
+                                  user={
+                                    users.find(
+                                      (u) => u.id === comment.userId,
+                                    ) ||
+                                    ({
+                                      id: comment.userId,
+                                      firstName:
+                                        comment.userName?.split(" ")[0],
+                                      lastName: comment.userName
+                                        ?.split(" ")
+                                        .slice(1)
+                                        .join(" "),
+                                      avatar: comment.userAvatar,
+                                      email: "",
+                                      role: "TEAM_MEMBER",
+                                    } as User)
+                                  }
                                   size="sm"
                                 />
                                 <div className="flex-1 bg-secondary/10 p-4 rounded-[1.5rem] border border-border/30 group-hover:bg-secondary/20 transition-all">
                                   <div className="flex items-center justify-between mb-1">
                                     <span className="text-xs font-black text-foreground uppercase tracking-tight">
-                                      {users.find(
-                                        (u) => u.id === comment.userId,
-                                      )
-                                        ? `${users.find((u) => u.id === comment.userId)?.firstName} ${users.find((u) => u.id === comment.userId)?.lastName}`
-                                        : "TEAM MEMBER"}
+                                      {comment.userName &&
+                                      !comment.userName
+                                        .toLowerCase()
+                                        .includes("undefined")
+                                        ? comment.userName
+                                        : users.find(
+                                              (u) => u.id === comment.userId,
+                                            )
+                                          ? `${users.find((u) => u.id === comment.userId)?.firstName} ${users.find((u) => u.id === comment.userId)?.lastName}`
+                                          : "TEAM MEMBER"}
                                     </span>
                                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
                                       {formatDistanceToNow(

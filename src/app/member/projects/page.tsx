@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSocket } from "@/context/SocketContext";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
   Calendar,
@@ -26,7 +27,26 @@ export default function MemberProjectsPage() {
     data: projectsData,
     isLoading,
     isFetching,
+    refetch,
   } = useGetMyProjectsQuery({ page, limit: 12 }, { skip: !user });
+
+  const { socket, isConnected } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleProjectUpdate = () => {
+      refetch();
+    };
+
+    socket.on("project:assigned", handleProjectUpdate);
+    socket.on("project:updated", handleProjectUpdate);
+
+    return () => {
+      socket.off("project:assigned", handleProjectUpdate);
+      socket.off("project:updated", handleProjectUpdate);
+    };
+  }, [socket, isConnected, refetch]);
 
   const projects = projectsData?.items || [];
   const totalPages = projectsData?.totalPages || 1;
