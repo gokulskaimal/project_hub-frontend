@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Project Hub | Premium Project Management",
+  title: "Project Hub",
   description:
     "The authoritative platform for modern project management and team efficiency.",
 };
@@ -31,6 +31,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <Providers>
           <NextTopLoader color="#2563EB" showSpinner={false} />
