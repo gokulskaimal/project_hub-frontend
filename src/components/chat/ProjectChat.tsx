@@ -297,7 +297,7 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
           <h3 className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">
-            Communication Matrix
+            Project Chat
           </h3>
         </div>
         <span className="text-[10px] font-black text-primary uppercase tracking-widest opacity-80">

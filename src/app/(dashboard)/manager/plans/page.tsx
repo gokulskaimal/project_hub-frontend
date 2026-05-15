@@ -205,7 +205,7 @@ export default function ManagerPlansPage() {
             color="blue"
           />
           <StatCard
-            label="Level"
+            label="Plan Tier"
             value={stats.isPremium ? "Premium" : "Standard"}
             icon={Shield}
             color={stats.isPremium ? "purple" : "blue"}
@@ -217,7 +217,7 @@ export default function ManagerPlansPage() {
             color="green"
           />
           <StatCard
-            label="System"
+            label="Status"
             value="Online"
             icon={Activity}
             color="blue"

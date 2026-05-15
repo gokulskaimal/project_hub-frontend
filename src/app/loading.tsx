@@ -6,18 +6,18 @@ export default function Loading() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-primary/10 rounded-full blur-[80px] animate-pulse" />
 
         <div className="relative group">
-          {/* Main Tactical Spinner */}
+          {/* Primary Loading Spinner */}
           <div className="h-28 w-28 animate-[spin_3s_linear_infinite] rounded-full border-[10px] border-primary/5 border-t-primary shadow-[0_0_60px_rgba(var(--primary),0.2)]"></div>
 
-          {/* Sub-Internal Counter-Rotation */}
+          {/* Secondary Rotation Layer */}
           <div className="absolute inset-2 h-24 w-24 animate-[spin_2s_linear_infinite_reverse] rounded-full border-[6px] border-secondary/20 border-t-secondary/60 opacity-60"></div>
 
-          {/* Central Data Core */}
+          {/* Central Indicator */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-4 h-4 bg-primary rounded-sm rotate-45 animate-pulse shadow-[0_0_20px_rgba(var(--primary),0.8)]" />
           </div>
 
-          {/* Scanning Line HUD Effect */}
+          {/* Decorative Effect */}
           <div className="absolute -inset-4 border border-primary/10 rounded-full animate-ping opacity-20" />
         </div>
 

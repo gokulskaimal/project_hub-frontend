@@ -97,7 +97,7 @@ export default function EditSprintModal({
                       as="h3"
                       className="text-2xl font-black text-foreground uppercase tracking-tight"
                     >
-                      Refine Sprint
+                      Edit Sprint
                     </Dialog.Title>
                     <button
                       onClick={onClose}
@@ -110,7 +110,7 @@ export default function EditSprintModal({
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="form-label mb-2 block">
-                        Identifier
+                        Sprint Name
                       </label>
                       <div className="relative">
                         <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -118,7 +118,7 @@ export default function EditSprintModal({
                           type="text"
                           required
                           className="form-input !pl-12"
-                          placeholder="SPRINT IDENTIFIER..."
+                          placeholder="SPRINT NAME..."
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                         />
@@ -127,12 +127,12 @@ export default function EditSprintModal({
 
                     <div>
                       <label className="form-label mb-2 block">
-                        Mission Objective
+                        Sprint Goal
                       </label>
                       <textarea
                         rows={3}
                         className="form-input"
-                        placeholder="DEFINE TARGET OBJECTIVE..."
+                        placeholder="DEFINE SPRINT GOAL..."
                         value={goal}
                         onChange={(e) => setGoal(e.target.value)}
                       />
@@ -141,7 +141,7 @@ export default function EditSprintModal({
                     <div className="grid grid-cols-2 gap-6">
                       <div>
                         <label className="form-label mb-2 block">
-                          Start Node
+                          Start Date
                         </label>
                         <div className="relative">
                           <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -156,7 +156,7 @@ export default function EditSprintModal({
                       </div>
                       <div>
                         <label className="form-label mb-2 block">
-                          Target End
+                          End Date
                         </label>
                         <div className="relative">
                           <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -180,7 +180,7 @@ export default function EditSprintModal({
                         {isLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                         ) : (
-                          "Commit Changes"
+                          "Save Changes"
                         )}
                       </button>
                       <button
@@ -189,7 +189,7 @@ export default function EditSprintModal({
                         onClick={onClose}
                         disabled={isLoading}
                       >
-                        Abort
+                        Cancel
                       </button>
                     </div>
                   </form>

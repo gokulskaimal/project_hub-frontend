@@ -96,7 +96,7 @@ export default function MemberContributionChart({
           </div>
           <div>
             <h3 className="text-[13px] font-black text-foreground uppercase tracking-tight">
-              Node Operations
+              Team Contribution
             </h3>
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] opacity-40">
               {sprint.name}
@@ -178,7 +178,7 @@ export default function MemberContributionChart({
         <div className="flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
-            Live Node Sync
+            Live Updates
           </span>
         </div>
       </div>

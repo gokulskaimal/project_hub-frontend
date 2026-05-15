@@ -83,7 +83,7 @@ export default function ProjectBurnUpChart({
           <TrendingUp className="w-8 h-8 text-slate-200" />
         </div>
         <h4 className="text-[13px] font-black text-slate-400 uppercase tracking-widest">
-          Node History Uninitialized
+          No data available
         </h4>
         <p className="text-[10px] text-slate-300 font-bold mt-2 uppercase tracking-widest max-w-[200px]">
           Add and complete tasks to track project growth and scope creep.
@@ -105,10 +105,10 @@ export default function ProjectBurnUpChart({
           </div>
           <div>
             <h3 className="text-base font-black text-foreground tracking-tight">
-              System Burn-Up Vector
+              Project Burn-Up Chart
             </h3>
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
-              Strategic Scope vs Completion Growth
+              Scope vs Completion
             </p>
           </div>
         </div>
@@ -154,7 +154,7 @@ export default function ProjectBurnUpChart({
                   return (
                     <div className="bg-slate-950 border border-white/10 p-4 rounded-[1.5rem] shadow-2xl backdrop-blur-xl ring-1 ring-white/10">
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3 pb-2 border-b border-white/5">
-                        Pulse Vector: {label}
+                        Date: {label}
                       </p>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between gap-8">
@@ -215,7 +215,7 @@ export default function ProjectBurnUpChart({
           <div className="flex items-center gap-1.5">
             <Target className="w-3.5 h-3.5 text-primary" />
             <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">
-              Target Vector Sync
+              Data Synchronized
             </span>
           </div>
         </div>

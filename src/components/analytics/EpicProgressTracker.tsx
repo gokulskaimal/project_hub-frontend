@@ -102,7 +102,7 @@ export default function EpicProgressTracker({
         <div className="flex items-center gap-2">
           <Clock className="w-3 h-3 text-muted-foreground opacity-40" />
           <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-60">
-            Real-time Node Pulse
+            Live Progress Updates
           </span>
         </div>
       </div>

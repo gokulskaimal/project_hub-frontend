@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 font-sans">
       <div className="relative group max-w-lg w-full">
-        {/* Background Decorative Matrix Effect */}
+        {/* Background Decorative Effect */}
         <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary/20 rounded-full blur-[100px] opacity-50 group-hover:bg-primary/30 transition-all duration-1000" />
         <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] opacity-50 group-hover:bg-secondary/20 transition-all duration-1000" />
 

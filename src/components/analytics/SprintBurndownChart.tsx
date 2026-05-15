@@ -98,7 +98,7 @@ export default function SprintBurndownChart({
           <TrendingDown className="w-8 h-8 text-slate-200" />
         </div>
         <h4 className="text-[13px] font-black text-slate-400 uppercase tracking-widest">
-          Burndown Vector Depleted
+          No data available
         </h4>
         <p className="text-[10px] text-slate-300 font-bold mt-2 uppercase tracking-widest max-w-[220px]">
           No story points allocated to this sprint for velocity tracking.
@@ -116,10 +116,10 @@ export default function SprintBurndownChart({
           </div>
           <div>
             <h3 className="text-base font-black text-foreground tracking-tight flex items-center gap-2">
-              Sprint Burndown Pulse
+              Sprint Burndown Chart
             </h3>
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
-              Ideal vs Actual velocity vector
+              Ideal vs Actual Progress
             </p>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function SprintBurndownChart({
                   return (
                     <div className="bg-slate-950 border border-white/10 p-4 rounded-[1.5rem] shadow-2xl backdrop-blur-xl ring-1 ring-white/10">
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3 pb-2 border-b border-white/5">
-                        Lifecycle: {label}
+                        Day: {label}
                       </p>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between gap-8">
@@ -229,9 +229,9 @@ export default function SprintBurndownChart({
       <div className="mt-8 pt-4 border-t border-border/50 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
         <div className="flex items-center gap-2">
           <Info className="w-3.5 h-3.5 opacity-40" />
-          <span>Velocity Vector Calibration Active</span>
+          <span>Real-time updates enabled</span>
         </div>
-        <span className="opacity-40">Sync: T+0</span>
+        <span className="opacity-40">Synced</span>
       </div>
     </div>
   );

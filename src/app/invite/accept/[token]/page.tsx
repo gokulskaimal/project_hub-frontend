@@ -132,8 +132,8 @@ export default function AcceptInvitePage() {
                   Accept invite
                 </h1>
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60 leading-relaxed italic">
-                  Configure your node credentials <br />
-                  to join the collective matrix.
+                  Configure your account details <br />
+                  to join the project.
                 </p>
               </div>
 
@@ -158,7 +158,7 @@ export default function AcceptInvitePage() {
                 </div>
                 <Input
                   type="password"
-                  placeholder="ACCESS KEY (PASSWORD)"
+                  placeholder="CREATE PASSWORD"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
@@ -167,7 +167,7 @@ export default function AcceptInvitePage() {
                 />
                 <Input
                   type="password"
-                  placeholder="VERIFY ACCESS KEY"
+                  placeholder="CONFIRM PASSWORD"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={loading}
@@ -187,13 +187,13 @@ export default function AcceptInvitePage() {
                   isLoading={loading}
                   className="h-14 mt-4 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-primary/30 active:scale-95 transition-all"
                 >
-                  {loading ? "INITIALIZING..." : "JOIN COLLECTIVE"}
+                  {loading ? "SAVING..." : "JOIN PROJECT"}
                 </Button>
 
                 <div className="my-8 flex items-center gap-4">
                   <div className="flex-1 h-px bg-white/5" />
                   <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em]">
-                    OR AUTO-SYNC
+                    OR SIGN IN WITH
                   </span>
                   <div className="flex-1 h-px bg-white/5" />
                 </div>
@@ -212,7 +212,7 @@ export default function AcceptInvitePage() {
 
                 <div className="mt-8 pt-6 border-t border-white/5 text-center">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-                    Already an active node?{" "}
+                    Already have an account?{" "}
                     <Link
                       href="/login"
                       className="text-primary hover:brightness-125 transition-all"
