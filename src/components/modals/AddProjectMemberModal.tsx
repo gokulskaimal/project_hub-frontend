@@ -217,13 +217,13 @@ export default function AddProjectMemberModal({
                           )}
                           {removedCount > 0 && (
                             <span className="text-[9px] font-black text-rose-500 bg-rose-500/10 px-2.5 py-1 rounded-lg uppercase tracking-widest border border-rose-500/20">
-                              -{removedCount} PRUNED
+                              -{removedCount} REMOVED
                             </span>
                           )}
                         </div>
                       ) : (
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-40">
-                          {selectedIds.length} SELECTED MEMBERS
+                          {selectedIds.length} MEMBERS SELECTED
                         </span>
                       )}
                     </div>
@@ -232,7 +232,7 @@ export default function AddProjectMemberModal({
                         onClick={onClose}
                         className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                       >
-                        Abort
+                        Cancel
                       </button>
                       <button
                         onClick={handleSave}
@@ -242,7 +242,7 @@ export default function AddProjectMemberModal({
                         {isUpdating ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          "Commit Roster"
+                          "Save Team"
                         )}
                       </button>
                     </div>

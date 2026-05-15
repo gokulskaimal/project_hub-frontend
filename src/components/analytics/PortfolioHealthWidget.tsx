@@ -60,7 +60,7 @@ export const PortfolioHealthWidget: React.FC<PortfolioHealthWidgetProps> = ({
             value={averageHealth}
             max={100}
             size={180}
-            label="Integrity"
+            label="Health"
             color={
               averageHealth > 75
                 ? "#10B981"
@@ -78,10 +78,10 @@ export const PortfolioHealthWidget: React.FC<PortfolioHealthWidgetProps> = ({
             </h3>
             <p className="text-sm font-black text-foreground uppercase tracking-tight">
               {averageHealth > 75
-                ? "System Nominal"
+                ? "Stable Performance"
                 : averageHealth > 45
                   ? "At Risk"
-                  : "Critical Intervention Required"}
+                  : "Action Required"}
             </p>
           </div>
 
@@ -110,7 +110,7 @@ export const PortfolioHealthWidget: React.FC<PortfolioHealthWidgetProps> = ({
       {/* Project Specific Health */}
       <div className="space-y-3">
         <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] px-2 mb-4">
-          Node Health Distribution
+          Project Health Breakdown
         </h4>
         {projects.map((project, index) => (
           <motion.div
@@ -147,7 +147,7 @@ export const PortfolioHealthWidget: React.FC<PortfolioHealthWidgetProps> = ({
           <div className="py-12 glass-card rounded-[2rem] border border-dashed border-white/5 flex flex-col items-center justify-center opacity-50">
             <Activity className="w-12 h-12 text-muted-foreground/30 mb-2" />
             <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-              No Active Nodes
+              No Active Projects
             </p>
           </div>
         )}

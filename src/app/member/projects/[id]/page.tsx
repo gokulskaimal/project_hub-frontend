@@ -36,7 +36,7 @@ import EpicListing from "@/components/dashboard/EpicListing";
 import SprintSelectorHeader from "@/components/project/SprintSelectorHeader";
 import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
 import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
-import StrategicProjectReport from "@/components/analytics/StrategicProjectReport";
+import ProjectOverviewReport from "@/components/analytics/ProjectOverviewReport";
 import { Layers, BarChart } from "lucide-react";
 import { PaginatedResponse } from "@/types/project";
 
@@ -317,20 +317,20 @@ export default function MemberProjectDetailsPage() {
             </div>
           ) : activeTab === "ANALYTICS" ? (
             <div className="space-y-8">
-              {/* Analytics Strategy Toggle */}
+              {/* Analytics View Toggle */}
               <div className="flex items-center justify-center">
                 <div className="bg-slate-950 p-1 rounded-2xl border border-white/10 flex items-center shadow-2xl">
                   <button
                     onClick={() => setAnalyticsView("SPRINT")}
                     className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "SPRINT" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
                   >
-                    Tactical Sprint
+                    Active Sprint
                   </button>
                   <button
                     onClick={() => setAnalyticsView("STRATEGIC")}
                     className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "STRATEGIC" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
                   >
-                    Strategic Project
+                    Project Overview
                   </button>
                 </div>
               </div>
@@ -354,13 +354,13 @@ export default function MemberProjectDetailsPage() {
                         No Sprint Selected
                       </h3>
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[260px] text-center leading-relaxed">
-                        Select an active or completed operational node to
-                        generate a performance audit.
+                        Select an active or completed sprint to generate a
+                        performance report.
                       </p>
                     </div>
                   )
                 ) : (
-                  <StrategicProjectReport
+                  <ProjectOverviewReport
                     key="strategic-report"
                     project={project!}
                     tasks={tasks}
@@ -432,11 +432,11 @@ export default function MemberProjectDetailsPage() {
                       <LayoutGrid className="w-10 h-10 text-muted-foreground" />
                     </div>
                     <h3 className="text-xl font-black text-foreground mb-2 tracking-tight">
-                      No Operational Sprint
+                      No Current Sprint
                     </h3>
                     <p className="text-muted-foreground text-center max-w-sm text-sm font-medium leading-relaxed">
-                      All systems are currently idle. Select a historical node
-                      or wait for mission command to initiate the next cycle.
+                      No active sprint selected. Select a previous sprint to
+                      review performance.
                     </p>
                   </div>
                 ) : (
@@ -468,9 +468,9 @@ export default function MemberProjectDetailsPage() {
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-base font-black text-foreground flex items-center gap-3 uppercase tracking-tighter">
                         <Layers size={20} className="text-primary/70" />
-                        Mission Backlog
+                        Project Backlog
                         <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-[10px] font-black border border-primary/20 tracking-widest">
-                          {backlogTasks.length} NODES
+                          {backlogTasks.length} TASKS
                         </span>
                       </h3>
                     </div>

@@ -33,11 +33,11 @@ export default function MemberTasksLayout({
         <div className="mb-8 flex justify-between items-center">
           <div className="space-y-2">
             <h1 className="text-4xl font-black text-foreground tracking-tighter flex items-center gap-4">
-              MY DIRECTIVES
+              MY TASKS
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_12px_rgba(var(--primary),0.5)]" />
             </h1>
             <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60">
-              Neural Task Interface • Synchronized
+              Personal Task Dashboard • Managed
             </p>
           </div>
         </div>

@@ -68,10 +68,10 @@ export default function EfficiencyTrendChart({
       <div className="bg-card p-6 rounded-[2.5rem] border border-border shadow-sm h-full flex flex-col items-center justify-center text-center">
         <Activity className="w-8 h-8 text-muted-foreground/30 mb-3" />
         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-relaxed">
-          Historical Insight Pending
+          No data available
           <br />
           <span className="opacity-40">
-            Complete more tasks to build trend map
+            Complete more tasks to build performance history
           </span>
         </p>
       </div>
@@ -90,7 +90,7 @@ export default function EfficiencyTrendChart({
         </div>
         <div>
           <h3 className="text-[13px] font-black text-foreground uppercase tracking-tight">
-            Efficiency Pulse
+            Efficiency Trend
           </h3>
           <p className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] opacity-40">
             Evolution of Cycle Time (Days)
@@ -151,10 +151,10 @@ export default function EfficiencyTrendChart({
                         </div>
                         <div className="flex items-center justify-between gap-8">
                           <span className="text-[10px] font-black text-white/70 uppercase">
-                            Sample Scale
+                            Tasks Completed
                           </span>
                           <span className="text-xs font-black text-white">
-                            {dataPoint.payload?.taskCount ?? 0} NODES
+                            {dataPoint.payload?.taskCount ?? 0} TASKS
                           </span>
                         </div>
                       </div>
@@ -184,11 +184,11 @@ export default function EfficiencyTrendChart({
           />
           <span>
             {data[data.length - 1].avgCycleTime < data[0].avgCycleTime
-              ? "Optimization Detected"
-              : "Drag Resistance Detected"}
+              ? "Efficiency Improving"
+              : "Efficiency Declining"}
           </span>
         </div>
-        <span className="opacity-40">Last 6 Cycles</span>
+        <span className="opacity-40">Last 6 Months</span>
       </div>
     </div>
   );

@@ -119,7 +119,7 @@ export const EpicGanttChart: React.FC<EpicGanttChartProps> = ({
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-3">
             <Layers className="w-6 h-6 text-primary" />
-            Epic Strategic Roadmap
+            Epic Project Roadmap
           </h2>
           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-60">
             Master deliverable timeline synchronization

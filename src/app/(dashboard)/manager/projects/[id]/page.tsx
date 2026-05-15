@@ -41,7 +41,7 @@ import ProjectStatsCards from "@/components/project/ProjectStatsCards";
 import SprintSelectorHeader from "@/components/project/SprintSelectorHeader";
 import AddProjectMemberModal from "@/components/modals/AddProjectMemberModal";
 import SprintAnalysisReport from "@/components/analytics/SprintAnalysisReport";
-import StrategicProjectReport from "@/components/analytics/StrategicProjectReport";
+import ProjectOverviewReport from "@/components/analytics/ProjectOverviewReport";
 import MeetingSection from "@/components/Meeting/MeetingSection";
 import { PaginatedResponse } from "@/types/project";
 
@@ -292,7 +292,7 @@ export default function ProjectDetailsPage() {
     if (!activeSprint) return;
     const confirmed = await confirmWithAlert(
       "Complete Sprint?",
-      `Are you sure you want to complete ${activeSprint.name}? Any unfinished tasks will be migrated to ${destination === "BACKLOG" ? "backlog" : "the next cycle"}.`,
+      `Are you sure you want to complete ${activeSprint.name}? Any unfinished tasks will be migrated to ${destination === "BACKLOG" ? "backlog" : "the next sprint"}.`,
     );
     if (confirmed) {
       try {
@@ -420,20 +420,20 @@ export default function ProjectDetailsPage() {
             />
           ) : activeTab === "ANALYTICS" ? (
             <div className="space-y-8">
-              {/* Analytics Strategy Toggle */}
+              {/* Analytics View Toggle */}
               <div className="flex items-center justify-center">
                 <div className="bg-slate-950 p-1 rounded-2xl border border-white/10 flex items-center shadow-2xl">
                   <button
                     onClick={() => setAnalyticsView("SPRINT")}
                     className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "SPRINT" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
                   >
-                    Sprint Stats
+                    Active Sprint
                   </button>
                   <button
                     onClick={() => setAnalyticsView("STRATEGIC")}
                     className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${analyticsView === "STRATEGIC" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"}`}
                   >
-                    Project Report
+                    Project Overview
                   </button>
                 </div>
               </div>
@@ -463,7 +463,7 @@ export default function ProjectDetailsPage() {
                     </div>
                   )
                 ) : (
-                  <StrategicProjectReport
+                  <ProjectOverviewReport
                     key="strategic-report"
                     project={project!}
                     tasks={tasks}
@@ -537,7 +537,7 @@ export default function ProjectDetailsPage() {
                 </div>
               </div>
 
-              <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-6">
+              <div className="bg-card p-8 rounded-[2.5rem] border border-border/50 shadow-2xl space-y-8">
                 <SprintSelectorHeader
                   selectedSprintId={selectedSprintId}
                   setSelectedSprintId={setSelectedSprintId}

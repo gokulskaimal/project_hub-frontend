@@ -80,7 +80,7 @@ export default function StartSprintModal({
                           as="h3"
                           className="text-2xl font-black text-foreground leading-none uppercase tracking-tight"
                         >
-                          Initialize Sprint
+                          Start Sprint
                         </Dialog.Title>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
                           Accelerate your team&apos;s momentum
@@ -99,7 +99,7 @@ export default function StartSprintModal({
                     <div className="space-y-2">
                       <label className="form-label flex items-center gap-2">
                         <PlayCircle className="w-3.5 h-3.5 text-amber-500" />
-                        Sprint Identifier
+                        Sprint Name
                       </label>
                       <input
                         type="text"
@@ -112,12 +112,12 @@ export default function StartSprintModal({
                     <div className="space-y-2">
                       <label className="form-label flex items-center gap-2">
                         <Target className="w-3.5 h-3.5 text-amber-500" />
-                        Mission Goal
+                        Sprint Goal
                       </label>
                       <textarea
                         rows={3}
                         className="form-input"
-                        placeholder="DEFINE TARGET OBJECTIVE..."
+                        placeholder="ENTER SPRINT GOAL..."
                         value={goal}
                         onChange={(e) => setGoal(e.target.value)}
                       />
@@ -127,7 +127,7 @@ export default function StartSprintModal({
                       <div className="space-y-2">
                         <label className="form-label flex items-center gap-2">
                           <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                          Start Node
+                          Start Date
                         </label>
                         <input
                           type="date"
@@ -138,7 +138,7 @@ export default function StartSprintModal({
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="form-label">Timeline Focus</label>
+                        <label className="form-label">Duration</label>
                         <select
                           className="form-select"
                           value={duration}
@@ -154,11 +154,11 @@ export default function StartSprintModal({
 
                     <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/20">
                       <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest leading-relaxed">
-                        <strong className="text-amber-400">WARNING:</strong>{" "}
-                        INITIALIZING THIS SPRINT WILL SHIFT THE TIMELINE TO
-                        ACTIVE STATE. CURRENTLY{" "}
+                        <strong className="text-amber-400">NOTE:</strong>{" "}
+                        STARTING THIS SPRINT WILL MAKE IT THE CURRENT ACTIVE
+                        SPRINT. IT CONTAINS{" "}
                         <strong className="text-amber-400">{taskCount}</strong>{" "}
-                        TASKS ARE ASSIGNED.
+                        TASKS.
                       </p>
                     </div>
 
@@ -167,14 +167,14 @@ export default function StartSprintModal({
                         type="submit"
                         className="px-8 py-3.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all min-w-[140px]"
                       >
-                        Launch Sprint
+                        Start Sprint
                       </button>
                       <button
                         type="button"
                         className="px-8 py-3.5 border border-border text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary transition-all"
                         onClick={onClose}
                       >
-                        Abort
+                        Cancel
                       </button>
                     </div>
                   </form>

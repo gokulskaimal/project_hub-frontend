@@ -56,7 +56,7 @@ export default function TaskDistributionChart({
       { subject: "Stories", A: counts.STORY, fullMark: sprintTasks.length },
       { subject: "Bugs", A: counts.BUG, fullMark: sprintTasks.length },
       { subject: "Tasks", A: counts.TASK, fullMark: sprintTasks.length },
-      { subject: "Strategic", A: counts.EPIC, fullMark: sprintTasks.length },
+      { subject: "Epics", A: counts.EPIC, fullMark: sprintTasks.length },
     ];
   }, [tasks, sprint]);
 
@@ -126,7 +126,7 @@ export default function TaskDistributionChart({
                       </p>
                       <p className="text-lg font-black text-white">
                         {payload[0].value}{" "}
-                        <span className="text-[10px] text-primary">NODES</span>
+                        <span className="text-[10px] text-primary">TASKS</span>
                       </p>
                     </div>
                   );
@@ -141,7 +141,7 @@ export default function TaskDistributionChart({
       <div className="mt-4 pt-4 border-t border-border/50 flex justify-between items-center relative z-10">
         <div className="flex flex-col">
           <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-            Predominant Vector
+            Primary Category
           </span>
           <span className="text-[10px] font-black text-primary uppercase mt-0.5">
             {[...data].sort((a, b) => b.A - a.A)[0].subject}

@@ -50,7 +50,7 @@ export default function SprintMetricsGrid({
 
   const metrics = [
     {
-      label: "Velocity Delivery",
+      label: "Sprint Velocity",
       value: `${completedPoints} / ${totalPoints}`,
       sub: "Total Story Points",
       icon: Target,
@@ -58,7 +58,7 @@ export default function SprintMetricsGrid({
       bg: "bg-primary/10",
     },
     {
-      label: "Say/Do Ratio",
+      label: "Completion Rate",
       value: `${sayDoRatio}%`,
       sub: "Commitment Reliability",
       icon: TrendingUp,
@@ -66,7 +66,7 @@ export default function SprintMetricsGrid({
       bg: "bg-violet-500/10",
     },
     {
-      label: "Task Closure",
+      label: "Tasks Completed",
       value: `${completedTasks} / ${totalTasks}`,
       sub: "Task completion",
       icon: CheckCircle2,

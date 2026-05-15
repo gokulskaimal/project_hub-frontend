@@ -8,24 +8,24 @@ import ProjectBurnUpChart from "./ProjectBurnUpChart";
 import { ShieldCheck, Target, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
-interface StrategicProjectReportProps {
+interface ProjectOverviewReportProps {
   project: Project;
   tasks: Task[];
   sprints: Sprint[];
 }
 
-export default function StrategicProjectReport({
+export default function ProjectOverviewReport({
   project,
   tasks,
   sprints,
-}: StrategicProjectReportProps) {
+}: ProjectOverviewReportProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-12 pb-12"
     >
-      {/* Strategic Header */}
+      {/* Project Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-[1.5rem] bg-slate-950 flex items-center justify-center shadow-2xl border border-white/10 ring-4 ring-emerald-500/10">
@@ -42,7 +42,7 @@ export default function StrategicProjectReport({
         </div>
       </div>
 
-      {/* Main Forecasting Engine */}
+      {/* Project Forecast */}
       <ProjectForecastCard project={project} tasks={tasks} sprints={sprints} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">

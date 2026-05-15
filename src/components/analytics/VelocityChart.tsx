@@ -70,16 +70,16 @@ export default function VelocityChart({ sprints, tasks }: VelocityChartProps) {
           </div>
           <div>
             <h3 className="text-base font-black text-foreground tracking-tight flex items-center gap-2">
-              System Velocity Pulse
+              Team Velocity
             </h3>
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5 opacity-60">
-              Linear Delivery performance
+              Historical sprint performance
             </p>
           </div>
         </div>
         <div className="bg-slate-950 px-4 py-2 rounded-2xl shadow-xl flex flex-col items-end">
           <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">
-            Global AVG
+            Average
           </span>
           <span className="text-xl font-black text-white leading-none">
             {avgVelocity}{" "}
@@ -120,7 +120,7 @@ export default function VelocityChart({ sprints, tasks }: VelocityChartProps) {
                   return (
                     <div className="bg-slate-950 border border-white/10 p-4 rounded-[1.5rem] shadow-2xl backdrop-blur-xl ring-1 ring-white/10">
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3 pb-2 border-b border-white/5">
-                        {label} Scorecard
+                        {label} Summary
                       </p>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between gap-8">
@@ -170,20 +170,20 @@ export default function VelocityChart({ sprints, tasks }: VelocityChartProps) {
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-primary" />
             <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-              Finalized
+              Completed
             </span>
           </div>
           <div className="flex items-center gap-1.5 opacity-60">
             <div className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_10px_rgba(139,92,246,0.5)]" />
             <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-              Active Run
+              Active Sprint
             </span>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-xl border border-border/50">
           <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
           <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
-            Efficiency Metrics Tracking
+            Team Performance
           </span>
         </div>
       </div>

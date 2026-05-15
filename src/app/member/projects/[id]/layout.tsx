@@ -47,12 +47,12 @@ export default function MemberProjectLayout({
             className="flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-all mb-4 group"
           >
             <ArrowLeft className="w-3.5 h-3.5 mr-2 transition-transform group-hover:-translate-x-1" />{" "}
-            RETURN TO SECTOR
+            BACK TO PROJECTS
           </button>
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <h1 className="text-3xl font-black text-foreground flex items-center gap-4 tracking-tighter">
-                {project ? project.name : "SYNCHRONIZING..."}
+                {project ? project.name : "LOADING..."}
                 {project && (
                   <span
                     className={`text-[9px] px-3 py-1 rounded-xl border font-black uppercase tracking-[0.2em] shadow-2xl ${
@@ -61,15 +61,12 @@ export default function MemberProjectLayout({
                         : "bg-secondary/30 text-muted-foreground border-border/20"
                     }`}
                   >
-                    {project.status === "ACTIVE"
-                      ? "Operational"
-                      : project.status}
+                    {project.status === "ACTIVE" ? "Active" : project.status}
                   </span>
                 )}
               </h1>
               <p className="text-[11px] font-medium text-muted-foreground/70 max-w-2xl leading-relaxed italic border-l-2 border-primary/20 pl-4">
-                {project?.description ||
-                  "Awaiting neural mission parameters..."}
+                {project?.description || "No description available."}
               </p>
             </div>
           </div>

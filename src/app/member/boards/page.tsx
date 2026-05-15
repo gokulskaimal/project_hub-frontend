@@ -41,7 +41,7 @@ export default function MemberBoardsPage() {
   }
 
   return (
-    <DashboardLayout title="Tactical Boards">
+    <DashboardLayout title="Project Boards">
       <div className="space-y-10 sm:space-y-12 pb-12">
         {/* Boards Banner */}
         <div className="relative overflow-hidden rounded-[2.5rem] bg-card px-8 py-12 sm:px-12 sm:py-16 border border-border/50 shadow-2xl group">
@@ -54,16 +54,15 @@ export default function MemberBoardsPage() {
                 <LayoutDashboard className="w-6 h-6 text-primary" />
               </div>
               <span className="px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
-                Neural Control
+                Board Management
               </span>
             </div>
             <h1 className="text-4xl font-black text-foreground tracking-tighter mb-4 uppercase">
-              Mission <span className="text-primary">Boards</span>
+              Project <span className="text-primary">Boards</span>
             </h1>
             <p className="text-muted-foreground text-sm font-medium max-w-xl leading-relaxed">
-              Launch directly into active operational partitions to coordinate
-              sprint cycles, node synchronization, and system-wide delivery
-              velocity.
+              Launch directly into active project sections to coordinate
+              sprints, tasks, and project velocity.
             </p>
           </div>
         </div>
@@ -76,7 +75,7 @@ export default function MemberBoardsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Locate mission board..."
+              placeholder="Search boards..."
               className="w-full pl-12 pr-4 py-3 bg-secondary/30 border border-transparent rounded-2xl text-sm text-foreground font-bold placeholder-muted-foreground/40 outline-none focus:bg-secondary/50 focus:border-primary/20 transition-all shadow-inner"
             />
           </div>
@@ -88,10 +87,10 @@ export default function MemberBoardsPage() {
               <KanbanSquare className="w-12 h-12 text-primary opacity-40 mx-auto" />
             </div>
             <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">
-              Void Matrix
+              No Boards Found
             </h3>
             <p className="text-muted-foreground text-sm font-medium leading-relaxed">
-              No tactical boards detected within the current query scope.
+              No boards found matching your search.
             </p>
           </div>
         ) : (
@@ -101,10 +100,7 @@ export default function MemberBoardsPage() {
                 key={project.id}
                 id={project.id}
                 title={project.name}
-                description={
-                  project.description ||
-                  "Active agile mission node requiring synchronization."
-                }
+                description={project.description || "Awaiting project data..."}
                 icon={KanbanSquare}
                 href={`/member/projects/${project.id}/board`}
                 status={project.status}
@@ -121,7 +117,7 @@ export default function MemberBoardsPage() {
                 }
                 footerRight={
                   <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2 group-hover:translate-x-1 transition-transform">
-                    Initialize <ArrowRight className="w-3.5 h-3.5" />
+                    View Board <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 }
               />

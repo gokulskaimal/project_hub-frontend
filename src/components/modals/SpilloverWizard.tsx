@@ -51,7 +51,7 @@ export default function SpilloverWizard({
               leaveTo="opacity-0 translate-y-12 scale-95"
             >
               <Dialog.Panel className="relative transform overflow-hidden modal-surface p-0 text-left transition-all sm:my-8 sm:w-full sm:max-w-md">
-                {/* Tactical Header */}
+                {/* Active Header */}
                 <div className="bg-amber-500/10 p-8 border-b border-amber-500/20 relative overflow-hidden">
                   <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl" />
 

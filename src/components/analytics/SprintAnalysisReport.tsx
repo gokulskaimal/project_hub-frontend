@@ -103,7 +103,7 @@ export default function SprintAnalysisReport({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Main Vector: Burndown */}
+        {/* Burndown Analysis */}
         <div className="lg:col-span-8">
           <ErrorBoundary
             fallback={
@@ -119,7 +119,7 @@ export default function SprintAnalysisReport({
           </ErrorBoundary>
         </div>
 
-        {/* Typology & Composition */}
+        {/* Sprint Breakdown */}
         <div className="lg:col-span-4 grid grid-cols-1 gap-8">
           <ErrorBoundary
             fallback={
@@ -154,7 +154,7 @@ export default function SprintAnalysisReport({
         </div>
       </div>
 
-      {/* Operational Breakdown */}
+      {/* Task Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mt-10">
         {/* Success List */}
         <div className="bg-card rounded-[2.5rem] border border-border shadow-sm p-8 relative overflow-hidden group">

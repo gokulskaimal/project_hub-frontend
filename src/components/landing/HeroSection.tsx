@@ -14,7 +14,7 @@ export default function HeroSection() {
       <div className="container max-w-[1400px] mx-auto px-6 relative z-10 flex flex-col items-center text-center">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-black uppercase tracking-[0.2em] mb-12">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          Production Core Active • v4.2.0
+          Production Ready • v4.2.0
         </div>
 
         <h1 className="text-hero font-black text-foreground mb-8 uppercase italic">

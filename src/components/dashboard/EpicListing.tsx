@@ -132,11 +132,11 @@ export default function EpicListing({
         </div>
         <div className="max-w-md">
           <h3 className="text-foreground font-black text-2xl uppercase tracking-tighter">
-            No <span className="text-primary">Strategic</span> Epics
+            No <span className="text-primary">Project</span> Epics
           </h3>
           <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-3 leading-relaxed opacity-60">
-            Epics represent macro-objectives within the project matrix. Initiate
-            a directive to begin mapping.
+            Epics represent high-level objectives within the project. Create an
+            epic to start tracking progress.
           </p>
         </div>
         {!isReadOnly && (
@@ -145,7 +145,7 @@ export default function EpicListing({
             className="flex items-center gap-3 bg-primary text-primary-foreground px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:opacity-90 transition-all shadow-2xl shadow-primary/20 active:scale-95"
           >
             <Plus size={18} />
-            Manifest New Epic
+            Create New Epic
           </button>
         )}
       </div>
@@ -161,13 +161,13 @@ export default function EpicListing({
               onClick={() => setViewMode("LIST")}
               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center ${viewMode === "LIST" ? "bg-primary text-primary-foreground shadow-xl shadow-primary/10" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <Layers className="w-3.5 h-3.5" /> Spectrum
+              <Layers className="w-3.5 h-3.5" /> Grid
             </button>
             <button
               onClick={() => setViewMode("GANTT")}
               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center ${viewMode === "GANTT" ? "bg-primary text-primary-foreground shadow-xl shadow-primary/10" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <Map className="w-3.5 h-3.5" /> Chronology
+              <Map className="w-3.5 h-3.5" /> Timeline
             </button>
           </div>
         </div>
@@ -248,7 +248,7 @@ export default function EpicListing({
                     <div className="mt-2">
                       <div className="flex items-center justify-between mb-3 px-1">
                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-70">
-                          Objective Saturation
+                          Progress Status
                         </span>
                         <span
                           className={`text-xs font-black ${progress === 100 ? "text-emerald-500" : "text-primary"}`}
@@ -276,7 +276,7 @@ export default function EpicListing({
                         <div className="flex items-center gap-2">
                           <Target size={14} className="text-primary/50" />
                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                            {total} Macro-Directives
+                            {total} Tasks
                           </span>
                         </div>
                       </div>
@@ -284,7 +284,7 @@ export default function EpicListing({
                         <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-xl border border-emerald-500/20 shadow-sm animate-in fade-in zoom-in duration-500">
                           <CheckCircle2 size={12} strokeWidth={3} />
                           <span className="text-[9px] font-black uppercase tracking-[0.1em]">
-                            Target Achieved
+                            Completed
                           </span>
                         </div>
                       )}
@@ -305,7 +305,7 @@ export default function EpicListing({
                         <div className="space-y-4">
                           <div className="flex items-center justify-between mb-2">
                             <h5 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-50">
-                              Sub-Directive Spectrum
+                              Linked Tasks
                             </h5>
                           </div>
 
@@ -313,7 +313,7 @@ export default function EpicListing({
                             <div className="text-center py-12 px-6 border-2 border-dashed border-border/20 rounded-[2rem] bg-secondary/10">
                               <AlertCircle className="w-8 h-8 text-muted-foreground/10 mx-auto mb-3" />
                               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-40">
-                                Zero Signals Linked
+                                No tasks linked
                               </p>
                             </div>
                           ) : (
