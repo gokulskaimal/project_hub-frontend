@@ -125,102 +125,107 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-3 w-80 md:w-[420px] bg-card rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-border/20 z-50 overflow-hidden transform origin-top-right transition-all animate-in zoom-in-95 duration-300 glass-card">
-          <div className="p-6 border-b border-border/10 bg-secondary/20">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-black text-foreground uppercase tracking-[0.3em]">
-                Notifications
-              </h3>
-              {unreadCount > 0 && (
+        <div className="absolute right-0 md:right-[-10px] top-full mt-3 z-50 flex flex-col items-end animate-in fade-in zoom-in-95 duration-300 origin-top-right">
+          {/* Visual Anchor Pointer */}
+          <div className="w-4 h-4 bg-card border-l border-t border-border/20 rotate-45 -mb-[9px] mr-8 z-[51] hidden md:block" />
+
+          <div className="w-[calc(100vw-32px)] sm:w-80 md:w-[420px] bg-card rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-border/20 overflow-hidden glass-card">
+            <div className="p-6 border-b border-border/10 bg-secondary/20">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xs font-black text-foreground uppercase tracking-[0.3em]">
+                  Notifications
+                </h3>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                  >
+                    <Check className="w-3 h-3" /> Mark All Read
+                  </button>
+                )}
+              </div>
+
+              <div className="flex gap-2 bg-background/50 p-1.5 rounded-2xl border border-border/10 shadow-inner">
                 <button
-                  onClick={handleMarkAllRead}
-                  className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                  onClick={() => setActiveTab("unread")}
+                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-500 ${
+                    activeTab === "unread"
+                      ? "bg-primary text-primary-foreground shadow-2xl"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
                 >
-                  <Check className="w-3 h-3" /> Mark All Read
+                  UNREAD ({unreadItems.length})
                 </button>
+                <button
+                  onClick={() => setActiveTab("read")}
+                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-500 ${
+                    activeTab === "read"
+                      ? "bg-primary text-primary-foreground shadow-2xl"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  READ ({readItems.length})
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
+              {displayedItems.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground/30">
+                  <div className="mb-4 flex justify-center">
+                    <div className="p-4 bg-secondary/30 rounded-full border border-border/10">
+                      <Bell size={24} className="opacity-20" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest">
+                    No notifications yet
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border/10">
+                  {displayedItems.map((notification: Notification) => (
+                    <div
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`p-5 hover:bg-secondary/30 transition-all duration-300 flex gap-4 cursor-pointer relative group/item ${!notification.isRead ? "bg-primary/5" : ""}`}
+                    >
+                      {!notification.isRead && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                      )}
+                      <div className="mt-1 shrink-0">
+                        <div
+                          className={`p-2 rounded-xl bg-background shadow-inner border border-border/10 group-hover/item:scale-110 transition-transform`}
+                        >
+                          {getIcon(notification.type)}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 py-0.5">
+                        <p
+                          className={`text-sm tracking-tight ${!notification.isRead ? "font-black text-foreground" : "font-bold text-muted-foreground/70"}`}
+                        >
+                          {notification.title}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground/50 mt-1.5 leading-relaxed line-clamp-2 italic font-medium">
+                          {notification.message}
+                        </p>
+                        <p className="text-[9px] font-black text-border mt-3 uppercase tracking-widest">
+                          {formatTime(notification.createdAt)}
+                        </p>
+                      </div>
+                      {!notification.isRead && (
+                        <button
+                          onClick={(e) => handleMarkRead(notification.id, e)}
+                          className="shrink-0 w-8 h-8 rounded-xl bg-card border border-border/20 text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 flex items-center justify-center self-center shadow-xl opacity-0 group-hover/item:opacity-100"
+                          title="Mark as read"
+                        >
+                          <Check size={14} strokeWidth={3} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-
-            <div className="flex gap-2 bg-background/50 p-1.5 rounded-2xl border border-border/10 shadow-inner">
-              <button
-                onClick={() => setActiveTab("unread")}
-                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-500 ${
-                  activeTab === "unread"
-                    ? "bg-primary text-primary-foreground shadow-2xl"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                }`}
-              >
-                UNREAD ({unreadItems.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("read")}
-                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-500 ${
-                  activeTab === "read"
-                    ? "bg-primary text-primary-foreground shadow-2xl"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                }`}
-              >
-                READ ({readItems.length})
-              </button>
-            </div>
-          </div>
-
-          <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
-            {displayedItems.length === 0 ? (
-              <div className="p-12 text-center text-muted-foreground/30">
-                <div className="mb-4 flex justify-center">
-                  <div className="p-4 bg-secondary/30 rounded-full border border-border/10">
-                    <Bell size={24} className="opacity-20" />
-                  </div>
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-widest">
-                  No notifications yet
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/10">
-                {displayedItems.map((notification: Notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`p-5 hover:bg-secondary/30 transition-all duration-300 flex gap-4 cursor-pointer relative group/item ${!notification.isRead ? "bg-primary/5" : ""}`}
-                  >
-                    {!notification.isRead && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
-                    )}
-                    <div className="mt-1 shrink-0">
-                      <div
-                        className={`p-2 rounded-xl bg-background shadow-inner border border-border/10 group-hover/item:scale-110 transition-transform`}
-                      >
-                        {getIcon(notification.type)}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0 py-0.5">
-                      <p
-                        className={`text-sm tracking-tight ${!notification.isRead ? "font-black text-foreground" : "font-bold text-muted-foreground/70"}`}
-                      >
-                        {notification.title}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground/50 mt-1.5 leading-relaxed line-clamp-2 italic font-medium">
-                        {notification.message}
-                      </p>
-                      <p className="text-[9px] font-black text-border mt-3 uppercase tracking-widest">
-                        {formatTime(notification.createdAt)}
-                      </p>
-                    </div>
-                    {!notification.isRead && (
-                      <button
-                        onClick={(e) => handleMarkRead(notification.id, e)}
-                        className="shrink-0 w-8 h-8 rounded-xl bg-card border border-border/20 text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 flex items-center justify-center self-center shadow-xl opacity-0 group-hover/item:opacity-100"
-                        title="Mark as read"
-                      >
-                        <Check size={14} strokeWidth={3} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}
