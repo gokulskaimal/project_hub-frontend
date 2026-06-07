@@ -34,13 +34,13 @@ export default function Header() {
 
           <nav className="hidden lg:flex items-center gap-10">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item}
                 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-primary transition-all duration-300"
-                href={`#${item.toLowerCase()}`}
+                href={`/#${item.toLowerCase()}`}
               >
                 {item}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -80,14 +80,14 @@ export default function Header() {
           >
             <div className="flex flex-col gap-4 p-6">
               {navItems.map((item) => (
-                <a
+                <Link
                   key={item}
-                  href={`#${item.toLowerCase()}`}
+                  href={`/#${item.toLowerCase()}`}
                   onClick={() => setIsOpen(false)}
                   className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em] hover:text-primary py-2 transition-all"
                 >
                   {item}
-                </a>
+                </Link>
               ))}
               <hr className="border-white/5 my-2" />
               <div className="flex flex-col gap-4">

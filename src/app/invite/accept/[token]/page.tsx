@@ -47,11 +47,28 @@ export default function AcceptInvitePage() {
       z
         .object({
           token: z.string().min(10, "Invalid invite token"),
-          firstName: z.string().min(2, "First name too short"),
-          lastName: z.string().min(2, "Last name too short"),
-          password: z.string().min(8, "Password must be at least 8 characters"),
-          confirmPassword: z.string(),
+          firstName: z.string().trim().min(2, "First name too short"),
+          lastName: z.string().trim().min(2, "Last name too short"),
+          password: z
+            .string()
+            .trim()
+            .min(8, "Password must be at least 8 characters")
+            .regex(
+              /[a-z]/,
+              "Password must contain at least one lowercase letter",
+            )
+            .regex(
+              /[A-Z]/,
+              "Password must contain at least one uppercase letter",
+            )
+            .regex(/[0-9]/, "Password must contain at least one number")
+            .regex(
+              /[!@#$%^&*(),.?":{}|<>]/,
+              "Password must contain at least one special character",
+            ),
+          confirmPassword: z.string().trim(),
         })
+
         .refine((d) => d.password === d.confirmPassword, {
           message: "Passwords do not match",
           path: ["confirmPassword"],

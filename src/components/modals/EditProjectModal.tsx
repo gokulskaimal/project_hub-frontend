@@ -41,6 +41,8 @@ export default function EditProjectModal({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [bulkEmails, setBulkEmails] = useState("");
@@ -113,6 +115,7 @@ export default function EditProjectModal({
           : "",
       );
       setTeamMemberIds(project.teamMemberIds || []);
+      setTags(project.tags || []);
     }
   }, [project, isOpen]);
 
@@ -130,6 +133,7 @@ export default function EditProjectModal({
           startDate: startDate ? new Date(startDate).toISOString() : undefined,
           endDate: endDate ? new Date(endDate).toISOString() : undefined,
           teamMemberIds,
+          tags,
         },
       }).unwrap();
       notifier.success(MESSAGES.PROJECTS.UPDATE_SUCCESS);
@@ -341,6 +345,65 @@ export default function EditProjectModal({
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <label className="form-label uppercase tracking-[0.2em]">
+                        Project Tags
+                      </label>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest border border-primary/20"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTags((prev) => prev.filter((t) => t !== tag))
+                              }
+                              className="hover:text-rose-500 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          placeholder="ADD TAGS..."
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (
+                                tagInput.trim() &&
+                                !tags.includes(tagInput.trim())
+                              ) {
+                                setTags([...tags, tagInput.trim()]);
+                                setTagInput("");
+                              }
+                            }
+                          }}
+                          className="form-input text-xs uppercase"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              tagInput.trim() &&
+                              !tags.includes(tagInput.trim())
+                            ) {
+                              setTags([...tags, tagInput.trim()]);
+                              setTagInput("");
+                            }
+                          }}
+                          className="px-6 bg-secondary text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary/80 transition-all"
+                        >
+                          Add
+                        </button>
                       </div>
                     </div>
 

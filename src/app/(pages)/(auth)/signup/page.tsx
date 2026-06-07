@@ -12,6 +12,7 @@ import {
   setPassword,
   setFirstName,
   setLastName,
+  restoreSignupState,
 } from "@/features/auth/authSlice";
 import {
   useRegisterManagerMutation,
@@ -58,6 +59,7 @@ export default function SignUpPage() {
     signupStep,
     error,
     otpResendAvailableAt,
+    signupToken,
   } = useSelector(selectSignupData);
   const loading =
     registerLoading ||
@@ -65,6 +67,10 @@ export default function SignUpPage() {
     verifyLoading ||
     completeLoading ||
     googleLoading;
+
+  useEffect(() => {
+    dispatch(restoreSignupState());
+  }, [dispatch]);
 
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
@@ -111,7 +117,8 @@ export default function SignUpPage() {
       organizationName: z
         .string()
         .trim()
-        .min(2, "Organization name is required"),
+        .min(2, "Organization name is required")
+        .regex(/[a-zA-Z0-9]/, "Must contain at least one letter or number"),
     });
     const parsed = schema.safeParse({ email, organizationName: name });
     if (!parsed.success) {
@@ -195,12 +202,27 @@ export default function SignUpPage() {
           .trim()
           .min(1, "Email is required")
           .email("Enter a valid email"),
-        firstName: z.string().trim().min(2, "First name too short"),
-        lastName: z.string().trim().min(2, "Last name too short"),
+        firstName: z
+          .string()
+          .trim()
+          .min(2, "First name too short")
+          .regex(/[a-zA-Z]/, "Must contain at least one letter"),
+        lastName: z
+          .string()
+          .trim()
+          .min(2, "Last name too short")
+          .regex(/[a-zA-Z]/, "Must contain at least one letter"),
         password: z
           .string()
           .trim()
-          .min(8, "Password must be at least 8 characters"),
+          .min(8, "Password must be at least 8 characters")
+          .refine((val) => /[a-z]/.test(val), "Must contain lowercase")
+          .refine((val) => /[A-Z]/.test(val), "Must contain uppercase")
+          .refine((val) => /\d/.test(val), "Must contain number")
+          .refine(
+            (val) => /[!@#$%^&*(),.?":{}|<>]/.test(val),
+            "Must contain special character",
+          ),
         confirmPassword: z
           .string()
           .trim()
@@ -235,7 +257,10 @@ export default function SignUpPage() {
         firstName: parsed.data.firstName,
         lastName: parsed.data.lastName,
         password: parsed.data.password,
+        signupToken,
       }).unwrap();
+
+      sessionStorage.removeItem("signupState");
       notifier.success(MESSAGES.AUTH.SIGNUP_SUCCESS);
       router.push("/login");
     } catch (err: unknown) {

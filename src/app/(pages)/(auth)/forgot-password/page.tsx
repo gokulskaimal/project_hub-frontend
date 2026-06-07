@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
     try {
       await requestReset({ email }).unwrap();
       setIsSubmitted(true);
-      notifier.success("Reset link sent successfully");
+      notifier.success("Reset request proccessed");
     } catch (err: unknown) {
       notifier.error(err, "Failed to send reset link. Please try again.");
     }

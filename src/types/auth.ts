@@ -66,6 +66,7 @@ export interface CompleteSignupPayload {
   lastName: string;
   password?: string;
   organizationName?: string;
+  signupToken: string | null;
 }
 
 export interface AcceptInvitePayload {

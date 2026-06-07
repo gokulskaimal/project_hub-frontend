@@ -98,7 +98,24 @@ export default function ManagerDashboardPage() {
     limit: 12,
   });
 
-  const { socket } = useSocket();
+  const { socket, syncTimestamp } = useSocket();
+
+  useEffect(() => {
+    if (syncTimestamp > 0) {
+      refetchProjects();
+      refetchStats();
+      refetchAnalytics();
+      refetchMembers();
+      refetchInvites();
+    }
+  }, [
+    syncTimestamp,
+    refetchProjects,
+    refetchStats,
+    refetchAnalytics,
+    refetchMembers,
+    refetchInvites,
+  ]);
 
   useEffect(() => {
     if (socket) {
@@ -146,7 +163,6 @@ export default function ManagerDashboardPage() {
     refetchStats,
     refetchAnalytics,
   ]);
-
   return (
     <DashboardLayout title="Manager Dashboard">
       <motion.div
@@ -183,6 +199,33 @@ export default function ManagerDashboardPage() {
             }
           />
         </motion.div>
+
+        {organization?.subscriptionStatus === "EXPIRED" && (
+          <motion.div variants={item} className="px-1">
+            <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-rose-500/20 rounded-xl">
+                  <AlertCircle className="w-6 h-6 text-rose-500" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-rose-500 uppercase tracking-widest">
+                    Subscription Expired
+                  </h3>
+                  <p className="text-[11px] font-black text-rose-500/70 uppercase tracking-widest mt-1">
+                    Your plan has expired. Please renew to continue using
+                    premium features and creating projects.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/manager/settings/billing"
+                className="shrink-0 bg-rose-500 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-colors shadow-lg shadow-rose-500/20"
+              >
+                Renew Plan
+              </Link>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div variants={item}>
           <div className="flex items-center justify-between mb-6 px-1">

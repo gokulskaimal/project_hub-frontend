@@ -31,7 +31,14 @@ export default function UserModal({
   useEffect(() => {
     if (isOpen) {
       loadProfile();
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
     }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [isOpen, loadProfile]);
 
   if (!isOpen) return null;

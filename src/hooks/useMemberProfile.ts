@@ -107,8 +107,8 @@ export function useMemberProfile(token: string | null) {
   const changePassword = useCallback(async () => {
     const payload = {
       currentPassword: passwords.current,
-      newPassword: passwords.new,
-      confirmNewPassword: passwords.confirm,
+      newPassword: passwords.new.trim(),
+      confirmNewPassword: passwords.confirm.trim(),
     };
 
     const parsed = passwordChangeSchema.safeParse(payload);
