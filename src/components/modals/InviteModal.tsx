@@ -12,10 +12,14 @@ import {
   UserPlus,
   ShieldCheck,
   Clock,
+  AlertCircle,
 } from "lucide-react";
 import {
   useSendInviteMutation,
   useSendInvitationsMutation,
+  useGetManagerPlansQuery,
+  useGetManagerOrganizationQuery,
+  useGetManagerDashboardStatsQuery,
 } from "@/store/api/managerApiSlice";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
@@ -50,6 +54,26 @@ export default function InviteModal({
   const [sendInvite, { isLoading: singleLoading }] = useSendInviteMutation();
   const [sendInvitations, { isLoading: bulkLoading }] =
     useSendInvitationsMutation();
+
+  const { data: plans } = useGetManagerPlansQuery(undefined, { skip: !isOpen });
+  const { data: org } = useGetManagerOrganizationQuery(undefined, {
+    skip: !isOpen,
+  });
+  const { data: dashboardStats } = useGetManagerDashboardStatsQuery(undefined, {
+    skip: !isOpen,
+  });
+
+  const activePlan = plans?.find((p) => p.id === org?.planId);
+  const isLimitReached =
+    dashboardStats && org
+      ? org.subscriptionStatus === "EXPIRED" ||
+        org.subscriptionStatus === "INACTIVE" ||
+        !org.planId ||
+        !activePlan ||
+        (activePlan.limits?.members !== -1 &&
+          dashboardStats.members.total + dashboardStats.invites.pending >=
+            (activePlan.limits?.members || 0))
+      : false;
 
   const isLoading = singleLoading || bulkLoading;
 
@@ -187,109 +211,92 @@ export default function InviteModal({
                     </button>
                   </div>
 
-                  <div className="flex p-1 bg-secondary/30 rounded-xl mb-8 w-fit border border-border/50">
-                    <button
-                      onClick={() => setIsBulkMode(false)}
-                      className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
-                        !isBulkMode
-                          ? "bg-primary text-white shadow-lg shadow-primary/20"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Single Invite
-                    </button>
-                    <button
-                      onClick={() => setIsBulkMode(true)}
-                      className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
-                        isBulkMode
-                          ? "bg-primary text-white shadow-lg shadow-primary/20"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Bulk Invite
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {isBulkMode ? (
-                      <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-                        <div className="space-y-2">
-                          <label className="form-label !flex items-center gap-2">
-                            <Mail className="w-3.5 h-3.5 text-primary" />
-                            <span>Emails</span>
-                          </label>
-                          <textarea
-                            value={bulkEmails}
-                            onChange={(e) => setBulkEmails(e.target.value)}
-                            placeholder="jane@example.com, john@example.com..."
-                            rows={8}
-                            className="form-input !text-xs !font-black uppercase tracking-widest placeholder:opacity-40"
-                          />
-                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 italic">
-                            * Comma or Line separated addresses
+                  <div className="min-h-[300px] md:min-h-[400px]">
+                    {isLimitReached ? (
+                      <div className="h-full flex flex-col items-center justify-center space-y-6 animate-in zoom-in-95 duration-300 py-12">
+                        <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center">
+                          <AlertCircle className="w-10 h-10 text-rose-500" />
+                        </div>
+                        <div className="text-center space-y-2">
+                          <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">
+                            {!org?.planId ||
+                            org?.subscriptionStatus !== "ACTIVE"
+                              ? "Plan Required"
+                              : "Limit Reached"}
+                          </h3>
+                          <p className="text-[12px] font-black text-muted-foreground uppercase tracking-widest max-w-sm mx-auto leading-relaxed">
+                            {!org?.planId ||
+                            org?.subscriptionStatus !== "ACTIVE"
+                              ? "You need an active subscription plan to invite team members."
+                              : "Your organization has reached the maximum number of members allowed on your current plan."}
                           </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <label className="form-label !flex items-center gap-2">
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>Roles</span>
-                            </label>
-                            <select
-                              value={bulkRole}
-                              onChange={(e) => setBulkRole(e.target.value)}
-                              className="form-select"
-                            >
-                              <option
-                                value={USER_ROLES.TEAM_MEMBER}
-                                className="bg-card text-foreground"
-                              >
-                                MEMBER
-                              </option>
-                              <option
-                                value={USER_ROLES.ORG_MANAGER}
-                                className="bg-card text-foreground"
-                              >
-                                MANAGER
-                              </option>
-                            </select>
-                          </div>
-                        </div>
+                        <button
+                          onClick={() => {
+                            onClose();
+                            window.location.href = "/manager/settings/billing";
+                          }}
+                          className="mt-4 bg-primary text-white px-8 py-4 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all"
+                        >
+                          Upgrade Plan
+                        </button>
                       </div>
                     ) : (
-                      <div className="space-y-6">
-                        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                          {invites.map((invite, index) => (
-                            <div
-                              key={index}
-                              className="group flex gap-4 items-start animate-in fade-in slide-in-from-bottom-2 duration-200"
-                            >
-                              <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
-                                <div className="md:col-span-6 space-y-2">
-                                  <label className="form-label !flex items-center gap-2">
-                                    <Mail className="w-3.5 h-3.5 text-primary" />
-                                    <span>Email Address</span>
-                                  </label>
-                                  <input
-                                    type="email"
-                                    required
-                                    value={invite.email}
-                                    onChange={(e) =>
-                                      updateRow(index, "email", e.target.value)
-                                    }
-                                    placeholder="jane@example.com"
-                                    className="form-input"
-                                  />
-                                </div>
-                                <div className="md:col-span-3 space-y-2">
+                      <>
+                        <div className="flex p-1 bg-secondary/30 rounded-xl mb-8 w-fit border border-border/50">
+                          <button
+                            onClick={() => setIsBulkMode(false)}
+                            className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                              !isBulkMode
+                                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            Single Invite
+                          </button>
+                          <button
+                            onClick={() => setIsBulkMode(true)}
+                            className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                              isBulkMode
+                                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            Bulk Invite
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                          {isBulkMode ? (
+                            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                              <div className="space-y-2">
+                                <label className="form-label !flex items-center gap-2">
+                                  <Mail className="w-3.5 h-3.5 text-primary" />
+                                  <span>Emails</span>
+                                </label>
+                                <textarea
+                                  value={bulkEmails}
+                                  onChange={(e) =>
+                                    setBulkEmails(e.target.value)
+                                  }
+                                  placeholder="jane@example.com, john@example.com..."
+                                  rows={8}
+                                  className="form-input !text-xs !font-black uppercase tracking-widest placeholder:opacity-40"
+                                />
+                                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 italic">
+                                  * Comma or Line separated addresses
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
                                   <label className="form-label !flex items-center gap-2">
                                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                                     <span>Roles</span>
                                   </label>
                                   <select
-                                    value={invite.role}
+                                    value={bulkRole}
                                     onChange={(e) =>
-                                      updateRow(index, "role", e.target.value)
+                                      setBulkRole(e.target.value)
                                     }
                                     className="form-select"
                                   >
@@ -307,88 +314,156 @@ export default function InviteModal({
                                     </option>
                                   </select>
                                 </div>
-                                <div className="md:col-span-3 space-y-2">
-                                  <label className="form-label !flex items-center gap-2">
-                                    <Clock className="w-3.5 h-3.5 text-purple-500" />
-                                    <span>Link Expires In</span>
-                                  </label>
-                                  <select
-                                    value={invite.expiry}
-                                    onChange={(e) =>
-                                      updateRow(index, "expiry", e.target.value)
-                                    }
-                                    className="form-select"
-                                  >
-                                    <option
-                                      value="7 Days"
-                                      className="bg-card text-foreground"
-                                    >
-                                      7 DAYS
-                                    </option>
-                                    <option
-                                      value="14 Days"
-                                      className="bg-card text-foreground"
-                                    >
-                                      14 DAYS
-                                    </option>
-                                    <option
-                                      value="30 Days"
-                                      className="bg-card text-foreground"
-                                    >
-                                      30 DAYS
-                                    </option>
-                                  </select>
-                                </div>
                               </div>
-                              {invites.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeRow(index)}
-                                  className="mt-8 p-3 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
-                                >
-                                  <Trash2 className="w-5 h-5" />
-                                </button>
-                              )}
                             </div>
-                          ))}
-                        </div>
+                          ) : (
+                            <div className="space-y-6">
+                              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {invites.map((invite, index) => (
+                                  <div
+                                    key={index}
+                                    className="group flex gap-4 items-start animate-in fade-in slide-in-from-bottom-2 duration-200"
+                                  >
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
+                                      <div className="md:col-span-6 space-y-2">
+                                        <label className="form-label !flex items-center gap-2">
+                                          <Mail className="w-3.5 h-3.5 text-primary" />
+                                          <span>Email Address</span>
+                                        </label>
+                                        <input
+                                          type="email"
+                                          required
+                                          value={invite.email}
+                                          onChange={(e) =>
+                                            updateRow(
+                                              index,
+                                              "email",
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder="jane@example.com"
+                                          className="form-input"
+                                        />
+                                      </div>
+                                      <div className="md:col-span-3 space-y-2">
+                                        <label className="form-label !flex items-center gap-2">
+                                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                          <span>Roles</span>
+                                        </label>
+                                        <select
+                                          value={invite.role}
+                                          onChange={(e) =>
+                                            updateRow(
+                                              index,
+                                              "role",
+                                              e.target.value,
+                                            )
+                                          }
+                                          className="form-select"
+                                        >
+                                          <option
+                                            value={USER_ROLES.TEAM_MEMBER}
+                                            className="bg-card text-foreground"
+                                          >
+                                            MEMBER
+                                          </option>
+                                          <option
+                                            value={USER_ROLES.ORG_MANAGER}
+                                            className="bg-card text-foreground"
+                                          >
+                                            MANAGER
+                                          </option>
+                                        </select>
+                                      </div>
+                                      <div className="md:col-span-3 space-y-2">
+                                        <label className="form-label !flex items-center gap-2">
+                                          <Clock className="w-3.5 h-3.5 text-purple-500" />
+                                          <span>Link Expires In</span>
+                                        </label>
+                                        <select
+                                          value={invite.expiry}
+                                          onChange={(e) =>
+                                            updateRow(
+                                              index,
+                                              "expiry",
+                                              e.target.value,
+                                            )
+                                          }
+                                          className="form-select"
+                                        >
+                                          <option
+                                            value="7 Days"
+                                            className="bg-card text-foreground"
+                                          >
+                                            7 DAYS
+                                          </option>
+                                          <option
+                                            value="14 Days"
+                                            className="bg-card text-foreground"
+                                          >
+                                            14 DAYS
+                                          </option>
+                                          <option
+                                            value="30 Days"
+                                            className="bg-card text-foreground"
+                                          >
+                                            30 DAYS
+                                          </option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                    {invites.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => removeRow(index)}
+                                        className="mt-8 p-3 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                      >
+                                        <Trash2 className="w-5 h-5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
 
-                        <button
-                          type="button"
-                          onClick={addRow}
-                          className="inline-flex items-center gap-2 text-[10px] font-black text-primary hover:text-primary/80 bg-primary/10 px-6 py-2.5 rounded-xl transition-all uppercase tracking-widest"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add Email
-                        </button>
-                      </div>
+                              <button
+                                type="button"
+                                onClick={addRow}
+                                className="inline-flex items-center gap-2 text-[10px] font-black text-primary hover:text-primary/80 bg-primary/10 px-6 py-2.5 rounded-xl transition-all uppercase tracking-widest"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add Email
+                              </button>
+                            </div>
+                          )}
+
+                          <div className="bg-secondary/10 -mx-10 -mb-6 px-10 py-8 mt-10 flex flex-row-reverse gap-4 border-t border-border/50">
+                            <button
+                              type="submit"
+                              disabled={isLoading}
+                              className="px-10 py-3.5 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50 min-w-[200px] flex items-center justify-center gap-2"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                              ) : (
+                                <>
+                                  <Send className="w-4 h-4" />
+                                  Send Invite
+                                </>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              className="px-10 py-3.5 border border-border text-foreground rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-secondary transition-all flex items-center justify-center"
+                              onClick={onClose}
+                              disabled={isLoading}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </>
                     )}
-
-                    <div className="bg-secondary/10 -mx-10 -mb-6 px-10 py-8 mt-10 flex flex-row-reverse gap-4 border-t border-border/50">
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="px-10 py-3.5 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all disabled:opacity-50 min-w-[200px] flex items-center justify-center gap-2"
-                      >
-                        {isLoading ? (
-                          <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4" />
-                            Send Invite
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className="px-10 py-3.5 border border-border text-foreground rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-secondary transition-all flex items-center justify-center"
-                        onClick={onClose}
-                        disabled={isLoading}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+                  </div>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

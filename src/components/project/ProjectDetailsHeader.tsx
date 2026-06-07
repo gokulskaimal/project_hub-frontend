@@ -53,6 +53,14 @@ export default function ProjectDetailsHeader({
           <div>
             <h1 className="text-2xl font-black text-foreground tracking-tighter flex items-center gap-3">
               {project?.name}
+              {project?.tags?.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-[9px] font-black uppercase tracking-widest border border-primary/20"
+                >
+                  {tag}
+                </span>
+              ))}
             </h1>
             <p className="text-xs font-medium text-muted-foreground mt-1 max-w-2xl line-clamp-1">
               {project?.description ||

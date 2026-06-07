@@ -204,11 +204,19 @@ api.interceptors.response.use(
 
       // Handle JWT token expiration
       if (statusCode === 401) {
-        // Clear localStorage
-        if (
+        const publicAuthPaths = [
+          "/login",
+          "/verify-otp",
+          "/register-manager",
+          "/complete-signup",
+          "/send-otp",
+        ];
+        const isPublicPath =
           typeof window !== "undefined" &&
-          !window.location.pathname.includes("/login")
-        ) {
+          publicAuthPaths.some((path) =>
+            window.location.pathname.includes(path),
+          );
+        if (!isPublicPath) {
           if (config.url?.includes(API_ROUTES.AUTH.REFRESH)) {
             return Promise.reject(error);
           }
@@ -296,9 +304,51 @@ export const extractErrorMessage = (
   defaultMessage: string = "An unexpected error occurred",
 ): string => {
   const err = error as {
-    data?: { error?: { message?: string }; message?: string };
+    data?: {
+      error?: {
+        message?: string;
+        details?:
+          | Record<string, string | string[]>
+          | Array<{ message?: string } | string>;
+      };
+      message?: string;
+      details?:
+        | Record<string, string | string[]>
+        | Array<{ message?: string } | string>;
+    };
     message?: string;
   };
+
+  const data = err?.data;
+
+  // Check if we have specific field details from the server validation
+  const details = data?.error?.details || data?.details;
+  if (details && typeof details === "object" && !Array.isArray(details)) {
+    // If it's a field map from Zod, extract the first error message
+    const record = details as Record<string, string | string[]>;
+    const firstKey = Object.keys(record)[0];
+    if (
+      firstKey &&
+      Array.isArray(record[firstKey]) &&
+      record[firstKey].length > 0
+    ) {
+      // e.g., "password: Must contain lowercase"
+      return `${firstKey.charAt(0).toUpperCase() + firstKey.slice(1)}: ${record[firstKey][0]}`;
+    } else if (firstKey && typeof record[firstKey] === "string") {
+      return `${firstKey.charAt(0).toUpperCase() + firstKey.slice(1)}: ${record[firstKey]}`;
+    }
+  } else if (Array.isArray(details) && details.length > 0) {
+    const arr = details as Array<{ message?: string } | string>;
+    const firstItem = arr[0];
+    if (
+      typeof firstItem === "object" &&
+      firstItem !== null &&
+      "message" in firstItem &&
+      firstItem.message
+    )
+      return firstItem.message;
+    if (typeof firstItem === "string") return firstItem;
+  }
   return (
     err?.data?.error?.message ||
     err?.data?.message ||

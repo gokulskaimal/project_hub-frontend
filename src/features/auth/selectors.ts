@@ -14,6 +14,7 @@ export const selectSignupData = createSelector(
     error,
     loading,
     otpResendAvailableAt,
+    signupToken,
   }) => ({
     email,
     otp,
@@ -25,5 +26,6 @@ export const selectSignupData = createSelector(
     error,
     loading,
     otpResendAvailableAt,
+    signupToken,
   }),
 );

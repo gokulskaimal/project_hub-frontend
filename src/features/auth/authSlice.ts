@@ -19,6 +19,7 @@ interface AuthState {
   accessToken: string | null;
   role: string | null;
   user: UserProfile | null;
+  signupToken: string | null;
 }
 
 const baseInitialState: AuthState = {
@@ -36,6 +37,7 @@ const baseInitialState: AuthState = {
   accessToken: null,
   role: null,
   user: null,
+  signupToken: null,
 };
 
 const initialState: AuthState = { ...baseInitialState };
@@ -73,6 +75,20 @@ const authSlice = createSlice({
     },
     setSignupStep(state, action: PayloadAction<number>) {
       state.signupStep = action.payload;
+    },
+    setSignupToken(state, action: PayloadAction<string | null>) {
+      state.signupToken = action.payload;
+    },
+    restoreSignupState(state) {
+      if (typeof window !== "undefined") {
+        const saved = sessionStorage.getItem("signupState");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state.signupStep = parsed.signupStep;
+          state.email = parsed.email;
+          state.signupToken = parsed.signupToken;
+        }
+      }
     },
     hydrateFromStorage(state) {
       try {
@@ -176,11 +192,33 @@ const authSlice = createSlice({
           state.error = null;
         },
       )
-      .addMatcher(authApiSlice.endpoints.verifyOtp.matchFulfilled, (state) => {
-        state.loading = false;
-        state.signupStep = 3;
-        state.otpResendAvailableAt = null;
-      })
+      .addMatcher(
+        authApiSlice.endpoints.verifyOtp.matchFulfilled,
+        (state, action) => {
+          state.loading = false;
+          state.signupStep = 3;
+          state.otpResendAvailableAt = null;
+
+          const payload = action.payload as {
+            data?: { signupToken?: string };
+            signupToken?: string;
+          };
+          const token =
+            payload.data?.signupToken || payload.signupToken || null;
+          state.signupToken = token;
+
+          if (token && typeof window !== "undefined") {
+            sessionStorage.setItem(
+              "signupState",
+              JSON.stringify({
+                signupStep: 3,
+                email: state.email,
+                signupToken: token,
+              }),
+            );
+          }
+        },
+      )
       .addMatcher(
         authApiSlice.endpoints.registerManager.matchFulfilled,
         (state, action) => {
@@ -203,5 +241,7 @@ export const {
   setFirstName,
   setLastName,
   hydrateFromStorage,
+  setSignupToken,
+  restoreSignupState,
 } = authSlice.actions;
 export default authSlice.reducer;

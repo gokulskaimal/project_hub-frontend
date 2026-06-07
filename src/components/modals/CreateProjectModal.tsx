@@ -12,10 +12,14 @@ import {
   Target,
   Check,
   Briefcase,
+  AlertCircle,
 } from "lucide-react";
 import {
   useCreateProjectMutation,
   useGetManagerMembersQuery,
+  useGetManagerPlansQuery,
+  useGetManagerOrganizationQuery,
+  useGetManagerDashboardStatsQuery,
 } from "@/store/api/managerApiSlice";
 import { Input } from "@/components/ui/Input";
 import { Project } from "@/types/project";
@@ -51,6 +55,24 @@ export default function CreateProjectModal({
   });
 
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
+  const { data: plans } = useGetManagerPlansQuery(undefined, { skip: !isOpen });
+  const { data: org } = useGetManagerOrganizationQuery(undefined, {
+    skip: !isOpen,
+  });
+  const { data: dashboardStats } = useGetManagerDashboardStatsQuery(undefined, {
+    skip: !isOpen,
+  });
+
+  const activePlan = plans?.find((p) => p.id === org?.planId);
+  const isLimitReached =
+    dashboardStats && org
+      ? org.subscriptionStatus === "EXPIRED" ||
+        org.subscriptionStatus === "INACTIVE" ||
+        !org.planId ||
+        !activePlan ||
+        dashboardStats.projects.total >= (activePlan.limits?.projects || 0)
+      : false;
+
   const { data: membersData = { items: [], total: 0 } } =
     useGetManagerMembersQuery(
       { page: 1, limit: 1000 },
@@ -180,6 +202,17 @@ export default function CreateProjectModal({
   };
 
   const handleSubmit = async () => {
+    if (dashboardStats && plans && org) {
+      const activePlan = plans.find((p) => p.id === org.planId);
+      const projectLimit = activePlan?.limits?.projects || 1;
+      if (dashboardStats.projects.total >= projectLimit) {
+        notifier.error(
+          null,
+          "Project Limit Reached. Please upgrade your plan.",
+        );
+        return;
+      }
+    }
     try {
       await createProject(formData).unwrap();
       notifier.success(MESSAGES.PROJECTS.CREATE_SUCCESS);
@@ -269,319 +302,361 @@ export default function CreateProjectModal({
                   </div>
 
                   <div className="min-h-[300px] md:min-h-[400px]">
-                    {step === 1 && (
-                      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <Input
-                          label="Project Name"
-                          placeholder="My Awesome Project"
-                          required
-                          value={formData.name}
-                          onChange={(e) =>
-                            setFormData({ ...formData, name: e.target.value })
-                          }
-                          labelClassName="uppercase tracking-[0.2em]"
-                        />
-                        <div className="space-y-2">
-                          <label className="form-label uppercase tracking-[0.2em]">
-                            Project Description
-                          </label>
-                          <textarea
-                            rows={4}
-                            placeholder="Add a description..."
-                            value={formData.description}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                description: e.target.value,
-                              })
-                            }
-                            className="form-input min-h-[120px] resize-none"
-                          />
+                    {isLimitReached ? (
+                      <div className="h-full flex flex-col items-center justify-center space-y-6 animate-in zoom-in-95 duration-300 py-12">
+                        <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center">
+                          <AlertCircle className="w-10 h-10 text-rose-500" />
                         </div>
+                        <div className="text-center space-y-2">
+                          <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">
+                            {!org?.planId ||
+                            org?.subscriptionStatus !== "ACTIVE"
+                              ? "Plan Required"
+                              : "Limit Reached"}
+                          </h3>
+                          <p className="text-[12px] font-black text-muted-foreground uppercase tracking-widest max-w-sm mx-auto leading-relaxed">
+                            {!org?.planId ||
+                            org?.subscriptionStatus !== "ACTIVE"
+                              ? "You need an active subscription plan to create projects."
+                              : "Your organization has reached the maximum number of projects allowed on your current plan."}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            onClose();
+                            window.location.href = "/manager/settings/billing";
+                          }}
+                          className="mt-4 bg-primary text-white px-8 py-4 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all"
+                        >
+                          Upgrade Plan
+                        </button>
                       </div>
-                    )}
-
-                    {step === 2 && (
-                      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="grid grid-cols-2 gap-6">
-                          <Input
-                            label="Start Date"
-                            type="date"
-                            required
-                            value={formData.startDate}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                startDate: e.target.value,
-                              })
-                            }
-                            labelClassName="uppercase tracking-[0.2em]"
-                          />
-                          <Input
-                            label="End Date"
-                            type="date"
-                            required
-                            value={formData.endDate}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                endDate: e.target.value,
-                              })
-                            }
-                            labelClassName="uppercase tracking-[0.2em]"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <label className="form-label uppercase tracking-[0.2em]">
-                              Priority
-                            </label>
-                            <select
-                              value={formData.priority}
+                    ) : (
+                      <>
+                        {step === 1 && (
+                          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <Input
+                              label="Project Name"
+                              placeholder="My Awesome Project"
+                              required
+                              value={formData.name}
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
-                                  priority: e.target
-                                    .value as Project["priority"],
+                                  name: e.target.value,
                                 })
                               }
-                              className="form-select"
-                            >
-                              <option value="LOW">LOW 🟢</option>
-                              <option value="MEDIUM">MEDIUM 🟡</option>
-                              <option value="HIGH">HIGH 🔴</option>
-                              <option value="CRITICAL">CRITICAL 🚨</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="form-label uppercase tracking-[0.2em]">
-                              Project Status
-                            </label>
-                            <select
-                              value={formData.status}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  status: e.target.value as Project["status"],
-                                })
-                              }
-                              className="form-select"
-                            >
-                              <option value="PLANNING">PLANNING 📝</option>
-                              <option value="ACTIVE">ACTIVE 🚀</option>
-                              <option value="ON_HOLD">ON HOLD ⏸️</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <label className="form-label">Project Tags</label>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            {formData.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest border border-primary/20"
-                              >
-                                {tag}
-                                <button
-                                  onClick={() => removeTag(tag)}
-                                  className="hover:text-rose-500 transition-colors"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                          <div className="flex gap-2">
-                            <input
-                              placeholder="ADD TAGS..."
-                              value={tagInput}
-                              onChange={(e) => setTagInput(e.target.value)}
-                              onKeyDown={(e) =>
-                                e.key === "Enter" &&
-                                (e.preventDefault(), addTag())
-                              }
-                              className="form-input"
+                              labelClassName="uppercase tracking-[0.2em]"
                             />
-                            <button
-                              type="button"
-                              onClick={addTag}
-                              className="px-6 bg-secondary text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary/80 transition-all"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {step === 3 && (
-                      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                            <input
-                              placeholder="SEARCH TEAM MEMBERS..."
-                              className="form-input flex-1"
-                              value={memberSearch}
-                              onChange={(e) => setMemberSearch(e.target.value)}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowBulkAdd(!showBulkAdd)}
-                              className={`p-3 rounded-xl border transition-all ${
-                                showBulkAdd
-                                  ? "bg-primary/20 border-primary text-primary"
-                                  : "border-border text-muted-foreground hover:text-primary"
-                              }`}
-                            >
-                              <Target className="w-5 h-5" />
-                            </button>
-                          </div>
-
-                          {showBulkAdd && (
-                            <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
-                              <label className="text-[10px] font-black text-primary uppercase tracking-widest">
-                                Add many emails
+                            <div className="space-y-2">
+                              <label className="form-label uppercase tracking-[0.2em]">
+                                Project Description
                               </label>
                               <textarea
-                                rows={3}
-                                className="form-input !text-xs !bg-card"
-                                placeholder="EMAILS SEPARATED BY COMMAS..."
-                                value={bulkEmails}
-                                onChange={(e) => setBulkEmails(e.target.value)}
+                                rows={4}
+                                placeholder="Add a description..."
+                                value={formData.description}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    description: e.target.value,
+                                  })
+                                }
+                                className="form-input min-h-[120px] resize-none"
                               />
-                              <div className="flex justify-end">
+                            </div>
+                          </div>
+                        )}
+
+                        {step === 2 && (
+                          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <div className="grid grid-cols-2 gap-6">
+                              <Input
+                                label="Start Date"
+                                type="date"
+                                required
+                                value={formData.startDate}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    startDate: e.target.value,
+                                  })
+                                }
+                                labelClassName="uppercase tracking-[0.2em]"
+                              />
+                              <Input
+                                label="End Date"
+                                type="date"
+                                required
+                                value={formData.endDate}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    endDate: e.target.value,
+                                  })
+                                }
+                                labelClassName="uppercase tracking-[0.2em]"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <label className="form-label uppercase tracking-[0.2em]">
+                                  Priority
+                                </label>
+                                <select
+                                  value={formData.priority}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      priority: e.target
+                                        .value as Project["priority"],
+                                    })
+                                  }
+                                  className="form-select"
+                                >
+                                  <option value="LOW">LOW 🟢</option>
+                                  <option value="MEDIUM">MEDIUM 🟡</option>
+                                  <option value="HIGH">HIGH 🔴</option>
+                                  <option value="CRITICAL">CRITICAL 🚨</option>
+                                </select>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="form-label uppercase tracking-[0.2em]">
+                                  Project Status
+                                </label>
+                                <select
+                                  value={formData.status}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      status: e.target
+                                        .value as Project["status"],
+                                    })
+                                  }
+                                  className="form-select"
+                                >
+                                  <option value="PLANNING">PLANNING 📝</option>
+                                  <option value="ACTIVE">ACTIVE 🚀</option>
+                                  <option value="ON_HOLD">ON HOLD ⏸️</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <label className="form-label">Project Tags</label>
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {formData.tags.map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest border border-primary/20"
+                                  >
+                                    {tag}
+                                    <button
+                                      onClick={() => removeTag(tag)}
+                                      className="hover:text-rose-500 transition-colors"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  placeholder="ADD TAGS..."
+                                  value={tagInput}
+                                  onChange={(e) => setTagInput(e.target.value)}
+                                  onKeyDown={(e) =>
+                                    e.key === "Enter" &&
+                                    (e.preventDefault(), addTag())
+                                  }
+                                  className="form-input"
+                                />
                                 <button
                                   type="button"
-                                  onClick={handleBulkAddEmails}
-                                  className="bg-primary text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
+                                  onClick={addTag}
+                                  className="px-6 bg-secondary text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-secondary/80 transition-all"
                                 >
-                                  Check List
+                                  Add
                                 </button>
                               </div>
                             </div>
-                          )}
-
-                          <div className="flex items-center justify-between px-1">
-                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-                              {formData.teamMemberIds.length} ADDED
-                            </p>
-                            <div className="flex gap-4">
-                              <button
-                                type="button"
-                                onClick={handleSelectAll}
-                                className="text-[9px] font-black text-primary hover:text-primary/80 uppercase tracking-widest transition-colors"
-                              >
-                                Add All
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleDeselectAll}
-                                className="text-[9px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest transition-colors"
-                              >
-                                Clear
-                              </button>
-                            </div>
                           </div>
-                        </div>
+                        )}
 
-                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                          {filteredMembers.map((member) => {
-                            const isSelected = formData.teamMemberIds.includes(
-                              member.id,
-                            );
-                            return (
-                              <div
-                                key={member.id}
-                                onClick={() => toggleMember(member.id)}
-                                className={`group flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
-                                  isSelected
-                                    ? "border-primary bg-primary/10"
-                                    : "border-border/30 bg-secondary/10 hover:border-border/60 hover:bg-secondary/20"
-                                }`}
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-black uppercase ${
-                                      isSelected
-                                        ? "bg-primary text-white shadow-md shadow-primary/20"
-                                        : "bg-background text-muted-foreground border border-border/30"
-                                    }`}
-                                  >
-                                    {(member.firstName || "U").charAt(0)}
-                                  </div>
-                                  <div>
-                                    <h4
-                                      className={`text-[13px] font-black uppercase tracking-tight ${
-                                        isSelected
-                                          ? "text-primary"
-                                          : "text-foreground"
-                                      }`}
-                                    >
-                                      {member.firstName} {member.lastName}
-                                    </h4>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
-                                      {member.email}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div
-                                  className={`w-6 h-6 rounded-xl border-2 flex items-center justify-center transition-all ${
-                                    isSelected
-                                      ? "bg-primary border-primary shadow-md shadow-primary/20"
-                                      : "border-border/50 group-hover:border-primary/50"
+                        {step === 3 && (
+                          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  placeholder="SEARCH TEAM MEMBERS..."
+                                  className="form-input flex-1"
+                                  value={memberSearch}
+                                  onChange={(e) =>
+                                    setMemberSearch(e.target.value)
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowBulkAdd(!showBulkAdd)}
+                                  className={`p-3 rounded-xl border transition-all ${
+                                    showBulkAdd
+                                      ? "bg-primary/20 border-primary text-primary"
+                                      : "border-border text-muted-foreground hover:text-primary"
                                   }`}
                                 >
-                                  {isSelected && (
-                                    <Check className="w-4 h-4 text-white" />
-                                  )}
+                                  <Target className="w-5 h-5" />
+                                </button>
+                              </div>
+
+                              {showBulkAdd && (
+                                <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                                  <label className="text-[10px] font-black text-primary uppercase tracking-widest">
+                                    Add many emails
+                                  </label>
+                                  <textarea
+                                    rows={3}
+                                    className="form-input !text-xs !bg-card"
+                                    placeholder="EMAILS SEPARATED BY COMMAS..."
+                                    value={bulkEmails}
+                                    onChange={(e) =>
+                                      setBulkEmails(e.target.value)
+                                    }
+                                  />
+                                  <div className="flex justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={handleBulkAddEmails}
+                                      className="bg-primary text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
+                                    >
+                                      Check List
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between px-1">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
+                                  {formData.teamMemberIds.length} ADDED
+                                </p>
+                                <div className="flex gap-4">
+                                  <button
+                                    type="button"
+                                    onClick={handleSelectAll}
+                                    className="text-[9px] font-black text-primary hover:text-primary/80 uppercase tracking-widest transition-colors"
+                                  >
+                                    Add All
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleDeselectAll}
+                                    className="text-[9px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest transition-colors"
+                                  >
+                                    Clear
+                                  </button>
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                            </div>
+
+                            <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                              {filteredMembers.map((member) => {
+                                const isSelected =
+                                  formData.teamMemberIds.includes(member.id);
+                                return (
+                                  <div
+                                    key={member.id}
+                                    onClick={() => toggleMember(member.id)}
+                                    className={`group flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
+                                      isSelected
+                                        ? "border-primary bg-primary/10"
+                                        : "border-border/30 bg-secondary/10 hover:border-border/60 hover:bg-secondary/20"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-4">
+                                      <div
+                                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-black uppercase ${
+                                          isSelected
+                                            ? "bg-primary text-white shadow-md shadow-primary/20"
+                                            : "bg-background text-muted-foreground border border-border/30"
+                                        }`}
+                                      >
+                                        {(member.firstName || "U").charAt(0)}
+                                      </div>
+                                      <div>
+                                        <h4
+                                          className={`text-[13px] font-black uppercase tracking-tight ${
+                                            isSelected
+                                              ? "text-primary"
+                                              : "text-foreground"
+                                          }`}
+                                        >
+                                          {member.firstName} {member.lastName}
+                                        </h4>
+                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">
+                                          {member.email}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div
+                                      className={`w-6 h-6 rounded-xl border-2 flex items-center justify-center transition-all ${
+                                        isSelected
+                                          ? "bg-primary border-primary shadow-md shadow-primary/20"
+                                          : "border-border/50 group-hover:border-primary/50"
+                                      }`}
+                                    >
+                                      {isSelected && (
+                                        <Check className="w-4 h-4 text-white" />
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-secondary/10 px-10 py-8 flex items-center justify-between border-t border-border/50">
-                  {step > 1 ? (
-                    <button
-                      onClick={handleBack}
-                      className="flex items-center gap-2 text-[10px] font-black text-muted-foreground hover:text-foreground uppercase tracking-widest transition-all"
-                    >
-                      <ArrowLeft className="w-4 h-4" /> Go Back
-                    </button>
-                  ) : (
-                    <div />
-                  )}
+                {!isLimitReached && (
+                  <div className="bg-secondary/10 px-10 py-8 flex items-center justify-between border-t border-border/50">
+                    {step > 1 ? (
+                      <button
+                        onClick={handleBack}
+                        className="flex items-center gap-2 text-[10px] font-black text-muted-foreground hover:text-foreground uppercase tracking-widest transition-all"
+                      >
+                        <ArrowLeft className="w-4 h-4" /> Go Back
+                      </button>
+                    ) : (
+                      <div />
+                    )}
 
-                  {step < 3 ? (
-                    <button
-                      onClick={handleNext}
-                      className="inline-flex items-center gap-2 bg-primary px-8 py-3.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all"
-                    >
-                      Next <ArrowRight className="w-4 h-4" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleSubmit}
-                      disabled={isCreating}
-                      className="inline-flex items-center justify-center gap-2 bg-foreground px-10 py-3.5 rounded-xl text-[10px] font-black text-background uppercase tracking-widest hover:bg-foreground/90 shadow-2xl shadow-foreground/10 transition-all disabled:opacity-50 min-w-[200px]"
-                    >
-                      {isCreating ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4 mr-1" />
-                          Create Project
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
+                    {step < 3 ? (
+                      <button
+                        onClick={handleNext}
+                        className="inline-flex items-center gap-2 bg-primary px-8 py-3.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-primary/90 hover:shadow-xl shadow-primary/20 transition-all"
+                      >
+                        Next <ArrowRight className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleSubmit}
+                        disabled={isCreating}
+                        className="inline-flex items-center justify-center gap-2 bg-foreground px-10 py-3.5 rounded-xl text-[10px] font-black text-background uppercase tracking-widest hover:bg-foreground/90 shadow-2xl shadow-foreground/10 transition-all disabled:opacity-50 min-w-[200px]"
+                      >
+                        {isCreating ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4 mr-1" />
+                            Create Project
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
               </Dialog.Panel>
             </Transition.Child>
           </div>
